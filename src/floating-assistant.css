@@ -1,0 +1,199 @@
+/* A fixed floating window. No rail, workspace slot, or reserved page width. */
+.ai-floating-window,
+.app-shell.s5-shell > .assistant-panel.ai-floating-window {
+  position: fixed !important;
+  right: auto !important;
+  bottom: auto !important;
+  display: flex !important;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  flex: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible;
+  border: 1px solid #42617c;
+  border-radius: 11px !important;
+  background: #0b1927;
+  color: #cee0ef;
+  box-shadow: 0 18px 65px #0009, 0 2px 10px #0006, inset 0 1px 0 #a7d9ff0c;
+  font: 13px/1.65 Inter, "Microsoft YaHei", "PingFang SC", sans-serif;
+  backdrop-filter: none;
+  isolation: isolate;
+  container-type: size;
+}
+.app-shell.s5-shell > .assistant-panel.ai-floating-window[hidden],
+.ai-floating-window[hidden] { display: none !important; }
+.ai-floating-window[data-state="MAXIMIZED"] { border-radius: 9px !important; }
+.ai-floating-window[data-state="MINIMIZED"] { border-radius: 8px !important; }
+.ai-floating-window .ai-window-titlebar {
+  display: flex;
+  align-items: center;
+  flex: 0 0 47px;
+  min-height: 0;
+  padding: 0 8px 0 11px;
+  border-bottom: 1px solid #2b455c;
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(105deg, #15314a, #0d2133);
+  user-select: none;
+}
+.ai-floating-window .ai-window-drag-handle {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  flex: 1;
+  min-width: 0;
+  gap: 9px;
+  margin-right: 8px;
+  padding: 4px 2px;
+  border-radius: 5px;
+  cursor: grab;
+  touch-action: none;
+  outline-offset: -3px;
+}
+.ai-floating-window.is-dragging .ai-window-drag-handle { cursor: grabbing; }
+.ai-floating-window[data-state="MAXIMIZED"] .ai-window-drag-handle { cursor: default; }
+.ai-floating-window .ai-window-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 27px;
+  height: 27px;
+  border: 1px solid #4780a9;
+  border-radius: 6px;
+  background: linear-gradient(140deg, #23618b, #14334e);
+  color: #d5f3ff;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .5px;
+  font-weight: 700;
+}
+.ai-floating-window .ai-window-title { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+.ai-window-mascot{width:35px;height:39px;object-fit:contain;flex:0 0 35px;pointer-events:none;filter:drop-shadow(0 2px 3px #0005)}
+.ai-chat-empty .ai-empty-mascot{width:100px;height:108px;object-fit:contain;margin-bottom:5px;filter:drop-shadow(0 8px 12px #0004)}
+.ai-floating-window .ai-window-title b { color: #e0f0fc; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.ai-floating-window .ai-window-title small { color: #80a7c4; font-size: 10px; white-space: nowrap; }
+.ai-floating-window .ai-window-controls { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.ai-floating-window .ai-window-controls button {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #aec7db;
+  cursor: pointer;
+}
+.ai-floating-window .ai-window-controls button:hover { background: #2a4e6b; color: #fff; }
+.ai-floating-window .ai-window-controls .ai-window-close:hover { background: #a74747; color: #fff; }
+.ai-floating-window :is(button, [role="button"]):focus-visible { outline: 2px solid #6dc9ff; outline-offset: -2px; }
+.ai-floating-window .ai-floating-body { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; min-width: 0; overflow: hidden; border-radius: 0 0 10px 10px; }
+.ai-floating-window .ai-floating-body[hidden] { display: none !important; }
+.ai-floating-window[data-state="MINIMIZED"] .ai-window-titlebar { flex: 1; border-bottom: 0; border-radius: 8px; }
+.ai-floating-window[data-state="MINIMIZED"] .ai-window-title small { display: none; }
+.ai-floating-window[data-state="MINIMIZED"] .ai-window-title b { font-size: 12px; }
+.ai-floating-window .assistant-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  padding: 10px 12px 12px;
+  gap: 7px;
+  overflow: hidden;
+}
+.ai-floating-window :is(.assistant-heading, .assistant-close, .assistant-foot, .assistant-suggestions) { display: none !important; }
+.ai-floating-window .assistant-sources { flex: 0 1 auto; min-height: 30px; max-height: 24%; margin: 0; overflow: auto; }
+.ai-floating-window .assistant-sources-bar { min-height: 29px; }
+.ai-floating-window .assistant-sources-bar > button { font-size: 11px; }
+.ai-floating-window .assistant-source-files { padding: 8px; }
+.ai-floating-window .assistant-source-list { max-height: none; }
+.ai-floating-window .assistant-context {
+  display: block !important;
+  flex: 0 1 auto;
+  min-height: 33px;
+  max-height: 24%;
+  margin: 0;
+  padding: 6px 9px;
+  border: 1px solid #2b465d;
+  border-radius: 6px;
+  background: #102a3d;
+  overflow: auto;
+  font-size: 11px;
+}
+.ai-floating-window .assistant-context > summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; min-height: 18px; }
+.ai-floating-window .assistant-context > summary::-webkit-details-marker { display: none; }
+.ai-floating-window .assistant-context > summary::after { content: '展开'; margin-left: auto; color: #84abc6; font-size: 10px; }
+.ai-floating-window .assistant-context[open] > summary::after { content: '收起'; }
+.ai-floating-window .assistant-context b { font-weight: 500; }
+.ai-floating-window .ai-live-context { display: block; margin: 8px 0 0; padding: 8px 0 0; border: 0; border-top: 1px solid #2b455d; border-radius: 0; background: transparent; }
+.ai-floating-window .ai-live-context strong { font-size: 14px; line-height: 1.65; }
+.ai-floating-window .ai-live-context p { font-size: 11px; line-height: 1.65; }
+.ai-floating-window .ai-live-context button { font-size: 10px; }
+.ai-floating-window .assistant-conversation { position: relative; display: flex; flex-direction: column; flex: 1 1 0; min-height: 30px; min-width: 0; margin: 0; overflow: hidden; }
+.ai-floating-window .chat-messages { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; min-width: 0; padding: 6px 2px 8px; gap: 16px; margin: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+.ai-floating-window .message { flex: 0 0 auto; width: auto; max-width: 100%; min-width: 0; margin: 0; }
+.ai-floating-window .message-content { max-width: 100%; min-width: 0; padding: 10px 12px; border-radius: 8px; font-size: 13px; line-height: 1.85; color: #d2e3f1; background: #132b40; border: 1px solid #29475f; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; overflow: auto; user-select: text; }
+.ai-floating-window .message.user { align-self: flex-end; max-width: 92%; }
+.ai-floating-window .message.user .message-content { background: #204c70; border-color: #386f98; color: #e2f0fc; }
+.ai-floating-window .message-label { font-size: 11px; margin-bottom: 5px; color: #9bbdd5; }
+.ai-floating-window .message-label small { font-size: 10px; color: #7399b4; }
+.ai-floating-window .message-actions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+.ai-floating-window .message-actions button { font-size: 10px; line-height: 1.5; padding: 4px 7px; border: 1px solid #315573; border-radius: 4px; color: #9dd0f0; background: #15334a; }
+.ai-floating-window .message-context-age { display: block; margin: 3px 0 5px; font-size: 10px; color: #c9ad7b; }
+.ai-floating-window .chat-new-messages { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; padding: 6px 11px; border: 1px solid #668cac; border-radius: 14px; background: #254965; color: #e1f3ff; box-shadow: 0 3px 12px #0006; font-size: 11px; white-space: nowrap; }
+.ai-floating-window .chat-input { flex: 0 0 auto; min-height: 0; margin: 0; padding: 9px 10px 8px; border: 1px solid #426782; border-radius: 8px; background: #0d2336; box-shadow: inset 0 1px 5px #00121b44; }
+.ai-floating-window .chat-input:focus-within { border-color: #5b9cc9; box-shadow: 0 0 0 1px #4a8abc22; }
+.ai-floating-window .chat-input textarea { display: block; box-sizing: border-box; width: 100%; min-height: 38px; max-height: min(156px, 25cqh) !important; margin: 0; padding: 0; border: 0; border-radius: 0; outline: none; background: transparent; color: #d9ebf9; box-shadow: none; resize: none; overflow-y: auto; font-size: 13px; line-height: 1.65; user-select: text; }
+.ai-floating-window .chat-input textarea::placeholder { color: #698da7; }
+.ai-floating-window .chat-input > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 7px; }
+.ai-floating-window .chat-input > div > span { color: #7293ab; font-size: 10px; }
+.ai-floating-window .chat-input button { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 28px; padding: 0; border: 1px solid #4c8cbd; border-radius: 5px; background: #266595; color: #e1f6ff; }
+.ai-floating-window .chat-input button:hover:not(:disabled) { background: #317daf; }
+.ai-floating-window .chat-input button:disabled { opacity: .4; }
+.ai-floating-window .ai-chat-empty { margin: auto 0; padding: 16px 10px; text-align: center; color: #8faac0; }
+.ai-floating-window .ai-chat-empty strong { display: block; margin: 10px 0; font-size: 16px; color: #d5e9f7; font-weight: 500; }
+.ai-floating-window .ai-chat-empty p { margin: 8px 0 15px; font-size: 12px; line-height: 1.8; }
+.ai-floating-window .ai-chat-empty button { border: 1px solid #36556f; border-radius: 15px; background: #18374f; color: #adcee5; font-size: 11px; padding: 6px 11px; }
+.ai-floating-window .chat-thinking { display: flex; align-items: center; gap: 7px; padding: 7px 0; font-size: 12px; color: #8eafc8; }
+.ai-floating-window .ai-window-resize { position: absolute; z-index: 4; touch-action: none; user-select: none; border-radius: 5px; }
+.ai-floating-window .ai-window-resize:focus-visible { background: #459bca55; outline: 1px solid #76ccfc; outline-offset: -2px; }
+.ai-resize-n { left: 14px; right: 14px; top: -3px; height: 8px; cursor: n-resize; }
+.ai-resize-s { left: 14px; right: 14px; bottom: -3px; height: 8px; cursor: s-resize; }
+.ai-resize-e { right: -3px; top: 14px; bottom: 14px; width: 8px; cursor: e-resize; }
+.ai-resize-w { left: -3px; top: 14px; bottom: 14px; width: 8px; cursor: w-resize; }
+.ai-resize-ne, .ai-resize-se, .ai-resize-sw, .ai-resize-nw { width: 15px; height: 15px; }
+.ai-resize-ne { right: -3px; top: -3px; cursor: ne-resize; }
+.ai-resize-se { right: -3px; bottom: -3px; cursor: se-resize; }
+.ai-resize-sw { left: -3px; bottom: -3px; cursor: sw-resize; }
+.ai-resize-nw { left: -3px; top: -3px; cursor: nw-resize; }
+.ai-resize-se::after { content: ''; position: absolute; right: 5px; bottom: 5px; width: 6px; height: 6px; border-right: 1px solid #6891af; border-bottom: 1px solid #6891af; }
+body.ai-window-gesturing, body.ai-window-gesturing * { user-select: none !important; }
+.ai-floating-dock { position: fixed; right: 16px; bottom: 16px; z-index: 142; display: flex; gap: 7px; filter: drop-shadow(0 5px 14px #020a1477); }
+.ai-floating-dock .voice-trigger { display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 8px; min-height: 40px; min-width: 43px; border: 1px solid #547c9c; border-radius: 8px; background: #153346; color: #dcefff; padding: 0 10px; cursor: pointer; }
+.voice-popover:not(.is-fullscreen) { top: auto; bottom: 66px; right: 16px; z-index: 143; border-radius: 10px; }
+.voice-fullscreen-trigger { z-index: 142; }
+.voice-popover.is-fullscreen { z-index: 143; }
+.app-shell > .modal-backdrop { z-index: 180; }
+@container (max-width: 390px) {
+  .ai-window-title small { display: none; }
+  .ai-floating-window .message-content { font-size: 12px; padding: 9px 10px; }
+}
+@container (max-height: 410px) {
+  .ai-floating-window .assistant-content { gap: 5px; padding: 7px 10px 9px; }
+  .ai-floating-window .chat-input { padding: 7px 8px; }
+  .ai-floating-window .chat-input textarea { max-height: 58px !important; }
+  .ai-floating-window .assistant-sources, .ai-floating-window .assistant-context { max-height: 21%; }
+}
+@container (max-height: 300px) {
+  .ai-floating-window .assistant-sources, .ai-floating-window .assistant-context { display: none !important; }
+  .ai-floating-window .assistant-conversation { min-height: 12px; }
+  .ai-floating-window .chat-input textarea { min-height: 25px; max-height: 38px !important; }
+  .ai-floating-window .chat-input > div > span { display: none; }
+}
+@media print { .ai-floating-dock, .ai-floating-window { display: none !important; } }

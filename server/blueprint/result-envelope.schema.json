@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tool result identity envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_id",
+    "context_ref",
+    "status",
+    "data",
+    "evidence_refs",
+    "error"
+  ],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "context_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "由宿主服务创建的不可变上下文引用；后端核对权限、快照版本和有效性"
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        "success",
+        "partial",
+        "needs_input",
+        "needs_approval",
+        "failed",
+        "cancelled",
+        "stale_context"
+      ]
+    },
+    "data": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 1
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "model_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "必须来自宿主或工具返回，禁止编造"
+        },
+        "schema_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "必须来自宿主或工具返回，禁止编造"
+        },
+        "snapshot_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "必须来自宿主或工具返回，禁止编造"
+        },
+        "source_type": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "continuation": {
+      "type": "object",
+      "properties": {
+        "cursor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "job_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "必须来自宿主或工具返回，禁止编造"
+        },
+        "remaining": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  }
+}

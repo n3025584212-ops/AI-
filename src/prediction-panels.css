@@ -1,0 +1,86 @@
+.prediction-ribbon { display:grid; grid-template-columns:minmax(190px,1.32fr) minmax(135px,.9fr) minmax(170px,1fr) minmax(170px,1fr) 105px; align-items:center; gap:0; min-height:78px; flex:none; padding:10px 20px; background:#172329; border-bottom:1px solid #3b4d54; color:#d4e3e5; }
+.prediction-ribbon>div,.prediction-ribbon>label { min-width:0; }
+.prediction-primary { display:flex; align-items:baseline; flex-wrap:wrap; column-gap:14px; padding-right:20px; }
+.prediction-eyebrow { color:#b4c9cc; font-size:12px; line-height:1.4; white-space:nowrap; }
+.prediction-value { font:500 34px/1.1 Bahnschrift,'Segoe UI',sans-serif; letter-spacing:-.5px; color:#9ce0cf; font-variant-numeric:tabular-nums; }
+.prediction-target,.prediction-metric { padding:0 20px; border-left:1px solid #3e535960; }
+.prediction-ribbon .prediction-target { display:block; margin:0; color:#cab991; font-size:12px; }
+.prediction-target>span,.prediction-metric>span { display:block; margin:0 0 6px; line-height:1; font-size:12px; color:#9cafb6; }
+.prediction-ribbon .prediction-target input { display:block; width:100%; max-width:126px; height:28px; padding:2px 7px; border:1px solid #58616a; border-radius:3px; background:#202e35; color:#e1cca3; box-shadow:none; font:500 20px/1.1 Bahnschrift,'Segoe UI',sans-serif; font-variant-numeric:tabular-nums; }
+.prediction-ribbon .prediction-target input:hover { border-color:#8b917f; }
+.prediction-ribbon .prediction-target input:focus { outline:1px solid #d0b77e; outline-offset:1px; border-color:#ad9668; }
+.prediction-target input::-webkit-inner-spin-button { opacity:.6; }
+.prediction-metric>div { display:flex; align-items:baseline; gap:10px; white-space:nowrap; }
+.prediction-metric strong { color:#d5e0e2; font:500 23px/1.1 Bahnschrift,'Segoe UI',sans-serif; font-variant-numeric:tabular-nums; }
+.prediction-metric small { color:#a6b7bc; font:400 13px Bahnschrift,'Segoe UI',sans-serif; }
+.prediction-target-delta strong,.prediction-target-delta small { color:#d3bb8f; }
+.prediction-status { display:flex; align-items:center; justify-content:flex-end; gap:7px; color:#8db8a8; font-size:12px; }
+.prediction-status small { display:block; color:#899ba2; margin-top:5px; font:400 12px Bahnschrift,'Segoe UI',sans-serif; }
+.prediction-status.is-pending { color:#d2b68a; }
+.prediction-ribbon.is-stale .prediction-value,.prediction-ribbon.is-stale .prediction-metric strong { opacity:.68; }
+.prediction-trace,.prediction-influence { width:100%; min-width:0; color:#c4d3d8; }
+.prediction-panel-heading,.prediction-section-heading { display:flex; align-items:center; justify-content:space-between; gap:5px; }
+.prediction-panel-heading { margin-bottom:15px; }
+.prediction-panel-heading h3 { margin:0; color:#d4e0e3; font-size:13px; font-weight:500; letter-spacing:0; white-space:nowrap; }
+.prediction-panel-heading small { color:#8d9fa7; font-size:11px; white-space:nowrap; }
+.prediction-comparison { display:block; width:100%; overflow:visible; }
+.prediction-svg-label { fill:#a6b8be; font:12px 'Segoe UI','Microsoft YaHei',sans-serif; }
+.prediction-svg-number { fill:#d1dde0; font:500 15px Bahnschrift,'Segoe UI',sans-serif; font-variant-numeric:tabular-nums; }
+.prediction-svg-forecast { fill:#9cdbc9; }
+.prediction-svg-target { fill:#ccb78f; font:12px Bahnschrift,'Segoe UI','Microsoft YaHei',sans-serif; }
+.prediction-gridline { stroke:#758d9520; stroke-width:1; }
+.prediction-track { stroke:#8a9ba538; stroke-width:2; }
+.prediction-target-line { stroke:#d3b680; stroke-width:1.2; stroke-dasharray:3 3; }
+.prediction-forecast-line { stroke:#90d9c4; stroke-width:3; }
+.prediction-forecast-dot { fill:#a1e1cf; stroke:#21333b; stroke-width:1; }
+.prediction-observed-line { stroke:#a5bdc9; stroke-width:3; }
+.prediction-observed-dot { fill:#263740; stroke:#b4cbd4; stroke-width:2; }
+.prediction-axis { fill:#8d9fa7; font:11px Bahnschrift,'Segoe UI',sans-serif; }
+.prediction-history { border-top:1px solid #718b932d; padding-top:13px; margin-top:16px; }
+.prediction-section-heading { color:#a5b8bf; font-size:12px; }
+.prediction-section-heading small { font-size:11px; color:#8199a2; }
+.prediction-history svg { display:block; width:100%; height:auto; margin-top:4px; overflow:visible; }
+.prediction-history-target { stroke:#c9ac77; stroke-width:1.3; stroke-dasharray:4 3; fill:none; }
+.prediction-history-forecast { stroke:#95d7c4; stroke-width:1.7; fill:none; }
+.prediction-history g[role=button] { cursor:crosshair; }
+.prediction-history g[role=button]:focus { outline:none; }
+.prediction-history g[role=button]:focus-visible circle:last-child { stroke:#f5f3db; stroke-width:2; }
+.prediction-history-readout { display:flex; align-items:center; gap:10px; margin-top:6px; font:12px Bahnschrift,'Segoe UI',sans-serif; color:#8eaaaF; }
+.prediction-history-readout strong { margin-left:auto; font-weight:500; color:#a4dbcc; font-size:14px; }
+.prediction-history-target-value { color:#cbb58d; }
+.prediction-legend { display:flex; justify-content:flex-end; gap:12px; margin-top:6px; font-size:11px; color:#94aab2; }
+.prediction-legend span { display:flex; align-items:center; gap:5px; }
+.prediction-legend i { display:block; width:10px; border-top:2px solid #94d6c3; }
+.prediction-legend span:last-child i { border-color:#c7ae7c; border-top-style:dashed; }
+.prediction-initial-result { display:flex; align-items:center; gap:6px; margin-top:17px; padding-top:12px; border-top:1px solid #718b932d; font-size:11px; color:#92a7af; }
+.prediction-initial-result time { margin-left:auto; font:12px Bahnschrift,'Segoe UI',sans-serif; color:#b3c7cd; }
+.prediction-drivers { display:flex; flex-direction:column; gap:2px; }
+.prediction-driver { display:block; width:100%; border:0; border-radius:3px; padding:8px 5px 9px; margin:0; text-align:left; background:transparent; color:#b4c8ce; }
+.prediction-driver:hover,.prediction-driver:focus-visible { background:#526e7933; }
+.prediction-driver:disabled { cursor:default; opacity:1; }
+.prediction-driver-top { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; }
+.prediction-driver-top>span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.prediction-driver-top b { color:#c5d9df; font:500 14px Bahnschrift,'Segoe UI',sans-serif; white-space:nowrap; }
+.prediction-driver-top small { margin-left:3px; font-size:10px; color:#8aa2ac; }
+.prediction-driver-bottom { display:flex; align-items:center; gap:8px; margin-top:8px; color:#a9c2c5; }
+.prediction-driver-track { display:block; width:100%; height:4px; border-radius:2px; background:#6f8d9922; }
+.prediction-driver-track i { display:block; height:100%; border-radius:2px; background:#8aaebb; transition:width .25s ease; }
+.prediction-driver:first-child .prediction-driver-track i { background:#8ebcaf; }
+.prediction-influence-stale { margin-top:10px; color:#c9b081; font-size:11px; }
+.prediction-trace.is-stale .prediction-comparison,.prediction-influence.is-stale .prediction-drivers { opacity:.62; }
+@media(min-width:1600px) {
+ .prediction-ribbon { grid-template-columns:minmax(300px,1.4fr) minmax(180px,.8fr) minmax(220px,1fr) minmax(220px,1fr) 120px; padding:11px 25px; }
+ .prediction-primary { flex-wrap:nowrap; }.prediction-value { font-size:38px; }
+}
+@media(max-width:1150px) {
+ .prediction-ribbon { grid-template-columns:minmax(166px,1.15fr) minmax(126px,.88fr) minmax(158px,1fr) minmax(157px,1fr) 90px; padding:9px 13px; min-height:76px; }
+ .prediction-primary { padding-right:12px; gap:3px; }.prediction-eyebrow { width:100%; }.prediction-value { font-size:30px; }
+ .prediction-target,.prediction-metric { padding-left:13px; padding-right:13px; }
+ .prediction-metric>div { gap:7px; }.prediction-metric strong { font-size:21px; }.prediction-metric small { font-size:12px; }
+ .prediction-status { gap:5px; font-size:11px; }
+}
+@media(max-height:780px) {
+ .prediction-panel-heading { margin-bottom:10px; }.prediction-comparison { max-height:112px; }
+ .prediction-history { margin-top:10px; padding-top:10px; }.prediction-history svg { max-height:69px; }
+ .prediction-initial-result { margin-top:10px; padding-top:10px; }.prediction-driver { padding-top:6px; padding-bottom:7px; }
+}

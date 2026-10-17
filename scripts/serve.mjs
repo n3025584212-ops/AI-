@@ -1,0 +1,8 @@
+import path from 'node:path';
+import {root,configureProjectEnv} from './project-env.mjs';
+configureProjectEnv();
+const {startServer}=await import('../server/index.mjs');
+const port=Number(process.env.QCDKR_PORT||5189),front=Number(process.env.QCDKR_FRONTEND_PORT||5190);
+const server=await startServer({port,dataDir:path.join(root,'.runtime-data/web'),distDir:path.join(root,'dist'),allowedOrigins:[`http://127.0.0.1:${front}`,`http://localhost:${front}`,`http://127.0.0.1:${port}`]});
+console.log(`QCDKR V1.1.0 independent project: http://127.0.0.1:${server.address().port}`);
+let closing=false;for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{if(closing)return;closing=true;server.close(()=>process.exit(0));});

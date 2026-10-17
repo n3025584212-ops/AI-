@@ -1,0 +1,20 @@
+/* Full product name remains readable in the existing surfaces. */
+.login-brand>div{flex:1;min-width:0}
+.login-brand-icon{flex:none}
+.login-screen .login-brand strong{font-size:clamp(18px,1.8vw,25px);line-height:1.45;letter-spacing:0;overflow-wrap:anywhere}
+.login-brand>p{flex:none;max-width:225px;line-height:1.6;letter-spacing:1px}
+.login-card>p{line-height:1.7;overflow-wrap:anywhere}
+.login-footer>span{white-space:normal;overflow-wrap:anywhere}
+.s5-shell.reference-shell .brand{height:auto;min-height:62px;align-items:flex-start}
+.s5-shell.reference-shell .brand>div.product-brand-title{min-width:0;font-size:11px;line-height:1.55;letter-spacing:0;white-space:normal;overflow-wrap:anywhere}
+.s5-shell.reference-shell .brand>.product-brand-title small{letter-spacing:0;margin-top:5px}
+.sidebar-signature b{font-size:10px;line-height:1.65;letter-spacing:0;overflow-wrap:anywhere}
+.s5-shell.reference-shell .topbar-product{min-width:0;flex:1}
+.s5-shell.reference-shell .topbar-product>strong{max-width:620px;white-space:normal;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.desktop-title-overlay body:before{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
+.rpt-head>strong{flex:1;min-width:0;font-size:14px;line-height:1.6;letter-spacing:0;overflow-wrap:anywhere}
+.rpt-head>div{flex:none;max-width:32%}
+.rpt-foot>span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+.rpt-foot>span:last-child{flex:none}
+@media print{.rpt-head>strong{font-size:11pt;line-height:1.6}}
+@media(max-width:700px){.login-screen .login-brand strong{font-size:17px}.login-brand{gap:10px}.login-brand-icon{width:35px}.login-brand span:not(.login-brand-icon){letter-spacing:0}}

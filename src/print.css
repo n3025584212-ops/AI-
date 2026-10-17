@@ -1,0 +1,176 @@
+/* Report-only print layout. Loaded last so screen breakpoints cannot clip it. */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body,
+  #root,
+  .app-shell,
+  .main-shell,
+  .workspace,
+  .main-content,
+  .report-layout,
+  .paper-wrap,
+  #report-paper {
+    background: #fff !important;
+    background-image: none !important;
+    color: #20394e;
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .sidebar,
+  .topbar,
+  .assistant-panel,
+  .page-heading,
+  .context-bar,
+  .dirty-note,
+  .main-footer,
+  .toast,
+  .report-layout > .panel,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  #report-paper {
+    font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.6;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  #report-paper .paper-header {
+    margin: 0 0 5mm;
+    padding: 0 0 3mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #report-paper .paper-kicker {
+    margin-top: 0;
+    font-size: 8pt;
+  }
+
+  #report-paper h1 {
+    font-size: 22pt;
+    line-height: 1.3;
+    margin: 2mm 0;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  #report-paper .paper-mode {
+    font-size: 8pt;
+    margin-bottom: 4mm;
+  }
+
+  #report-paper > img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 50mm;
+    object-fit: contain;
+    margin: 0 auto 3mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #report-paper h3 {
+    font-size: 11pt;
+    line-height: 1.4;
+    margin: 4mm 0 2mm;
+    padding-bottom: 1.5mm;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  #report-paper > p {
+    font-size: 9pt;
+    line-height: 1.65;
+    color: #40586b;
+    overflow-wrap: anywhere;
+    orphans: 3;
+    widows: 3;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #report-paper .paper-grid {
+    font-size: 9pt;
+    gap: 2mm 8mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #report-paper .paper-result {
+    padding: 3mm 4mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Keep the legend and SVG together, even when the chart starts a new page. */
+  #report-paper .line-chart {
+    display: block;
+    width: 100%;
+    max-width: 150mm;
+    height: auto;
+    margin: 2mm auto 3mm;
+    overflow: visible;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #report-paper .chart-legend {
+    margin: 0 0 1mm;
+    font-size: 8pt;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  #report-paper .line-chart svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: 48mm;
+    overflow: visible;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #report-paper .line-chart svg text {
+    fill: #50677b;
+  }
+
+  #report-paper .line-chart .chart-value {
+    fill: #a96023;
+  }
+
+  #report-paper .paper-footer {
+    margin-top: 5mm;
+    padding-top: 2mm;
+    font-size: 7pt;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

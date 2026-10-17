@@ -1,0 +1,34 @@
+/* A4 density is separate from the on-screen document preview. */
+@media print {
+  @page { background: white; }
+  html, body { color-scheme: light !important; }
+  .rpt-head { margin-bottom: 3mm; padding-bottom: 3mm; }
+  .rpt-eyebrow { margin-top: 5mm; }
+  .report-sheet h1 { font-size: 23pt !important; margin: 3mm 0 !important; }
+  .report-sheet .rpt-section-title { font-size: 18pt !important; margin: 5mm 0 !important; }
+  .report-sheet h2 { font-size: 11pt; margin: 4mm 0 2mm; padding-bottom: 2mm; }
+  .report-sheet p, .report-sheet .rpt-lead { font-size: 8.5pt; line-height: 1.7; margin: 2mm 0; }
+  .rpt-meta { padding: 3mm 0; margin-top: 4mm; gap: 3mm 7mm; }
+  .rpt-meta small { margin-bottom: 1mm; }
+  .rpt-meta span { font-size: 8.5pt; }
+  .rpt-kpis { margin: 4mm 0; }
+  .rpt-kpis > div { padding: 3.5mm; }
+  .rpt-kpis strong { font-size: 23pt; margin: 2mm 0; }
+  .report-sheet figure { margin: 3mm 0; }
+  .report-sheet figure img { max-height: 49mm; }
+  .rpt-scope { margin-top: 4mm; padding: 3mm 4mm; }
+  .rpt-scope p { font-size: 8pt; }
+  .rpt-table { margin: 3mm 0; }
+  .rpt-table th, .rpt-table td { padding: 1.7mm 2mm; line-height: 1.4; font-size: 8pt; }
+  .rpt-table td small { display: inline; margin-left: 2mm; font-size: 6.5pt; }
+  .rpt-list { margin: 2mm 0; font-size: 8.5pt; line-height: 1.7; }
+  .rpt-list li { margin-bottom: 2mm; }
+  .rpt-note { padding: 3mm 4mm; margin-top: 3mm; }
+  .report-sheet .line-chart svg { max-height: 51mm !important; }
+  .report-sheet .rpt-bars { gap: 2.7mm; margin: 3mm 0; }
+  .rpt-bars > div { font-size: 8.5pt; }
+  .rpt-foot { margin-top: 4mm; padding-top: 3mm; }
+  .rpt-plan { padding-bottom: 2mm; }
+  .rpt-plan-summary { padding: 2mm 3mm; margin: 2mm 0; font-size: 8.5pt; }
+  .rpt-ai { padding: 3mm; margin: 3mm 0; }
+}

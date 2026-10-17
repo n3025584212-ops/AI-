@@ -1,0 +1,16 @@
+/* Compact hover choices stay anchored to their own scene control. */
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice{position:relative;display:flex;align-items:center}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-trigger{display:flex;align-items:center;gap:5px;height:25px;padding:4px 8px;border:0;border-radius:12px;font-size:11px;color:#b8d1e0;background:transparent;transition:background 140ms ease,color 140ms ease}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-trigger:hover,
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-trigger[aria-expanded=true]{background:#83cfff18;color:#effaff}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-trigger svg{opacity:.65;transition:transform 140ms ease}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-trigger[aria-expanded=true] svg{transform:rotate(180deg)}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:35;display:flex;flex-direction:row;align-items:center;gap:3px;width:max-content;max-width:calc(100vw - 32px);padding:5px;border:0;border-radius:22px;background:#102a3bea;backdrop-filter:blur(16px);box-shadow:0 8px 24px #0005;animation:scene-choices-in 140ms ease both}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-menu:before{content:"";position:absolute;inset:-10px 0 auto;height:11px}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-menu button{display:flex;align-items:center;justify-content:center;flex:0 0 auto;gap:5px;min-height:30px;padding:5px 11px;border:0;border-radius:17px;background:transparent;color:#a9c8db;font-size:11px;font-weight:400;line-height:20px;white-space:nowrap;transition:background 120ms ease,color 120ms ease}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-menu button:hover{background:#9bd9fb16;color:#f1fbff}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-menu button[aria-pressed=true]{background:#48b8ef25;color:#e8f8ff}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-menu button[aria-pressed=true]:before{content:"";width:4px;height:4px;border-radius:50%;background:#76d5fa;flex:none}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice button:focus-visible{outline:2px solid #82d9ff;outline-offset:2px}
+@keyframes scene-choices-in{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-menu{animation:none}.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice button,.s5-shell.workbench-shell .dashboard-workspace .scene-tools .scene-choice-trigger svg{transition:none}}

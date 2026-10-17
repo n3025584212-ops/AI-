@@ -1,0 +1,15 @@
+node_modules/
+dist/
+data/
+qa/
+tmp/
+.venv-model/
+
+node_modules/
+model-runtime/
+data/local-llm/
+toolchain/
+dist/
+rebuild-output/
+.runtime-data/
+tmp/

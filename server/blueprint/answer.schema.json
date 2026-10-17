@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI answer structure (facts rendered from tool references)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "context_ref",
+    "status",
+    "summary",
+    "fact_refs",
+    "evidence_refs",
+    "uncertainties",
+    "action_refs"
+  ],
+  "properties": {
+    "context_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "由宿主服务创建的不可变上下文引用；后端核对权限、快照版本和有效性"
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        "completed",
+        "partial",
+        "needs_input",
+        "needs_approval",
+        "failed",
+        "cancelled",
+        "stale_context"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "简短描述；业务数值优先通过fact_refs由界面渲染，不自行编造。"
+    },
+    "fact_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "result_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "json_pointer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "result_ref",
+          "json_pointer",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 12
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "description": "必须来自宿主或工具返回，禁止编造"
+      },
+      "maxItems": 12
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 6
+    },
+    "action_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "description": "必须来自宿主或工具返回，禁止编造"
+      },
+      "maxItems": 3
+    }
+  }
+}

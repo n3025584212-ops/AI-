@@ -1,0 +1,513 @@
+{
+  "docs": [
+    {
+      "id": "paper-main",
+      "title": "DK-QKAR 论文正文",
+      "fileName": "DK_QKAR_论文_插图正式版_蓝灰无Marker雷达图_第4.3节消融压缩定稿版.docx",
+      "kind": "paper",
+      "sha256": "e55dcf18f4bbd0a386b40769541c243d716c92174e6408b7d5038498f19615e5",
+      "chunks": [
+        {
+          "id": "paper-main-c0001",
+          "heading": "1 引言",
+          "locator": "word/document.xml /w:document/w:body/w:p[1] 至 w:p[5]",
+          "text": "1 引言\n冷连轧轧制力是轧机负荷设定和带钢厚度控制的重要过程参数。Bland和Ford[1]建立了考虑前后张力的冷轧轧制力解析模型，为轧制力计算提供了理论基础。针对精密极薄带轧制，王家琪等[2]基于非圆弧理论研究轧制力快速预测，任鹏帆等[3]建立了机理和数据融合的304不锈钢极薄带轧制力模型。在冷连轧变形抗力预测方面，Wu等[4]采用灰狼优化算法优化支持向量回归模型，为轧制力计算提供变形抗力预测值。五机架冷连轧末机架承担最终工艺调节，本文以S5机架轧制力为唯一预测对象。\n多机架轧制的工艺状态具有连续性，前序机架形成的带钢状态与后续机架工况相互关联。针对轧制过程信息利用，李维刚等[5]采用图卷积网络建立热轧带钢轧制力预测模型，利用带钢之间的关联信息开展预测；机理模型与梯度提升决策树的结合也已用于热轧轧制力预报[6]。谢松雨等[7]通过特征增维引入机架间动态工艺参数，结合深度学习实现热轧轧制力动态预测。冷连轧研究进一步将物理约束融入多机架参数序列预测[8]。Wang等[9]构建CNN-BiLSTM-Attention模型，利用多机架信息同步预测冷轧轧制力和变形抗力；热轧研究则采用ELM与LSTM结合的方法修正非稳态工况下的轧制力预测偏差[10]。上述方法分别从样本关联、机架关联和动态修正等方面组织工艺信息。工艺状态在机架间的物理传递与预测值的递归使用属于不同过程：以前一机架预测值作为后一机架输入时，预测误差可能随之传递。本文利用已有工艺变量直接预测S5轧制力，不采用S1—S4机架的轧制力预测值逐级递推。\n在利用多机架工艺信息的基础上，轧制力预测还需要选择适合的建模方法。机理模型具有明确的物理基础，但变形抗力、摩擦因数等参数需要适应钢种、规格和工况变化；数据驱动方法则为参数预测和模型修正提供了补充。Zhao等[11]研究了数据驱动的带钢冷连轧变形抗力在线预测。在其他轧制过程预测任务中，王优龙等[12]将集成特征选择与SVR结合，用于热连轧板凸度预测；张峥等[13]建立SVR模型预测带钢精轧宽展。针对冷轧轧制力，Li等[14]将T-S模糊神经网络与解析模型结合开展预测。这些工作支持机器学习和机理—数据融合用于复杂轧制过程建模，但其预测对象和输入条件不同，模型效果仍需结合输入表示、样本规模及验证方案评价。\n输入特征选择和核函数设计是组织样本信息的两种途径。Peng等[15]提出最大相关—最小冗余（maximum relevance–minimum redundancy，mRMR）特征选择思想，兼顾特征与目标的相关性及特征间冗余。Rakotomamonjy等[16]提出SimpleMKL，通过核函数组合构建预测模型，为不同样本相似性表示的融合提供方法依据。RBF核本身能够建模非线性，本文关注的是其他核表示能否在有限样本条件下提供互补信息。Schuld和Killoran[17]从特征映射角度研究经典数据的量子态编码，Havlíček等[18]研究了量子增强特征空间中的监督学习，为利用量子态相似性构造核函数提供了基础。Wang等[19]进一步将量子核用于半导体欧姆接触的小样本建模。量子保真度核可提供不同于RBF核的相似性表示，其对冷连轧轧制力预测的实际作用仍需通过具体数据和匹配对照实验检验。"
+        },
+        {
+          "id": "paper-main-c0002",
+          "heading": "1 引言 / 2 数据预处理 / 2.1 数据来源与变量选择",
+          "locator": "word/document.xml /w:document/w:body/w:p[7] 至 w:p[13]",
+          "text": "针对冷连轧机架直接预测中不同核表示的互补利用问题，本文提出双核量子核辅助回归模型（dual-kernel quantum-kernel-assisted regression，DK-QKAR）。模型以完整25维多机架工艺特征构造经典RBF核，并引入由5维筛选特征构造的量子保真度核作为补充，通过固定权重融合形成量子—经典双核表示，以研究不同样本相似性表示的互补作用。消融结果显示，相较仅采用经典RBF核的单核模型，DK-QKAR的平均RMSE由20.101降至19.205，点估计降低4.46%，表明双核融合在当前评价设置下可获得进一步的预测性能改善。\n2 数据预处理\n2.1 数据来源与变量选择\n本文采用公开CRD冷轧数据集[20]，共包含400条样本。本文选取入口设定厚度、带钢宽度、入口实际厚度、S1—S3轧制力、S1—S5弯辊力、S1—S5轧制速度、S1—S5后张力和S1—S4前张力共25维工艺变量作为模型输入，以S5机架轧制力（以下简称S5轧制力）作为预测目标。上述输入涵盖几何、载荷、速度和张力等多类轧制过程信息。模型输入、输出变量及其数据范围见表1。\n表中数据范围根据本文采用的400条样本统计；对于跨机架合并列示的变量，数据范围为相应机架变量在400条样本中的总体最小值和最大值。公开CRD资料明确厚度和带钢宽度采用mm，其余过程变量未提供明确物理单位，表中以“—”表示；“—”仅表示公开来源未注明单位，并非无量纲。\n表1  输入、输出变量及数据范围\nTable 1 Input and output variables and their data ranges"
+        },
+        {
+          "id": "paper-main-c0003",
+          "heading": "2.1 数据来源与变量选择",
+          "locator": "word/document.xml /w:document/w:body/w:tbl[1]/w:tr[1] 至 w:tbl[1]/w:tr[10]",
+          "text": "变量名称\t数据范围\t单位\n入口设定厚度\t1.800–3.500\tmm\n带钢宽度\t794–1250\tmm\n入口实际厚度\t1.728–3.478\tmm\n轧制力（S1—S3）\t595.6–1215.0\t—\n弯辊力（S1—S5）\t29.43–163.5\t—\n轧制速度（S1—S5）\t35.91–1143.0\t—\n后张力（S1—S5）\t3.030–44.27\t—\n前张力（S1—S4）\t3.041–44.42\t—\nS5轧制力\t455.6–1279.0\t—"
+        },
+        {
+          "id": "paper-main-c0004",
+          "heading": "2.2 数据划分与预处理",
+          "locator": "word/document.xml /w:document/w:body/w:p[14] 至 w:p[22]",
+          "text": "2.2 数据划分与预处理\n根据入口设定厚度、出口设定厚度和带钢宽度的组合，将400条样本划分为8个规格组，每组50条。其中，出口设定厚度仅用于规格分组，不作为模型预测输入。各规格组按照原始记录顺序依次划分为13、13、12和12条的4个连续区块，共进行4轮训练—验证实验。第1轮选取各规格组的第1个区块组成验证集，其余区块作为训练集；后续3轮依次选取各规格组的第2、第3和第4个区块作为验证集。由此，每轮验证集均包含全部8个规格组，使不同规格在各轮验证中得到一致覆盖，并降低模型评价结果对单次规格构成的依赖。\n由于轧制速度、张力和轧制力等输入变量的量纲和数值范围存在差异，若直接用于模型训练，变量尺度差异可能影响训练效果。为减小变量尺度差异的影响，需要对输入数据进行标准化处理。本文采用标准差标准化对输入变量进行尺度统一[27-28]，其计算式为\nz=(x−μ)/(σ)\t（1）\n式中：x为原始变量值；z为标准化后的变量值；μ和σ分别为训练数据中相应变量的均值和标准差。\n经过标准差标准化后，DK-QKAR量子分支还需将筛选得到的5维特征转换至统一的量子旋转编码范围。由于标准差标准化并不限定特征的实际取值区间，本文进一步采用Min–Max线性映射，将5维特征映射至[0,π]，其计算式为\nq=π(z−z_(min))/(z_(max)−z_(min))\t（2）\n式中：z为标准化后的特征值；z_min和z_max分别为训练数据中相应特征的最小值和最大值；q为映射后的特征值。\n各轮标准化及Min–Max线性映射参数均仅由相应训练集确定，并应用于对应验证集，以避免数据泄漏。"
+        },
+        {
+          "id": "paper-main-c0005",
+          "heading": "3 S5轧制力预测模型构建 / 3.1 量子分支构建",
+          "locator": "word/document.xml /w:document/w:body/w:p[24] 至 w:p[38]",
+          "text": "3 S5轧制力预测模型构建\n3.1 量子分支构建\nDK-QKAR量子分支用于将低维工艺特征映射至量子特征空间，并基于量子态保真度度量样本间的相似性，构造量子核。其构建过程依次包括量子输入特征确定，输入尺度调整，Fiducial参考态构造，量子特征映射以及量子保真度核计算。\n量子分支采用逐维编码，输入维数与量子比特数对应。为控制量子分支规模并构建紧凑的低维表示，本文采用5量子比特逐维编码[19]，从25维工艺变量中筛选5维量子输入。经典RBF分支仍保留完整25维工艺特征  ，以避免样本相似性表示完全依赖低维量子输入。为使筛选后的5维变量兼顾与S5轧制力的相关性及变量间冗余，本文参照最大相关—最小冗余（maximum relevance–minimum redundancy，mRMR）思想[15]构建MI–Pearson筛选准则，以互信息衡量候选变量与S5轧制力的相关性，以候选变量与已选变量的平均绝对Pearson相关系数衡量冗余。对于已有已选变量的筛选步骤，候选变量的联合评分定义为\nScore(x)=I(x;y)−(1)/(|S|)∑_(s∈S)|ρ(x,s)|\t（3）\n式中：I(x;y)为候选变量x与S5轧制力y之间的互信息；S为已选变量集合；|S|为变量数量；ρ(x,s)为候选变量x与已选变量s的Pearson相关系数。\n为获得与S5轧制力相关且冗余较低的5维量子输入，本文采用MI–Pearson准则从25维工艺变量中逐步筛选变量，并仅利用各轮训练数据完成筛选，以形成紧凑的低维量子输入；为使筛选后的5维输入适用于量子旋转编码，先完成标准差标准化和Min–Max映射，再通过尺度参数λ调节整体旋转尺度，得到量子线路实际输入：\nu_(i)=λũ_(i).\t（4）\n式中，ui为尺度调整后的量子输入；ũi为Min–Max映射后的5维向量；λ用于控制整体旋转尺度，本文固定取0.4。\n获得量子输入后，还需确定数据编码前的参考量子态。为使参考态能够根据具体预测任务进行调整，本文在数据编码前引入参数化Fiducial参考态。其生成算符定义为\nU_(fid)(θ)=⊗_(q=1)^(5)R_(x)(θ_(q)),\t（5）\n将该算符作用于五比特基态，可得到数据编码前的Fiducial参考态：\n|φ(θ)⟩=U_(fid)(θ)|0⟩^(⊗5).\t（6）\n式中，U_(fid)(θ)为五比特Fiducial参考态生成算符；θ为待优化参数向量；θ_(q)为第q个量子比特对应的Fiducial参数；|φ(θ)⟩为数据编码前的五比特Fiducial参考态。\nFiducial参考态确定后，本文利用数据依赖的单量子比特旋转门将5维输入编码至量子态，并通过最近邻CNOT链引入量子比特间关联，以构造量子特征表示。DK-QKAR量子分支结构如图1所示，其中图1(a)给出五比特Fiducial特征映射线路，图1(b)概括从量子输入构造到量子核矩阵生成的流程。各量子比特依次施加H、Rz(uiq)和Ry(π/4)，再按q1→q2→q3→q4→q5施加由受控非（controlled-NOT，CNOT）门构成的最近邻链，最后施加Rx(uiq)。为简化图示，图1(a)中u_(q)表示任一样本量子输入向量的第q个分量；对于第i个样本，对应本文公式中的u_(iq)。"
+        },
+        {
+          "id": "paper-main-c0006",
+          "heading": "3.1 量子分支构建",
+          "locator": "word/document.xml /w:document/w:body/w:p[40] 至 w:p[50]",
+          "text": "图1 DK-QKAR量子分支结构：（a）五比特Fiducial参考态与量子特征映射线路；（b）量子核构建流程\nFig. 1 DK-QKAR quantum branch: (a) five-qubit Fiducial reference-state and quantum feature-mapping circuit; (b) quantum-kernel construction workflow\n为便于后续量子核计算，将图1(a)Fiducial参考态生成之后的量子特征映射门序写成数学形式。对于第i个样本，其量子特征映射酉算符定义为\nU_(map)(u_(i))=[⊗_(q=1)^(5)R_(x)(u_(iq))]U_(ent)[⊗_(q=1)^(5)R_(y)((π)/(4))R_(z)(u_(iq))H].\t（7）\n式中，U_(map)(u_(i))为第i个样本对应的五比特量子特征映射酉算符；u_(i)为经尺度参数λ调整后的5维量子输入向量；u_(iq)为u_(i)的第q维分量，其中q=1,2,…,5；H为Hadamard门；R_(x)、R_(y)和R_(z)分别表示绕x、y、z轴的单量子比特旋转门；U_(ent)为按q1→q2→q3→q4→q5顺序构造的最近邻CNOT链算符；⊗表示不同量子比特上单比特门的张量积。\n将Fiducial参考态生成算符与样本量子特征映射酉算符依次作用于五比特初态，可得到第i个样本的最终量子态：\n|ψ(u_(i);θ)⟩=U_(map)(u_(i))U_(fid)(θ)|0⟩^(⊗5).\t（8）\n式中，|ψ(u_(i);θ)⟩为样本i的最终五比特量子态。\n得到各样本的最终量子态后，为将量子特征空间中的样本相似性转化为可供后续核学习器使用的核值，本文采用量子态保真度度量任意两个样本i和j的最终量子态之间的相似性，并定义量子核为\nK_(Q)(u_(i),u_(j);θ)=|⟨ψ(u_(i);θ)∣ψ(u_(j);θ)⟩|^(2).\t（9）\n式中，i和j为样本索引；u_(i)和u_(j)分别为样本i和样本j经预处理及尺度调整后的5维量子输入向量K_(Q)(u_(i),u_(j);θ)表示样本i与样本j在参数θ下的量子保真度核值；|ψ(u_(i);θ)⟩和|ψ(u_(j);θ)⟩分别表示样本i和j的最终五比特量子态；⟨ψ(u_(i);θ)|ψ(u_(j);θ)⟩表示两个量子态的内积。"
+        },
+        {
+          "id": "paper-main-c0007",
+          "heading": "3.2 Fiducial参考态参数优化",
+          "locator": "word/document.xml /w:document/w:body/w:p[51] 至 w:p[58]",
+          "text": "3.2 Fiducial参考态参数优化\n为使量子核能够适配当前S5轧制力回归任务，本文利用训练侧监督信息优化Fiducial参数θ。参数变化会调整数据编码前的参考量子态，并进一步改变量子特征空间及量子核；已有参数化量子核研究表明，监督信息可用于调整量子嵌入或量子核参数[21-22]。优化后得到任务适配的参数θ^(∗)，用于构造后续量子核。\n为利用训练侧回归信息评价不同Fiducial参数对应的量子核，本文以量子核用于S5轧制力回归后的训练表现作为参数选择依据。对于每个候选θ，首先构造训练集量子Gram矩阵K_(Q)(θ)，并以预计算核形式重新拟合ε-SVR，得到对应的最优对偶系数β(θ)。据此定义训练侧评价函数\nJ(θ)=−(1)/(2)β(θ)^(⊤)K_(Q)(θ)β(θ)−ε∥β(θ)∥_(1)+ỹ^(⊤)β(θ).\t（10）\n式中，J(θ)为候选Fiducial参数对应的训练侧评价值；K_(Q)(θ)为由候选θ构造的训练集量子核矩阵；β(θ)为基于该量子核重新拟合ε-SVR得到的最优对偶系数，非支持向量位置记为0；ε为SVR不敏感区间参数；ỹ为标准化后的训练目标向量。\n因此，Fiducial参数的优化目标为\nθ^(∗)=arg min_(θ)J(θ).\t（11）\n本文采用确定性逐坐标搜索求解上述参数优化问题。搜索从零向量开始，每次仅调整一个Fiducial参数，并在当前步长下重新构造K_(Q)(θ)、拟合ε-SVR并计算J(θ)，仅当J(θ)减小时接受更新。各参数依次完成搜索后，步长依次由0.06减小至0.03和0.015，参数周期映射至[−π, π)。最终得到Fiducial最优参数θ^(∗)并构造优化量子核K_(Q)(θ^(∗))。"
+        },
+        {
+          "id": "paper-main-c0008",
+          "heading": "3.3 量子—经典双核轧制力预测模型",
+          "locator": "word/document.xml /w:document/w:body/w:p[59] 至 w:p[72]",
+          "text": "3.3 量子—经典双核轧制力预测模型\n本文提出的DK-QKAR模型将基于完整25维工艺特征构造的经典RBF核与基于5维筛选特征构造的量子保真度核进行固定权重融合。经典RBF核用于保留完整工艺信息，量子核用于提供补充的量子相似性表示，从而形成量子—经典双核结构。对于标准化后的完整25维工艺输入，经典RBF核定义为\nK_(R)(z_(i),z_(j))=exp​[−γ∥z_(i)−z_(j)∥_(2)^(2)].\t（12）\n式中，zi和zj为样本i和j的标准化25维输入向量，γ>0为RBF核参数，本文取γ=0.01。\n设KR为经典RBF核矩阵，KQ(θ*)为优化后的量子核矩阵。经典核和量子核虽由不同维度的特征构造，但均对应同一组训练样本，因此形成维度一致的Gram矩阵，两类核可按固定权重进行核级组合：\nK_(DK)=(1−α)K_(R)+αK_(Q)(θ^(∗)),  α=0.10.\t（13）\n式中，α=0.10为固定融合权重，经典RBF核和量子核的权重分别为0.90和0.10；两类核组合前不再实施额外的核尺度归一化。\n训练阶段，将组合后的训练Gram矩阵以预计算核形式输入ε-SVR完成模型拟合；预测阶段，根据待预测样本与训练样本之间的组合交叉核矩阵获得S5轧制力预测值，其表达式为\nŷ_(i)=∑_(j=1)^(n_(tr))β_(j)K_(DK)(x_(i),x_(j))+b\t（14）\n式中，ntr为训练样本数，βj为ε-SVR训练得到的对偶系数，b为偏置项，KDK(xi,xj)为待预测样本i与训练样本j之间的组合核值，ŷ_(i)为样本i的S5轧制力预测值。\nDK-QKAR量子—经典双核轧制力预测模型总体结构如图2所示。\n图2 DK-QKAR量子—经典双核轧制力预测模型总体结构\nFig. 2 Overall structure of the DK-QKAR quantum-classical dual-kernel rolling-force prediction model"
+        },
+        {
+          "id": "paper-main-c0009",
+          "heading": "4 结果与分析 / 4.1 对比模型及参数设置",
+          "locator": "word/document.xml /w:document/w:body/w:p[73] 至 w:p[77]",
+          "text": "4 结果与分析\n4.1 对比模型及参数设置\n为评价DK-QKAR的预测性能，选取ElasticNet、RBF-SVR、RandomForest、ExtraTrees、GradientBoosting、XGBoost和MLP共7种经典回归模型作为对比模型，涵盖线性模型、核方法、树集成和前馈神经网络等不同类型。各模型采用相同的4折数据划分，模型训练及相关数据处理均仅基于当前训练数据完成。针对各经典基线选取对预测性能影响较大的主要超参数进行候选搜索，其余参数保持固定，具体设置见表2。\n表2 经典基线模型候选超参数设置\nTable 2 Candidate hyperparameter settings of the classical baseline models"
+        },
+        {
+          "id": "paper-main-c0010",
+          "heading": "4.1 对比模型及参数设置",
+          "locator": "word/document.xml /w:document/w:body/w:tbl[2]/w:tr[1] 至 w:tbl[2]/w:tr[19]",
+          "text": "模型\t超参数\t候选值\nExtraTrees\t候选特征比例\t{0.35, 0.50, 0.75, 1.00}\n\t叶节点最小样本数\t{1, 2, 4}\nElasticNet\t正则化系数\t{0.0001, 0.001, 0.01, 0.1, 1.0}\n\tL1正则化比例\t{0.1, 0.5, 0.9}\nGradientBoosting\t基学习器数量\t{100, 200}\n\t学习率\t{0.03, 0.05, 0.1}\n\t最大树深度\t{2, 3}\nRBF-SVR\t惩罚系数 C\t{10, 30, 100}\n\t不敏感区间参数 ε\t{0.01, 0.1}\n\tRBF核参数 γ\t{scale, 0.01, 0.03, 0.1}\nXGBoost\t基学习器数量\t{100, 200}\n\t学习率\t{0.03, 0.05, 0.1}\n\t最大树深度\t{2, 3}\nMLP\t隐藏层结构\t{(50), (100), (50,50)}\n\tL2正则化系数\t{0.0001, 0.001}\n\t初始学习率\t{0.001, 0.003}\nRandomForest\t候选特征比例\t{0.35, 0.50, 0.75, 1.00}\n\t叶节点最小样本数\t{1, 2, 4}"
+        },
+        {
+          "id": "paper-main-c0011",
+          "heading": "4.2 模型预测性能评价与对比",
+          "locator": "word/document.xml /w:document/w:body/w:p[78] 至 w:p[87]",
+          "text": "4.2 模型预测性能评价与对比\n为了能够更好地评价模型的预测效果，本文选用均方根误差RMSE、平均绝对误差MAE和决定系数R^(2)作为模型评价指标，对应的计算式为\nRMSE=√((1)/(N)∑_(i=1)^(N)(y_(i)−ŷ_(i))^(2)),\t（15）\nMAE=(∑_(i=1)^(N)|y_(i)−ŷ_(i)|)/(N),\t（16）\nR^(2)=1−(∑_(i=1)^(N)(y_(i)−ŷ_(i))^(2))/(∑_(i=1)^(N)(y_(i)−y̅)^(2)).\t（17）\n式中：y_(i)和ŷ_(i)分别为第i个样本的实际值和预测值；y̅为实际值的平均值；N为评价样本数。\nRMSE和MAE均表示模型预测值与实际值之间的误差，数值越小，表明模型的预测误差越小；R^(2)表示预测值对实际值的拟合程度，数值越接近1，表明模型的拟合效果越好。对于目标值经过标准化处理的模型，预测结果在评价前恢复至原始尺度。\n为验证DK-QKAR的预测性能，选取ElasticNet、RBF-SVR、RandomForest、ExtraTrees、GradientBoosting、XGBoost和MLP模型进行对比，并采用RMSE、MAE和R2R^2评价各模型的预测结果，对比结果见表3\n表3 不同模型的预测性能对比\nTable 3 Prediction performance comparison of different models"
+        },
+        {
+          "id": "paper-main-c0012",
+          "heading": "4.2 模型预测性能评价与对比",
+          "locator": "word/document.xml /w:document/w:body/w:tbl[3]/w:tr[1] 至 w:tbl[3]/w:tr[9]",
+          "text": "模型\tRMSE\tRMSE标准差\tMAE\tR²\nDK-QKAR\t19.205\t11.044\t10.784\t0.9894\nRBF-SVR\t22.943\t11.312\t11.923\t0.9863\nExtraTrees\t31.368\t18.707\t16.273\t0.9707\nMLP\t36.486\t22.431\t20.175\t0.9598\nGradientBoosting\t41.871\t31.217\t21.166\t0.9362\nXGBoost\t42.665\t28.247\t22.543\t0.9384\nElasticNet\t42.847\t23.738\t27.949\t0.9463\nRandomForest\t46.963\t41.095\t23.073\t0.9090"
+        },
+        {
+          "id": "paper-main-c0013",
+          "heading": "4.2 模型预测性能评价与对比 / 4.3 DK-QKAR模型消融试验",
+          "locator": "word/document.xml /w:document/w:body/w:p[88] 至 w:p[95]",
+          "text": "在相同4折验证划分下，DK-QKAR平均RMSE为19.205，在所比较模型中最低；RBF-SVR平均RMSE为22.943。相较RBF-SVR，DK-QKAR平均RMSE降低16.29%。同时，DK-QKAR的MAE为10.784，R²为0.9894，分别对应较低的平均绝对误差和较高的拟合程度。不同模型预测性能的综合对比如图3所示。\n图3 不同模型预测性能对比雷达图：（a）RMSE；（b）RMSE标准差；（c）MAE；（d）R²（径向坐标范围为0.80～1.00）\nFig. 3 Radar charts for prediction performance comparison of different models: (a) RMSE; (b) RMSE standard deviation; (c) MAE; (d) R² (radial axis range: 0.80–1.00).\n4.3 DK-QKAR模型消融试验\n为分析经典RBF核、量子核及Fiducial参数优化对模型预测性能的影响，设置KR-only、FixedTheta、DK-QKAR和KQ-only 4种配置，具体结构及预测结果见表4。\n表4 DK-QKAR消融配置及预测结果\nTable 4 Ablation configurations and prediction results of DK-QKAR"
+        },
+        {
+          "id": "paper-main-c0014",
+          "heading": "4.3 DK-QKAR模型消融试验",
+          "locator": "word/document.xml /w:document/w:body/w:tbl[4]/w:tr[1] 至 w:tbl[4]/w:tr[5]",
+          "text": "配置\tα\tFiducial参数\t核结构\tRMSE\tMAE\tR2\nKR-only\t0\t—\tKR\t20.101\t11.362\t0.9886\nFixedTheta\t0.10\tθ=0\t0.90KR + 0.10KQ(0)\t19.284\t10.798\t0.9894\nDK-QKAR\t0.10\t训练数据内优化\t0.90KR + 0.10KQ(θ*)\t19.205\t10.784\t0.9894\nKQ-only\t1\t训练数据内优化\tKQ(θ*)\t55.493\t27.902\t0.8865"
+        },
+        {
+          "id": "paper-main-c0015",
+          "heading": "4.3 DK-QKAR模型消融试验 / 4.4 未见规格预测结果分析",
+          "locator": "word/document.xml /w:document/w:body/w:p[96] 至 w:p[105]",
+          "text": "与KR-only相比，FixedTheta和DK-QKAR的平均RMSE分别降低4.06%和4.46%，说明经典RBF核与量子核融合后获得了较好的点估计结果。在FixedTheta基础上，Fiducial参数优化使平均RMSE进一步降低约0.41%，其附加改善幅度较小。KQ-only的RMSE明显高于其余配置，表明在当前任务中，量子核更适合作为经典RBF核的补充表示，而非独立回归器。\n4.4 未见规格预测结果分析\n为考察模型在完整未见规格条件下的泛化性能，采用留一规格评价。每轮完整留出1个规格组的50条样本作为测试数据，其余7个规格组的350条样本用于模型构建，共进行8轮。每轮中，模型参数仅利用当前7个训练规格确定，完整留出的第8个规格不参与参数选择；全部预处理、5维量子输入选择、目标缩放和Fiducial参数优化均仅使用当前训练规格数据。\n留一规格评价结果显示，KR-only、DK-QKAR和FixedTheta的宏平均RMSE分别为117.490、120.581和120.712，KR-only的点估计最低；KQ-only的宏平均RMSE为174.480。逐规格结果见图4。\n图4 留一规格评价结果：（a）逐规格RMSE；（b）逐规格ΔRMSE\nFig. 4 Leave-one-specification-out evaluation results: (a) specification-wise RMSE; (b) specification-wise ΔRMSE\n图中Spec 1–8依次对应8个留出规格：1.8|0.181|818、2.75|0.282|794、2.75|0.282|919、3.5|0.916|920、3.5|1.022|1250、3|0.333|853、3|0.352|1000和3|0.461|926。\nDK-QKAR相对KR-only在3/8个完整留出规格上取得较低RMSE，相对FixedTheta在5/8个完整留出规格上取得较低RMSE；3/8和5/8均为留出规格级结果，并非样本级胜率。\nDK-QKAR在完整未见规格下尚未形成相对KR-only的一致优势，规格内评价中观察到的改善未稳定迁移至新规格。"
+        },
+        {
+          "id": "paper-main-c0016",
+          "heading": "5 结论",
+          "locator": "word/document.xml /w:document/w:body/w:p[106] 至 w:p[113]",
+          "text": "5 结论\n（1）本文提出DK-QKAR量子—经典双核回归模型，利用完整25维工艺特征构造经典RBF核，并以5维筛选特征构造量子保真度核，用于S5轧制力直接预测。\n（2）在按规格分组、组内连续分块的4折交叉验证中，DK-QKAR平均RMSE为19.205，低于RBF-SVR的22.943，平均RMSE降低16.29%。\n（3）消融结果表明，相较仅采用经典RBF核的KR-only，完整DK-QKAR的平均RMSE由20.101降至19.205，点估计降低4.46%。\n（4）FixedTheta已经取得主要双核增益，Fiducial参数优化在此基础上进一步使平均RMSE降低约0.41%，说明当前性能改善主要来自经典核与量子核的互补融合，Fiducial参数优化属于进一步细化。\n（5）KQ-only的预测误差明显高于经典核及双核配置，表明当前量子保真度核更适合作为经典RBF核的补充，而非独立替代。\n（6）留一规格评价显示，DK-QKAR在完整未见规格条件下相对KR-only尚未形成一致优势，规格内评价中观察到的改善未稳定迁移至新规格。\n当前研究仍存在以下局限：所用数据仅包含400组样本和8个规格，规格覆盖范围有限，且缺少独立生产数据验证；在完整未见规格的留一规格评价中，DK-QKAR尚未形成相对KR-only的一致优势；公开数据源未提供S5轧制力的明确物理单位，也缺少现场允许预测误差标准。因此，当前结果主要支持相同数据和评价尺度下的模型间相对性能比较，尚不能据此充分判断工程绝对预测精度，相关适用性仍需结合更广规格和独立生产数据进一步验证。"
+        },
+        {
+          "id": "paper-main-c0017",
+          "heading": "参考文献",
+          "locator": "word/document.xml /w:document/w:body/w:p[114] 至 w:p[122]",
+          "text": "参考文献\n[1] Bland D R, Ford H. The calculation of roll force and torque in cold strip rolling with tensions[J]. Proceedings of the Institution of Mechanical Engineers, 1948, 159(1): 144-163. DOI: 10.1243/PIME_PROC_1948_159_015_02\n[2] 王家琪, 刘晓, 张增强, 等. 基于非圆弧理论的精密极薄带轧制力快速预测[J]. 钢铁, 2023, 58(10): 85-91. DOI: 10.13228/j.boyuan.issn0449-749x.20230213\n[3] 任鹏帆, 王振华, 贾燚, 等. 机理和数据融合的304不锈钢极薄带轧制力模型[J]. 钢铁, 2024, 59(10): 64-76. DOI: 10.13228/j.boyuan.issn0449-749x.20240094\n[4] Wu Z D, Wang X C, Yang Q, et al. Deformation resistance prediction of tandem cold rolling based on grey wolf optimization and support vector regression[J]. Journal of Iron and Steel Research International, 2023, 30(9): 1803-1820. DOI: 10.1007/s42243-022-00894-1\n[5] 李维刚, 刘玮汲, 谢璐, 等. 基于图卷积网络的热轧带钢轧制力预测[J]. 钢铁, 2023, 58(3): 89-96. DOI: 10.13228/j.boyuan.issn0449-749x.20220532\n[6] 王海玉, 方坤, 董立杰, 等. 数据驱动的热轧轧制力预报模型研究与应用[J]. 中国冶金, 2024, 34(11): 93-99. DOI: 10.13228/j.boyuan.issn1006-9356.20240429\n[7] 谢松雨, 苏燕强, 黄小兵, 等. 基于特征增维和深度学习的热轧轧制力动态预测[J]. 中国冶金, 2025, 35(4): 145-154. DOI: 10.13228/j.boyuan.issn1006-9356.20240684\n[8] Wang Z, Zhang J, Wang Z, et al. Physics-informed and MC dropout-based sequence prediction for cold tandem rolling: Towards rolling schedule presetting and uncertainty quantification[J]. Measurement, 2026, 269: 120833. DOI: 10.1016/j.measurement.2026.120833"
+        },
+        {
+          "id": "paper-main-c0018",
+          "heading": "参考文献",
+          "locator": "word/document.xml /w:document/w:body/w:p[123] 至 w:p[129]",
+          "text": "[9] Wang Z, Zhang J, Lu Q, Bai Z. CNN-BiLSTM-attention based synchronous prediction model for multi-stand rolling force and deformation resistance in cold rolling[J]. Journal of Intelligent Manufacturing, 2025. DOI: 10.1007/s10845-025-02718-x\n[10] 丁敬国, 刘方路, 于琨, 等. 基于WOA-ELM-LSTM的非稳态热轧过程轧制力预测[J]. 钢铁研究学报, 2024, 36(1): 85-94. DOI: 10.13228/j.boyuan.issn1001-0963.20230100\n[11] Zhao J, Li J, Qie H, et al. Online prediction of deformation resistance for strip tandem cold rolling based on data-driven[J]. Metals, 2023, 13(4): 737. DOI: 10.3390/met13040737\n[12] 王优龙, 李维刚, 王永强. 基于集成特征选择和SVR的热连轧板凸度预测[J]. 钢铁, 2024, 59(1): 99-107. DOI: 10.13228/j.boyuan.issn0449-749x.20230387\n[13] 张峥, 仲兆准, 李阳, 等. 基于SVR模型的带钢精轧宽展预测[J]. 钢铁研究学报, 2023, 35(8): 1017-1024. DOI: 10.13228/j.boyuan.issn1001-0963.20220291\n[14] Li J, Wang X, Yang Q, et al. Rolling force prediction in cold rolling process based on combined method of T-S fuzzy neural network and analytical model[J]. The International Journal of Advanced Manufacturing Technology, 2022, 121: 4087-4098. DOI: 10.1007/s00170-022-09567-5\n[15] Peng H, Long F, Ding C. Feature selection based on mutual information: criteria of max-dependency, max-relevance, and min-redundancy[J]. IEEE Transactions on Pattern Analysis and Machine Intelligence, 2005, 27(8): 1226-1238. DOI: 10.1109/TPAMI.2005.159"
+        },
+        {
+          "id": "paper-main-c0019",
+          "heading": "参考文献",
+          "locator": "word/document.xml /w:document/w:body/w:p[130] 至 w:p[137]",
+          "text": "[16] Rakotomamonjy A, Bach F R, Canu S, et al. SimpleMKL[J]. Journal of Machine Learning Research, 2008, 9: 2491-2521.\n[17] Schuld M, Killoran N. Quantum machine learning in feature Hilbert spaces[J]. Physical Review Letters, 2019, 122(4): 040504. DOI: 10.1103/PhysRevLett.122.040504\n[18] Havlíček V, Córcoles A D, Temme K, et al. Supervised learning with quantum-enhanced feature spaces[J]. Nature, 2019, 567(7747): 209-212. DOI: 10.1038/s41586-019-0980-2\n[19] Wang Z, Wang F, Li L, et al. Quantum kernel learning for small dataset modeling in semiconductor fabrication: Application to Ohmic contact[J]. Advanced Science, 2025, 12(35): e06213. DOI: 10.1002/advs.202506213\n[20] DGlql. CRD: Cold rolling dataset[DB/OL]. GitHub, 2026[2026-09-17]. https://github.com/DGlql/CRD/tree/8a20ca646c9ffe8577a9bd925b4c2aa0d1fdd5f0\n[21] Hubregtsen T, Wierichs D, Gil-Fuster E, et al. Training quantum embedding kernels on near-term quantum computers[J]. Physical Review A, 2022, 106: 042431. DOI: 10.1103/PhysRevA.106.042431\n[22] Zhou X, Yu J, Tan J, et al. Quantum kernel estimation-based quantum support vector regression[J]. Quantum Information Processing, 2024, 23: 29. DOI: 10.1007/s11128-023-04231-7\n[27] 王力等，2025，《轧钢》 —— 支撑“钢铁轧制力预测中确实进行数据归一化处理”；\n[28] Chen et al., 2023, Materials —— 支撑“Z-score 标准化 + 你的这个公式”"
+        }
+      ]
+    },
+    {
+      "id": "model-python",
+      "title": "DK-QKAR-V5S2 模型源代码",
+      "fileName": "dkqkar_v5s2_model.py",
+      "kind": "model",
+      "sha256": "67d64e20c46bb4d08ddc70eb5a1ae79faba49506f75b4f89137743affda0b2fa",
+      "chunks": [
+        {
+          "id": "model-python-c0001",
+          "heading": "模块说明与特征定义",
+          "locator": "L1–L24",
+          "text": "\"\"\"Deployable DK-QKAR-V5S2 dual-kernel predictor for S5 rolling force.\n\nThis implementation preserves the frozen Stage-2 model structure:\n    K_DK = 0.10 * K_Q + 0.90 * K_R\nwith C=100, epsilon=0.01, gamma=0.01, lambda=0.4 and a 5D quantum map.\n\nFor deployment, ``fit`` may refit the 5 selected quantum inputs and theta on an\nexplicitly supplied training set. Benchmark metrics from the frozen study must\nnot be presented as a fresh evaluation of that deployment refit.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom pathlib import Path\nfrom typing import Iterable, Mapping, Sequence\nimport math\nimport pickle\n\nimport numpy as np\nimport pandas as pd\nfrom sklearn.feature_selection import mutual_info_regression\nfrom sklearn.preprocessing import MinMaxScaler, StandardScaler\nfrom sklearn.svm import SVR"
+        },
+        {
+          "id": "model-python-c0002",
+          "heading": "TARGET / FEATURES / def _pair_indices",
+          "locator": "L25–L45",
+          "text": "TARGET = \"S5 rolling forces\"\n\nFEATURES = [\n    \"Entry set thickness\", \"width\", \"Entry actual thickness\",\n    \"S1 rolling forces\", \"S2 rolling forces\", \"S3rolling forces\",\n    \"S1 bending force\", \"S2 bending force\", \"S3 bending force\",\n    \"S4 bending force\", \"S1 rolling speed\", \"S2 rolling speed\",\n    \"S3 rolling speed\", \"S4 rolling speed\", \"S1 back tension\",\n    \"S2 back tension\", \"S3 back tension\", \"S4 back tension\",\n    \"S1 front tension\", \"S2 front tension\", \"S3 front tension\",\n    \"S4 front tension\", \"S5 bending force\", \"S5 rolling speed\",\n    \"S5 back tension\",\n]\n\n\ndef _pair_indices(n_qubits: int, q: int) -> tuple[np.ndarray, np.ndarray]:\n    dim = 1 << n_qubits\n    i0 = np.asarray([x for x in range(dim) if ((x >> q) & 1) == 0])\n    return i0, i0 | (1 << q)"
+        },
+        {
+          "id": "model-python-c0003",
+          "heading": "def _gate / def bc / def _states",
+          "locator": "L46–L88",
+          "text": "def _gate(\n    states: np.ndarray,\n    q: int,\n    a: complex | np.ndarray,\n    b: complex | np.ndarray,\n    c: complex | np.ndarray,\n    d: complex | np.ndarray,\n    pairs: list[tuple[np.ndarray, np.ndarray]],\n) -> None:\n    i0, i1 = pairs[q]\n    v0 = states[:, i0].copy()\n    v1 = states[:, i1].copy()\n\n    def bc(z: complex | np.ndarray) -> complex | np.ndarray:\n        z = np.asarray(z)\n        return z if z.ndim == 0 else z[:, None]\n\n    states[:, i0] = bc(a) * v0 + bc(b) * v1\n    states[:, i1] = bc(c) * v0 + bc(d) * v1\n\n\ndef _states(X: np.ndarray, theta: np.ndarray) -> np.ndarray:\n    X = np.asarray(X, dtype=float)\n    n_samples, n_qubits = X.shape\n    if n_qubits != len(theta):\n        raise ValueError(\"Quantum feature dimension and theta length differ.\")\n    dim = 1 << n_qubits\n    states = np.zeros((n_samples, dim), dtype=complex)\n    states[:, 0] = 1.0\n    pairs = [_pair_indices(n_qubits, q) for q in range(n_qubits)]\n\n    for q in range(n_qubits):\n        co = math.cos(theta[q] / 2.0)\n        ss = -1j * math.sin(theta[q] / 2.0)\n        _gate(states, q, co, ss, ss, co, pairs)\n\n    h = 1.0 / math.sqrt(2.0)\n    for q in range(n_qubits):\n        _gate(states, q, h, h, h, -h, pairs)\n        x = X[:, q]\n        _gate(states, q, np.exp(-0.5j * x), 0, 0, np.exp(0.5j * x), pairs)\n        co = math.cos(math.pi / 8.0)\n        si = math.sin(math.pi / 8.0)"
+        },
+        {
+          "id": "model-python-c0004",
+          "heading": "def _states / def _quantum_kernel",
+          "locator": "L89–L117",
+          "text": "        _gate(states, q, co, -si, si, co, pairs)\n\n    idx = np.arange(dim)\n    for q in range(n_qubits - 1):\n        perm = idx.copy()\n        mask = ((perm >> q) & 1) == 1\n        perm[mask] ^= 1 << (q + 1)\n        states = states[:, perm]\n\n    for q in range(n_qubits):\n        x = X[:, q]\n        co = np.cos(x / 2.0)\n        ss = -1j * np.sin(x / 2.0)\n        _gate(states, q, co, ss, ss, co, pairs)\n    return states\n\n\ndef _quantum_kernel(A: np.ndarray, B: np.ndarray, theta: np.ndarray) -> np.ndarray:\n    sa = _states(A, theta)\n    same_object = A is B\n    sb = sa if same_object else _states(B, theta)\n    kernel = np.abs(sa @ sb.conj().T) ** 2\n    kernel = np.clip(kernel.real, 0.0, 1.0)\n    if same_object:\n        kernel = (kernel + kernel.T) / 2.0\n        np.fill_diagonal(kernel, 1.0)\n    return kernel"
+        },
+        {
+          "id": "model-python-c0005",
+          "heading": "def _squared_distances / def _select_quantum_features",
+          "locator": "L118–L147",
+          "text": "def _squared_distances(A: np.ndarray, B: np.ndarray) -> np.ndarray:\n    return np.maximum(\n        (A * A).sum(axis=1)[:, None]\n        + (B * B).sum(axis=1)[None, :]\n        - 2.0 * A @ B.T,\n        0.0,\n    )\n\n\ndef _select_quantum_features(\n    X: np.ndarray, y: np.ndarray, k: int, seed: int\n) -> list[int]:\n    relevance = mutual_info_regression(X, y, random_state=seed)\n    corr = np.nan_to_num(np.corrcoef(X, rowvar=False), nan=0.0)\n    selected: list[int] = []\n    candidates = set(range(X.shape[1]))\n    while len(selected) < k:\n        best = max(\n            sorted(candidates),\n            key=lambda i: float(\n                relevance[i]\n                - (0.0 if not selected else np.mean(np.abs(corr[i, selected])))\n            ),\n        )\n        selected.append(best)\n        candidates.remove(best)\n    return selected\n\n\n@dataclass"
+        },
+        {
+          "id": "model-python-c0006",
+          "heading": "class DKQKARV5S2 / def __post_init__",
+          "locator": "L148–L170",
+          "text": "class DKQKARV5S2:\n    C: float = 100.0\n    epsilon: float = 0.01\n    gamma: float = 0.01\n    lambda_scale: float = 0.4\n    alpha: float = 0.10\n    quantum_dim: int = 5\n    selection_seed: int = 20250621\n    theta_steps: tuple[float, ...] = (0.06, 0.03, 0.015)\n\n    def __post_init__(self) -> None:\n        self.x_scaler = StandardScaler()\n        self.q_scaler = MinMaxScaler((0.0, np.pi))\n        self.y_scaler = StandardScaler()\n        self.selected_feature_indices: list[int] = []\n        self.selected_features: list[str] = []\n        self.theta = np.zeros(self.quantum_dim, dtype=float)\n        self.train_x_scaled: np.ndarray | None = None\n        self.train_q_scaled: np.ndarray | None = None\n        self.regressor: SVR | None = None\n        self.is_fitted = False\n\n    @staticmethod"
+        },
+        {
+          "id": "model-python-c0007",
+          "heading": "def _as_frame",
+          "locator": "L171–L185",
+          "text": "    def _as_frame(\n        X: pd.DataFrame | Sequence[Sequence[float]] | Mapping[str, float]\n    ) -> pd.DataFrame:\n        if isinstance(X, Mapping):\n            X = pd.DataFrame([X])\n        elif not isinstance(X, pd.DataFrame):\n            X = pd.DataFrame(X, columns=FEATURES)\n        missing = [column for column in FEATURES if column not in X.columns]\n        if missing:\n            raise ValueError(f\"Missing input features: {missing}\")\n        frame = X.loc[:, FEATURES].apply(pd.to_numeric, errors=\"raise\").astype(float)\n        if not np.isfinite(frame.to_numpy()).all():\n            raise ValueError(\"Inputs contain NaN or infinite values.\")\n        return frame"
+        },
+        {
+          "id": "model-python-c0008",
+          "heading": "def _qka_loss / def _optimize_theta",
+          "locator": "L186–L215",
+          "text": "    def _qka_loss(self, kernel: np.ndarray, y_scaled: np.ndarray) -> float:\n        reg = SVR(\n            kernel=\"precomputed\", C=self.C, epsilon=self.epsilon,\n            max_iter=-1, tol=1e-3,\n        ).fit(kernel, y_scaled)\n        beta = np.zeros(len(y_scaled), dtype=float)\n        beta[reg.support_] = reg.dual_coef_.ravel()\n        return float(\n            -0.5 * beta @ kernel @ beta\n            - self.epsilon * np.abs(beta).sum()\n            + y_scaled @ beta\n        )\n\n    def _optimize_theta(self, A: np.ndarray, y_scaled: np.ndarray) -> np.ndarray:\n        theta = np.zeros(A.shape[1], dtype=float)\n        best_value = self._qka_loss(_quantum_kernel(A, A, theta), y_scaled)\n        for step in self.theta_steps:\n            for j in range(len(theta)):\n                base = theta.copy()\n                best = (best_value, theta.copy())\n                for sign in (-1.0, 1.0):\n                    candidate = base.copy()\n                    candidate[j] = ((candidate[j] + sign * step + np.pi) % (2 * np.pi)) - np.pi\n                    value = self._qka_loss(_quantum_kernel(A, A, candidate), y_scaled)\n                    if value < best[0] - 1e-12:\n                        best = (value, candidate)\n                if best[0] < best_value - 1e-12:\n                    best_value, theta = best\n        return theta"
+        },
+        {
+          "id": "model-python-c0009",
+          "heading": "def fit",
+          "locator": "L216–L243",
+          "text": "    def fit(\n        self, X: pd.DataFrame | Sequence[Sequence[float]], y: Iterable[float]\n    ) -> \"DKQKARV5S2\":\n        frame = self._as_frame(X)\n        target = np.asarray(list(y), dtype=float)\n        if len(frame) != len(target):\n            raise ValueError(\"X and y have different sample counts.\")\n        if not np.isfinite(target).all():\n            raise ValueError(\"Target contains NaN or infinite values.\")\n        if len(frame) < 10:\n            raise ValueError(\"Too few samples for a stable DK-QKAR fit.\")\n\n        raw = frame.to_numpy(dtype=float)\n        self.selected_feature_indices = _select_quantum_features(\n            raw, target, self.quantum_dim, self.selection_seed\n        )\n        self.selected_features = [FEATURES[i] for i in self.selected_feature_indices]\n\n        self.train_x_scaled = self.x_scaler.fit_transform(frame)\n        selected_raw = raw[:, self.selected_feature_indices]\n        self.train_q_scaled = self.q_scaler.fit_transform(selected_raw) * self.lambda_scale\n\n        y_scaled = self.y_scaler.fit_transform(target[:, None]).ravel()\n        self.theta = self._optimize_theta(self.train_q_scaled, y_scaled)\n\n        kr = np.exp(-self.gamma * _squared_distances(self.train_x_scaled, self.train_x_scaled))\n        kq = _quantum_kernel(self.train_q_scaled, self.train_q_scaled, self.theta)\n        kdk = self.alpha * kq + (1.0 - self.alpha) * kr"
+        },
+        {
+          "id": "model-python-c0010",
+          "heading": "def fit / def _cross_kernel",
+          "locator": "L244–L261",
+          "text": "        self.regressor = SVR(\n            kernel=\"precomputed\", C=self.C, epsilon=self.epsilon,\n            max_iter=-1, tol=1e-3,\n        ).fit(kdk, y_scaled)\n        self.is_fitted = True\n        return self\n\n    def _cross_kernel(self, frame: pd.DataFrame) -> np.ndarray:\n        if not self.is_fitted or self.regressor is None:\n            raise RuntimeError(\"Model is not fitted. Call fit() or load() first.\")\n        assert self.train_x_scaled is not None and self.train_q_scaled is not None\n        raw = frame.to_numpy(dtype=float)\n        x_scaled = self.x_scaler.transform(frame)\n        q_scaled = self.q_scaler.transform(raw[:, self.selected_feature_indices]) * self.lambda_scale\n        kr = np.exp(-self.gamma * _squared_distances(x_scaled, self.train_x_scaled))\n        kq = _quantum_kernel(q_scaled, self.train_q_scaled, self.theta)\n        return self.alpha * kq + (1.0 - self.alpha) * kr"
+        },
+        {
+          "id": "model-python-c0011",
+          "heading": "def predict / def predict_one / def save",
+          "locator": "L262–L282",
+          "text": "    def predict(\n        self, X: pd.DataFrame | Sequence[Sequence[float]] | Mapping[str, float]\n    ) -> np.ndarray:\n        frame = self._as_frame(X)\n        kernel = self._cross_kernel(frame)\n        assert self.regressor is not None\n        pred_scaled = self.regressor.predict(kernel)\n        return self.y_scaler.inverse_transform(pred_scaled[:, None]).ravel()\n\n    def predict_one(self, process_parameters: Mapping[str, float]) -> float:\n        return float(self.predict(process_parameters)[0])\n\n    def save(self, path: str | Path) -> None:\n        if not self.is_fitted:\n            raise RuntimeError(\"Fit the model before saving it.\")\n        path = Path(path)\n        path.parent.mkdir(parents=True, exist_ok=True)\n        with path.open(\"wb\") as handle:\n            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)\n\n    @staticmethod"
+        },
+        {
+          "id": "model-python-c0012",
+          "heading": "def load / def model_card",
+          "locator": "L283–L306",
+          "text": "    def load(path: str | Path) -> \"DKQKARV5S2\":\n        with Path(path).open(\"rb\") as handle:\n            model = pickle.load(handle)\n        if not isinstance(model, DKQKARV5S2):\n            raise TypeError(\"File does not contain a DKQKARV5S2 model.\")\n        return model\n\n    def model_card(self) -> dict[str, object]:\n        return {\n            \"model_name\": \"DK-QKAR-V5S2\",\n            \"target\": TARGET,\n            \"input_dim\": len(FEATURES),\n            \"quantum_dim\": self.quantum_dim,\n            \"selected_features\": list(self.selected_features),\n            \"theta\": [float(v) for v in self.theta],\n            \"parameters\": {\n                \"C\": self.C,\n                \"epsilon\": self.epsilon,\n                \"gamma\": self.gamma,\n                \"lambda\": self.lambda_scale,\n                \"alpha\": self.alpha,\n                \"dual_kernel\": f\"{self.alpha:.2f}*K_Q + {1.0-self.alpha:.2f}*K_R\",\n            },\n        }"
+        }
+      ]
+    },
+    {
+      "id": "equipment-base",
+      "title": "五机架六辊 UCM 基准结构与名义参数 V3 Astra",
+      "fileName": "DKQKAR_5Stand_v3_Astra/模型参数与编辑说明.md",
+      "kind": "equipment",
+      "sha256": "bca58250305cdfd10c771b2c21add135640c5bcd15868d080c4ae0dbf64c872d",
+      "chunks": [
+        {
+          "id": "equipment-base-c0001",
+          "heading": "DK-QKAR 五机架六辊 UCM · V3 Astra 重建 / 可编辑模型与交换模型 / 参考证据与综合建模部分",
+          "locator": "L1–L30",
+          "text": "# DK-QKAR 五机架六辊 UCM · V3 Astra 重建\n\n本目录是独立新版本，保留 V1、V2。交付用于设备结构说明、整线布置与 S5 分析展示。它是参考照片和原理图综合形成的工业工程可视化，不是原 CRD 设备的 1:1 复刻、原厂总装图或机械设计文件。\n\n## 可编辑模型与交换模型\n\n- `DKQKAR_5Stand_Master.blend`：主模型。S1–S5 分别位于同名设备集合，主要零件独立保留，曲线、文字和倒角可编辑；30 根主辊独立命名。\n- `DKQKAR_5Stand.glb`：设备交换模型。仅导出设备、钢带、设备局部基础和维护设施；不含摄影地面、弧形背景、灯光、摄像机。\n- `build_astra.py`：自包含 Blender Python 构建脚本，不依赖旧版脚本。`single` 生成单机架检查点，`full` 从检查点构建整线并导出及渲染，`export` 重新导出已保存的主模型。\n- `model_validation.json`：程序化结构核查结果。独立 GLB 回读核对在 `audit` 目录。\n\nBlender 坐标为 X 流向、Y 辊轴及传动侧、Z 高度。钢带沿 +X 依次经过 S1、S2、S3、S4、S5。glTF 导出采用 Y 向上坐标转换。\n\n## 参考证据与综合建模部分\n\n已实际对照的照片与原理图位于相邻 V1 的 `references` 目录：\n\n| 参考 | 本版使用的证据 | 限制 |\n|---|---|---|\n| 02 Hitachi 5stand 6hi | 设备与维护平台、电机装配之间的尺度关系 | 照片透视不提供测量尺寸 |\n| 04 Primetals Masteel HyperUCM | 蓝色分缝罩板、中央检修开口、内部多尺度装配、局部平台护栏 | 不按人员身高反推原厂尺寸，不复刻商标 |\n| 09 RollingMill Gearbox Motor | 灰色铸造电机、平整蓝色齿轮箱、局部机加工联轴器、线缆与安装底座的材质和构造差异 | 作为传动外观参考，不证明本机组实际采用这一传动形式 |\n| 11 Tandem Layout | 明确 S1→S5 五机架顺序与每机架六辊构成 | 原理示意不当作总装尺寸图 |\n| 14 UCM Principle | 工作辊 / 中间辊 / 支承辊的六辊堆叠关系、中间辊轴向移位功能 | 本交付以轴向移位的名义中位状态展示 |\n| 15 UCM / HyperUCM Comparison | BU、IM、WR 三类不同尺寸的轴承座、端盖、侧部弯辊/保持组件 | 零件内部机构与未见侧面采用概略可视化 |\n\n参考 10 是六机架项目的局部串辊 CAD，不作为五机架整线总装依据。下载清单中的 06 Q-CHANGE 属于热轧资料，不作为六辊 UCM 主体结构依据。原始来源与冲突复核见 `audit/reference_review.md`。\n\n成对闭式承力机架、液压 AGC、轴承座、弯辊组件、换辊轨道、喷淋、管线和平台按可见结构组织；其精确截面、紧固件数量、液压回路、阀件型号、传动比、电机额定功率及减薄道次均未由原厂资料确认。单电机、概略齿轮箱及双工作辊传动轴属于本版布置假设。"
+        },
+        {
+          "id": "equipment-base-c0002",
+          "heading": "名义尺寸 / 材质与图像",
+          "locator": "L31–L56",
+          "text": "## 名义尺寸\n\n| 项目 | 数值 | 性质 |\n|---|---:|---|\n| 机架间距 | 5.2 m | 可视化名义值 |\n| 轧制中心线 | Z = 3.0 m | 可视化名义值 |\n| 工作辊直径 | 0.40 m | 可视化名义值 |\n| 中间辊直径 | 0.60 m | 可视化名义值 |\n| 支承辊直径 | 1.18 m | 可视化名义值 |\n| 工作辊 / 中间辊 / 支承辊辊身长度 | 1.88 / 1.92 / 2.02 m | 可视化名义值 |\n| 钢带宽度 | 1.50 m | 可视化名义值 |\n| 钢带显示厚度 | 0.004 m，全线固定 | 显示用，不表达真实减薄制度 |\n| 平台格栅面标高 | 约 1.38 m | 可视化布置 |\n\nS1–S5 中心 X 坐标为 -10.4、-5.2、0、5.2、10.4 m。所有主辊在 X 方向对齐对应机架中心，工作辊表面贴合钢带上下表面；相邻 WR/IM、IM/BU 按名义圆柱几何相切。辊身肩部过渡在 |Y| = 1.055 m 完成，轴承座内侧面位于 |Y| = 1.07 m，留出 15 mm 名义轴向间隔。操作侧轴颈止于端盖后方，避免遮挡端盖细节。这些检查不是应力、寿命、装配公差或完整干涉检验。\n\n## 材质与图像\n\n蓝漆采用固定底色和细尺度粗糙度，灰色承力铸件、轴承座、研磨辊身、机加工端盖、镀铬活塞杆、橡胶、黄漆护栏独立分材质。没有采用大尺度云斑底色制造“脏旧”效果。\n\n7 张粗糙度/金属度纹理已打包进 Blender 和 GLB。Blender 中的微小程序凹凸、各向异性是渲染细化；GLB 会保留基础 PBR 与打包贴图，但交换查看器不一定重现 Blender 的微小凹凸、各向异性、摄影灯光和色调映射。两种文件的形状和位置应由独立回读核查一致。\n\n最终视图为整线斜视、操作侧正视、入口侧视、S5 特写，以及额外的传动侧整线图。整线斜视与特写采用透视摄像机，工程正视与入口侧视采用正交摄像机。地面、弧形无缝背景与灯光只为读图服务，不代表实际厂房。\n\n主场景 `Scene` 保存整线斜视的摄影设置。`03_Entry_View` 场景链接同一套设备和摄影背景，只增加入口方向的局部补光，用于复现入口侧视图；切换到这个场景即可按已保存的摄像机和灯光重新渲染，设备几何没有复制成不同版本。"
+        },
+        {
+          "id": "equipment-base-c0003",
+          "heading": "编辑与再运行",
+          "locator": "L57–L74",
+          "text": "## 编辑与再运行\n\n主机架采用 `S1_Frame` 至 `S5_Frame` 命名。六根主辊采用 `S5_WorkRoll_Top`、`S5_WorkRoll_Bottom`、`S5_IntermediateRoll_Top`、`S5_IntermediateRoll_Bottom`、`S5_BackupRoll_Top`、`S5_BackupRoll_Bottom` 等一致命名；钢带为 `Steel_Strip`。\n\n各机架的 `S*_Assembly` 是组装根节点。S1–S5 的共用基本几何采用共享数据以保持编辑效率；需要单独改动某一共享零件时，在 Blender 中先使其网格数据单用户。S5 额外部件为独立对象。导出过程用临时副本将父级逆矩阵整理为显式局部变换，保留主模型的可编辑曲线和文字。\n\n30 根主辊保留圆周方向的平滑，并在肩部使用 30° 阈值的法线分离，避免长辊身的高光被肩部法线拉成鼓包。`roll_shading_validation.json` 核查修改器计算后的中央辊身角点法线；最终 GLB 的独立回读也包含同一方向性核查。\n\n运行命令（PowerShell）：\n\n```powershell\n& 'blender' -b -t 10 --python-exit-code 1 --python '<MODEL_SOURCE>/build_astra.py' -- single\n& 'blender' -b -t 10 --python-exit-code 1 --python '<MODEL_SOURCE>/build_astra.py' -- full\n```\n\n当前 `build_astra.py` 已合入最终的主辊法线修正、整线自动取景、`03_Entry_View` 独立补光场景和单场景 GLB 导出限制，因此按上面 `single` → `full` 两条命令即可从头复现最终设备与摄影配置。`refine_hero.py` 和 `final_shading_pass.py` 是本次对已有检查点进行收尾的脚本，从头重建时不需要额外运行。`SingleStand_Astra.blend` 与编号 00 图片属于前期单机架审阅检查点，最终交付以 `DKQKAR_5Stand_Master.blend`、`DKQKAR_5Stand.glb` 和编号 01–05 图片为准。\n\n本次未修改 DK 软件、论文或其他项目。"
+        }
+      ],
+      "indexTransform": "Absolute developer paths replaced with portable placeholders; source sha256 still identifies the original document.",
+      "indexSha256": "4c32a5abf5cd58a1429f421d67317678701db0cf047a099dd02de2d3de5f4b27"
+    },
+    {
+      "id": "equipment-final",
+      "title": "最终 Readability 设备修正与可见性说明",
+      "fileName": "DKQKAR_5Stand_V2_Readability/局部修正说明.md",
+      "kind": "equipment",
+      "sha256": "9595862f007b24280c5537973474c32a418185a2d54d7b4002376e6b9daf3ada",
+      "chunks": [
+        {
+          "id": "equipment-final-c0001",
+          "heading": "V2 两项机械可读性修正 / 两项改动 / 场景与可见性",
+          "locator": "L1–L18",
+          "text": "# V2 两项机械可读性修正\n\n本版直接打开 `DKQKAR_5Stand_V2_Revision/DKQKAR_5Stand_Master.blend` 作增量修改。没有调用单机架或整线建模函数，没有修改设备网格、辊径、机架间距或钢带路径。原 V2 文件另行保留。\n\n## 两项改动\n\n1. 为主辊和辅助件使用独立对象材质槽，保留原来的 Base Color、Metallic 和纹理，仅调整 Roughness，使辅助轴承、端盖、细管的反光不再与主辊争夺注意力。细小端盖环、中心塞及端盖螺钉在展示中可逆隐藏；所有设备对象仍保留。主轴承座、主要端盖、液压结构均保留。\n2. 使用两个 S5 检视镜头：六辊整体镜头接近钢带水平线，避免长钢带的透视投影覆盖下工作辊；辊缝近景从工作辊端部观察实际钢带边缘及上下工作辊。没有拉大辊缝、加厚钢带或增加示意钢带。\n\n## 场景与可见性\n\n- `Scene`：整线斜视和正视，现有设备布局完整保留。\n- `S5_ROLL_INSPECTION`：S5 辊系及咬合近景，临时排除 `S5_SERVICE_PARTS_INSPECTION_VISIBILITY` 集合，让本来被遮挡的辊系可以直接读图。该集合含原有 S5 进出口导辊及支撑、接液盘、冷却喷管/喷嘴/阀/供液管，不是删除这些设备。\n- 小端盖装饰环、中心塞、螺钉的展示隐藏及辅助件的反射可见性变化逐项保存在 `revision_changes.json`。\n- 所有机架位置、主外壳、平台、护栏、电机和原始颜色保留；没有增加设备。\n- 拍摄补光只链接到 30 根主辊，不是设备组成部分。\n- 整线场景另加只链接到 `Steel_Strip` 的中性摄影光，恢复辅助件反光减弱后受影响的机架间钢带亮度；该光不进入两个 S5 检视镜头。`refine_strip_light.py` 记录并复现这一步。钢带材质仍与原 V2 完全一致。"
+        },
+        {
+          "id": "equipment-final-c0002",
+          "heading": "本轮输出",
+          "locator": "L19–L23",
+          "text": "## 本轮输出\n\n仅重新输出四张正式预览，位于 `previews/`：整线斜视、正视、S5 辊系特写、S5 侧面咬合特写。本轮编辑后的 Blender 工程保存在本目录，原 V2 和原 GLB 均未覆盖。\n\n本模型仍为 6-high UCM 工程可视化模型。支承辊/中间辊/工作辊的名义直径为 1.18/0.60/0.40 m，展示钢带厚度为 0.004 m。这些不是 CRD 原始钢厂设备实测尺寸，也不构成 1:1 复刻声明。"
+        }
+      ]
+    },
+    {
+      "id": "DOC-01",
+      "title": "冷连轧基本流程",
+      "fileName": "docs/knowledge-seed/01-冷连轧基本流程.md",
+      "kind": "general",
+      "sha256": "1a8b17486bf4ce359a267c7d1aefb39ca4212620df5f7bcfa9da11dd14c4d07b",
+      "chunks": [
+        {
+          "id": "DOC-01-c0001",
+          "heading": "冷连轧基本流程 / 冷轧是什么 / 串列冷连轧 / 厚度状态沿机架传递",
+          "locator": "L1–L34",
+          "text": "# 冷连轧基本流程\n\n## 冷轧是什么\n\n冷轧（cold rolling）是带钢在未加热到热轧状态下进行塑性减薄加工的一类轧制过程。本软件重点讨论带钢串列冷连轧。\n\n“冷轧”是较大的工艺概念；“冷连轧 / 串列冷连轧”（tandem cold rolling）是由多个连续机架进行冷轧的一种生产组织方式。两者不是同义的设备数量定义，冷轧也不表示材料在加工中完全不产生温升。这些是基础术语释义，不是当前现场参数或安全结论。\n\n## 串列冷连轧\n\n串列冷连轧（tandem cold rolling）是多个轧制机架沿带钢运动方向连续排列，同一条带钢依次通过各机架逐级减薄的轧制过程。\n\n本项目使用五机架顺序表示：\n\n```text\n入口 → S1 → S2 → S3 → S4 → S5 → 出口\n```\n\nS1 最靠近入口，S5 最靠近出口。五机架是这里讨论的机组结构，不表示所有串列冷轧机组都必须有五个机架。\n\n## 厚度状态沿机架传递\n\n整个机组的厚度状态可以写成：\n\n```text\nh0 → S1 → h1 → S2 → h2 → S3 → h3 → S4 → h4 → S5 → h5\n```\n\n- h0 是机组入口厚度。\n- h1～h4 是中间机架轧后厚度。\n- h5 是最终出口厚度。\n\nS1 的出口状态成为 S2 的入口状态；S2 的出口状态继续成为 S3 的入口状态，并依次向下游传递。每个机架的加工结果都与后续机架的入口状态相关。"
+        },
+        {
+          "id": "DOC-01-c0002",
+          "heading": "上游、下游与机架间区域 / 连续加工与协调 / 适用边界",
+          "locator": "L35–L49",
+          "text": "## 上游、下游与机架间区域\n\n上游、下游按带钢运行方向定义：带钢从上游流向下游。S1—S2、S2—S3、S3—S4、S4—S5 之间的带钢段称为机架间区域。\n\n这些区域与各机架共同构成连续带钢系统。各机架不是五个独立系统，而是一条连续工艺链。\n\n## 连续加工与协调\n\n基本过程是入口状态经过多机架连续压下，中间厚度逐级变化，最后形成出口状态。在这一过程中，各机架需要协调厚度、速度、张力和轧制载荷。\n\n基础知识之间可以按以下顺序理解：连续流程 → 多机架逐级压下 → 轧制载荷 → 机架间张力状态 → 速度协调。这是工艺概念之间的联系，不是当前工况的根因链。\n\n## 适用边界\n\n本条目用于解释冷连轧流程和 S1～S5 的基本位置关系，不提供安全阈值、最优工艺参数或现场控制命令。判断当前某卷带钢的异常原因，需要结合当前 Snapshot、实际输入数据、模型计算、已有 Finding/Evidence 和正式现场规则；不能仅由本条目作出结论。"
+        }
+      ]
+    },
+    {
+      "id": "DOC-02",
+      "title": "五机架冷连轧与 S1–S5",
+      "fileName": "docs/knowledge-seed/02-五机架冷连轧与S1-S5.md",
+      "kind": "general",
+      "sha256": "9ecda9b58ed42f504629f3669070be7ccdd3d698985a4b13049fb2ab8712becc",
+      "chunks": [
+        {
+          "id": "DOC-02-c0001",
+          "heading": "五机架冷连轧与 S1–S5 / 概述 / 核心知识 / 证据边界",
+          "locator": "L1–L25",
+          "text": "# 五机架冷连轧与 S1–S5\n\n## 概述\n\n本知识条目说明所引厂商案例的五机架配置及机架编号，并区分来源原文与 DKQKAR Studio 的内部简称。适用范围限于已冻结证据支持的案例事实和命名说明。\n\n## 核心知识\n\nSMS group 的《High-Tech Tandem Cold Mills》在 Dongbu Steel, South Korea 案例中展示了五机架串列冷轧机配置。该案例支持“工业串列冷轧存在五机架配置”这一事实（S13-R1-EV-001）。\n\n该案例的 Plant configuration 明确使用原文 stands 1-5 描述五个机架，可据此按 stand 1–5 对该案例机架顺序编号（S13-R1-EV-002）。\n\n在 DKQKAR Studio 的统一字段命名中，S1–S5 是项目内部使用的机架简称。来源原文为 stand 1–5，并未直接使用 S1–S5 字样；项目简称与来源原文应分别理解。\n\n## 证据边界\n\n来源能够支持该 Dongbu Steel 案例的五机架配置及 stand 1–5 顺序编号。S1–S5 是项目内部简称，与来源原文分开记录。\n\n- 五机架是 Dongbu Steel 案例的配置事实，不代表所有串列冷轧均为五机架。\n- stand 1–5 是来源中的机架编号；S1–S5 是 DKQKAR Studio 内部统一简称，不能写成 SMS 原文命名。\n- 该案例不能证明 Dongbu Steel 就是 DKQKAR Studio 当前研究生产线，也不能证明当前工况或 3D 模型与其设备一一对应。\n- 不移用该案例的设备尺寸、工艺参数或安全阈值；不由其配置推导模型预测性能。\n\n内部 Evidence ID 仅用于可追溯性，不是正式论文参考文献编号。"
+        },
+        {
+          "id": "DOC-02-c0002",
+          "heading": "证据来源",
+          "locator": "L26–L42",
+          "text": "## 证据来源\n\n- source_id: S13-R1\n  evidence_id: S13-R1-EV-001\n  source_title: High-Tech Tandem Cold Mills\n  publisher: SMS group GmbH\n  source_url: https://live.cdn.cms.sms-group.com/SMS_group_website/DataStorage/02_Downloads/2022/2022_Q2/W6-303E_Tandem_Cold_Mills.pdf\n  locator: PDF 第12页（1-based）；Dongbu Steel, South Korea；paragraph: 项目说明首段；相邻标题明确Five-stand six-high tandem cold mill\n  source_sha256: 43b9804b3a4ecaef03d39ceaa4dcfbd7807e7e500c515f3bfb48a2c85156e2e9\n\n- source_id: S13-R1\n  evidence_id: S13-R1-EV-002\n  source_title: High-Tech Tandem Cold Mills\n  publisher: SMS group GmbH\n  source_url: https://live.cdn.cms.sms-group.com/SMS_group_website/DataStorage/02_Downloads/2022/2022_Q2/W6-303E_Tandem_Cold_Mills.pdf\n  locator: PDF 第13页（1-based）；Plant configuration；item: stands 1-5 in ESS 6-high design\n  source_sha256: 43b9804b3a4ecaef03d39ceaa4dcfbd7807e7e500c515f3bfb48a2c85156e2e9"
+        }
+      ]
+    },
+    {
+      "id": "DOC-03",
+      "title": "厚度、压下与多机架分配",
+      "fileName": "docs/knowledge-seed/03-厚度压下与多机架分配.md",
+      "kind": "general",
+      "sha256": "69237bfc9567046ac9ed3326c7da95821e959f27bd6745df553be81a10f4fcd6",
+      "chunks": [
+        {
+          "id": "DOC-03-c0001",
+          "heading": "厚度、压下与多机架分配 / 入口厚度与出口厚度 / 压下量 / 压下率 / 总压下与多机架分配",
+          "locator": "L1–L52",
+          "text": "# 厚度、压下与多机架分配\n\n## 入口厚度与出口厚度\n\n单个机架的入口厚度记为 h_in，出口厚度记为 h_out。在正常减薄轧制中，h_out < h_in。\n\n连续多机架轧制中，S1 出口厚度近似对应 S2 入口厚度，S2 出口厚度近似对应 S3 入口厚度，并依次传递。五机架厚度演化可表示为：\n\n```text\nh0 → h1 → h2 → h3 → h4 → h5\n```\n\nh0 为机组入口厚度，h1～h4 为中间机架轧后厚度，h5 为最终出口厚度。\n\n## 压下量\n\n压下量（thickness reduction）是同一机架入口厚度与出口厚度之差：\n\n```text\nΔh = h_in - h_out\n```\n\n压下量有长度单位。以 2.0 mm → 1.6 mm 为纯算术说明，Δh = 2.0 - 1.6 = 0.4 mm；该例不是推荐压下制度或安全工艺值。\n\n## 压下率\n\n压下率（reduction ratio）是压下量与入口厚度的比值：\n\n```text\nr = (h_in - h_out) / h_in\nr% = (h_in - h_out) / h_in × 100%\n```\n\n同样用 2.0 mm → 1.6 mm 作纯算术说明，r = 0.2，百分数形式为 20%。压下率是比例，压下量是长度，两者不能混淆。\n\n## 总压下与多机架分配\n\n五机架的总压下量为：\n\n```text\nΔh_total = h0 - h5\nΔh1 + Δh2 + Δh3 + Δh4 + Δh5 = h0 - h5\n```\n\n总变形量由多个机架共同承担。多机架压下分配（multi-stand reduction distribution）也涉及压下制度（reduction schedule）或道次制度（pass schedule）的概念。\n\n各机架的压下率不能简单相加作为整个机组的总压下率。机组总压下率应按入口与最终出口厚度计算：\n\n```text\nr_total = (h0 - h5) / h0\n```"
+        },
+        {
+          "id": "DOC-03-c0002",
+          "heading": "为什么需要协调 / 适用边界",
+          "locator": "L53–L59",
+          "text": "## 为什么需要协调\n\n不同的压下分配会影响各机架轧制力、电机负荷、带钢张力、下游入口状态和连续轧制稳定性，因此属于多机架协同问题，不能把五个机架完全独立地指定。\n\n## 适用边界\n\n这些定义用于解释厚度、压下量、压下率及总压下分配，不给出当前最优道次或绝对安全限值。基础关系不能自动证明当前工况的异常原因；具体调整需要当前 Snapshot、实际数据、模型计算、已有 Finding/Evidence 和正式现场规则。"
+        }
+      ]
+    },
+    {
+      "id": "DOC-04",
+      "title": "轧制力基础",
+      "fileName": "docs/knowledge-seed/04-轧制力基础.md",
+      "kind": "general",
+      "sha256": "2122ff28c97868c6cd6580500e096f036fbedb63614ea8d0bb6c27695ad6b46d",
+      "chunks": [
+        {
+          "id": "DOC-04-c0001",
+          "heading": "轧制力基础 / 基本定义 / 接触压力与总载荷 / 基础模型的常见前提 / 平面应变近似 / 塑性不可压缩近似 / 材料变形抗力 / 摩擦条件 / 轧辊半径",
+          "locator": "L1–L44",
+          "text": "# 轧制力基础\n\n## 基本定义\n\n轧辊压迫带钢，使带钢产生塑性变形；轧辊与带钢的接触区域形成机械载荷。这种主要载荷称为轧制力（rolling force），也常称轧制载荷（rolling load）。\n\n轧制力表示轧辊—带钢相互作用形成的实际机械载荷，不等同于前张力、后张力或弯辊力。\n\n## 接触压力与总载荷\n\n轧辊与带钢之间存在有限接触区域，而不是单一点接触。接触压力（contact pressure）可以用沿接触区变化的 p(x) 表示。\n\n局部接触压力沿接触区域积分后形成总载荷，可用以下简化概念表达理解：\n\n```text\nF ≈ b ∫ p(x) dx\n```\n\n其中 F 为总轧制力，b 为带钢宽度，p(x) 为接触压力分布。该式用于说明压力分布与总载荷的关系，不是软件正式预测模型的替代算法。\n\n## 基础模型的常见前提\n\n不同轧制力模型的假设（model assumptions）并不完全相同。以下是常见基础概念，不能解释为所有模型都必须同时满足的统一条件。\n\n### 平面应变近似\n\n对于宽度远大于厚度的宽薄带材，很多二维模型采用近似平面应变描述。\n\n### 塑性不可压缩近似\n\n金属塑性变形通常近似体积基本守恒。\n\n### 材料变形抗力\n\n模型通常需要考虑流动应力、变形抗力或屈服相关参数。\n\n### 摩擦条件\n\n需要明确摩擦系数或所使用的摩擦边界模型。\n\n### 轧辊半径\n\n轧辊半径影响接触长度、压力分布和轧制载荷。一些模型进一步考虑轧辊弹性压扁。"
+        },
+        {
+          "id": "DOC-04-c0002",
+          "heading": "稳态条件 / 前后张力 / 使用边界",
+          "locator": "L45–L55",
+          "text": "### 稳态条件\n\n很多基础模型主要描述稳态轧制（steady-state rolling）。对于穿带、加速、减速和甩尾等瞬态阶段，不能自动认为这些稳态模型完全适用。\n\n### 前后张力\n\n更完整的模型可能将后张力（back tension）和前张力（front tension）作为入口、出口边界条件。\n\n## 使用边界\n\n使用具体轧制力模型时，应按照该模型自己的定义、假设和适用条件判断范围。通用轧制力概念不能证明当前 S5 轧制力偏高由某个具体变量造成，也不能提供最优参数或安全阈值。当前工况判断需要当前 Snapshot、实际输入、模型计算、已有 Finding/Evidence 和正式现场规则。"
+        }
+      ]
+    },
+    {
+      "id": "DOC-05",
+      "title": "弯辊力与板形控制基础",
+      "fileName": "docs/knowledge-seed/05-弯辊力与板形控制基础.md",
+      "kind": "general",
+      "sha256": "373bd0966f8f75922d6ce045bd0e417d033531553490eea6db1c9049e3e050ce",
+      "chunks": [
+        {
+          "id": "DOC-05-c0001",
+          "heading": "弯辊力与板形控制基础 / 概述 / 核心知识 / 证据边界",
+          "locator": "L1–L25",
+          "text": "# 弯辊力与板形控制基础\n\n## 概述\n\n本知识条目说明所引厂商案例中弯辊在板形与辊缝组合调节中的位置。适用范围限于该案例的组合措施描述，不提供单变量因果结论。\n\n## 核心知识\n\nSMS group 的《High-Tech Tandem Cold Mills》在 Bengang Steel Plates Co. Ltd., China 案例中，将工作辊弯辊和中间辊弯辊列为组合辊缝调节措施的一部分（S13-R1-EV-003）。\n\n该案例同时描述了弯辊、其他辊缝调节措施以及多区冷却等多种措施共同参与平直度控制，平直度结果对应的是这些措施的组合描述（S13-R1-EV-004）。\n\n在这一来源范围内，弯辊可理解为板形与辊缝组合调节中的一个执行因素。该资料不能支持把平直度结果单独归因于弯辊一个变量。\n\n## 证据边界\n\n来源能够支持弯辊属于该 Bengang 案例组合辊缝调节的参与因素，以及平直度结果与组合措施有关的案例描述。\n\n- bending 在该案例中是组合控制因素之一；flatness result 对应组合措施相关结果，不能改写成单变量因果关系。\n- 不能据此断言弯辊单独决定板形，或弯辊必然改善平直度。\n- 不能据此断言弯辊力必然提升 S5 轧制力预测性能，也不能外推为任意钢种和工况的通用因果结论。\n- 该厂商案例不构成当前工况安全证明，不提供现场弯辊力设置或安全阈值，也不能用于推断当前物理根因。\n\n内部 Evidence ID 仅用于可追溯性，不是正式论文参考文献编号。"
+        },
+        {
+          "id": "DOC-05-c0002",
+          "heading": "证据来源",
+          "locator": "L26–L42",
+          "text": "## 证据来源\n\n- source_id: S13-R1\n  evidence_id: S13-R1-EV-003\n  source_title: High-Tech Tandem Cold Mills\n  publisher: SMS group GmbH\n  source_url: https://live.cdn.cms.sms-group.com/SMS_group_website/DataStorage/02_Downloads/2022/2022_Q2/W6-303E_Tandem_Cold_Mills.pdf\n  locator: PDF 第48页（1-based）；Bengang Steel Plates Co. Ltd., China；paragraph: All ﬁve stands…段落中的Co-acting with…描述\n  source_sha256: 43b9804b3a4ecaef03d39ceaa4dcfbd7807e7e500c515f3bfb48a2c85156e2e9\n\n- source_id: S13-R1\n  evidence_id: S13-R1-EV-004\n  source_title: High-Tech Tandem Cold Mills\n  publisher: SMS group GmbH\n  source_url: https://live.cdn.cms.sms-group.com/SMS_group_website/DataStorage/02_Downloads/2022/2022_Q2/W6-303E_Tandem_Cold_Mills.pdf\n  locator: PDF 第48页（1-based）；Bengang Steel Plates Co. Ltd., China；paragraph: 同段This ensures, together with the multi-zone cooling…语句\n  source_sha256: 43b9804b3a4ecaef03d39ceaa4dcfbd7807e7e500c515f3bfb48a2c85156e2e9"
+        }
+      ]
+    },
+    {
+      "id": "DOC-06",
+      "title": "前张力与后张力",
+      "fileName": "docs/knowledge-seed/06-前张力与后张力.md",
+      "kind": "general",
+      "sha256": "e37d9ede5906d691843be112d5dd59e84edaceb635a71485762e96aca65907d5",
+      "chunks": [
+        {
+          "id": "DOC-06-c0001",
+          "heading": "前张力与后张力 / 相对于当前机架定义方向 / 后张力与前张力 / 相邻机架之间的语义 / 张力力值与张应力",
+          "locator": "L1–L40",
+          "text": "# 前张力与后张力\n\n## 相对于当前机架定义方向\n\n假定带钢沿箭头方向运行：\n\n```text\n入口侧                  当前机架                  出口侧\nback tension              [轧机]              front tension\n──────────────→──────────→──────────────→──────────→\n```\n\n前、后张力的名称相对于当前观察的机架定义，不能只根据整条机组的方向或字段简称判断。\n\n## 后张力与前张力\n\n后张力（back tension）表示该机架入口侧带钢上的纵向张力，也常称入口张力。\n\n前张力（front tension）表示该机架出口侧带钢上的纵向张力，也常称出口张力。\n\n## 相邻机架之间的语义\n\n机架间张力（interstand tension）描述相邻机架间连续带钢段的张力状态。例如：\n\n```text\nS4 ────── 机架间带钢段 ────── S5\n```\n\n同一段机架间张力，相对于 S4 是前张力，相对于 S5 是后张力。因此 front/back 表达的是相对于某个机架的入口、出口位置语义（interstand semantics）。\n\n## 张力力值与张应力\n\n工程系统中的“张力”可能表示力，单位为 N 或 kN；也可能表示张应力，单位为 MPa。张应力的基本关系为：\n\n```text\nσ_t = T / A\n```\n\n其中 T 是张力力值，A 是带钢横截面积。软件不能仅凭字段名称判断其单位或物理量，也不能把力值和张应力直接混用。"
+        },
+        {
+          "id": "DOC-06-c0002",
+          "heading": "测量语义 / 适用边界",
+          "locator": "L41–L49",
+          "text": "## 测量语义\n\n机架间张力通常描述自由带钢段中的纵向拉力状态。实际系统可能通过张力测量辊、载荷传感器（load cell）或张力计（tension meter）测量，也可能通过电机转矩、速度关系和控制模型估算。\n\n解释 front tension、back tension、interstand tension 时，应结合变量定义、单位、传感器位置和控制系统信号说明，确认其测量语义（measurement semantics）。不能仅凭 T4、T45 或 S4 tension 等字段名自行推断具体现场测点。\n\n## 适用边界\n\n本条目用于术语和位置关系解释，不证明当前张力信号来自某个确定测点，也不把张力变化直接认定为当前轧制力变化的根因。不提供安全张力或最优张力值；具体工况判断需要当前 Snapshot、实际数据、模型计算、已有 Finding/Evidence 和正式现场规则。"
+        }
+      ]
+    },
+    {
+      "id": "DOC-07",
+      "title": "轧制速度与机架协调",
+      "fileName": "docs/knowledge-seed/07-轧制速度与机架协调.md",
+      "kind": "general",
+      "sha256": "4a80a612f7d99afbfe8fb7977bee75bf7cc7a745465541ea71030c9dec975850",
+      "chunks": [
+        {
+          "id": "DOC-07-c0001",
+          "heading": "轧制速度与机架协调 / 轧辊速度与带钢速度 / 中性点与相对滑动 / 连续轧制的质量流量",
+          "locator": "L1–L36",
+          "text": "# 轧制速度与机架协调\n\n## 轧辊速度与带钢速度\n\n轧辊圆周速度（roll speed）可由角速度与轧辊半径表示：\n\n```text\nv_r = ωR\n```\n\n其中 ω 为轧辊角速度，R 为轧辊半径，v_r 为轧辊圆周速度。\n\n带钢沿轧制方向运动的线速度记为 v_s，称为带钢速度（strip speed）。轧辊圆周速度与带钢速度不应在所有位置直接视为相同。\n\n## 中性点与相对滑动\n\n轧制接触区中的中性点（neutral point）是带钢速度与轧辊圆周速度近似相等的位置，中性点两侧存在不同的相对滑动状态。\n\n出口带钢速度通常不能简单认为等于轧辊圆周速度，还需考虑前滑（forward slip）。\n\n## 连续轧制的质量流量\n\nS1 → S2 → S3 → S4 → S5 是连续带钢系统。稳定状态下，可以用基本质量流量（mass flow）关系理解机架间连续性：\n\n```text\nρ × b × h × v ≈ constant\n```\n\n其中 ρ 表示材料密度，b 表示带钢宽度，h 表示厚度，v 表示带钢速度。当材料密度基本不变、宽度变化较小时，可以进一步近似为：\n\n```text\nh × v ≈ constant\n```\n\n在这些前提下，随着带钢逐级减薄，带钢速度总体上需要相应提高。因此，连续减薄过程不能简单把五个机架的带钢速度全部设为相同。该关系不能直接代替实际轧辊转速和控制系统的设定。"
+        },
+        {
+          "id": "DOC-07-c0002",
+          "heading": "机架间速度与张力协调 / 前滑与速度协调 / 动态运行 / 适用边界",
+          "locator": "L37–L53",
+          "text": "## 机架间速度与张力协调\n\n当上游送带速度与下游拉带速度不协调时，机架间张力状态会发生变化。因此，机架间协调（interstand coordination）需要同时考虑机架速度与机架间张力。\n\n这种联系不能写成“速度提高 X 必然导致张力提高 Y”的固定因果关系；具体变化需要结合实际工况和控制系统判断。\n\n## 前滑与速度协调\n\n由于带钢出口速度与轧辊圆周速度之间可能存在前滑，协调时需要考虑轧辊转速、轧辊半径、带钢速度、前滑和压下状态，而不是只比较单个速度字段。\n\n## 动态运行\n\n加速、减速和速度切换过程中，各机架需要协同调整，否则可能扰动机架间张力、厚度控制和连续运行状态。机架速度协调可以理解为压下制度、质量流量、前滑、机架间张力和各机架速度之间的协同。\n\n## 适用边界\n\n本条目用于解释速度概念与连续轧制中的协调关系，不给出当前最优速度、安全限值或控制命令。稳态近似不能自动外推到所有动态阶段，也不能直接形成当前工况的根因链。具体判断需要当前 Snapshot、实际数据、模型计算、已有 Finding/Evidence 和正式现场规则。"
+        }
+      ]
+    },
+    {
+      "id": "DOC-08",
+      "title": "六辊 UCM 轧机结构",
+      "fileName": "docs/knowledge-seed/08-六辊UCM轧机结构.md",
+      "kind": "general",
+      "sha256": "906e5c80af0035cb4a9657a820bdf2fa86ec0d03d6a8b3ed90c263432f3733b4",
+      "chunks": [
+        {
+          "id": "DOC-08-c0001",
+          "heading": "六辊 UCM 轧机结构 / 概述 / 核心知识 / 证据边界",
+          "locator": "L1–L25",
+          "text": "# 六辊 UCM 轧机结构\n\n## 概述\n\n本知识条目说明所引 Primetals Technologies 资料中 UC-Mill 的结构类别及中间辊功能。适用范围限于该资料所述设备，不构成 DKQKAR Studio 现场设备核验。\n\n## 核心知识\n\nPrimetals Technologies 的 Tandem Cold Mill 技术资料将 UC-Mill 明确描述为 6-high steel mill，可作为该资料所述 UC-Mill 六辊结构类别的工业设备依据（S12-R1-EV-001）。\n\n同一资料明确描述了中间辊移位（intermediate-roll shifting）和中间辊弯辊（intermediate-roll bending）功能，可作为该 UC-Mill 功能说明的工业设备依据（S12-R1-EV-002）。\n\n本知识条目的结构与功能说明限定于该厂商资料所述 UC-Mill，不把结构类别说明扩写成完整部件清单或现场设备核验结论。\n\n## 证据边界\n\n来源能够支持所述 UC-Mill 的 6-high 结构类别，以及中间辊移位、弯辊功能。\n\n- UC-Mill 在该资料中属于 6-high 类别；不能据此断言所有 6-high 轧机都是 UC-Mill。\n- 不能据此断言只有 UC-Mill 具备中间辊移位或弯辊功能。\n- 该资料不能证明 DKQKAR Studio 当前现场设备就是所述型号，也不能证明现场设备尺寸、部件数量或设置值。\n- 该资料不能用于证明模型预测性能，不能用于推断当前物理根因，也不提供当前工况安全结论或安全阈值。\n\n内部 Evidence ID 仅用于可追溯性，不是正式论文参考文献编号。"
+        },
+        {
+          "id": "DOC-08-c0002",
+          "heading": "证据来源",
+          "locator": "L26–L42",
+          "text": "## 证据来源\n\n- source_id: S12-R1\n  evidence_id: S12-R1-EV-001\n  source_title: Tandem Cold Mill for High-Performance Steel Production\n  publisher: Primetals Technologies\n  source_url: https://www.primetals.com/en/portfolio/solutions/cold-rolling/tandem-cold-mill/\n  locator: Maximum Application of UC-Mill Principle and Advantages；paragraph XPath: /html/body/main/section/article/section/section[3]/div/p[2]\n  source_sha256: c15ec498c15e7acc2468cfeeddafc439a75058c01b0b51874f3866a784cdaf20\n\n- source_id: S12-R1\n  evidence_id: S12-R1-EV-002\n  source_title: Tandem Cold Mill for High-Performance Steel Production\n  publisher: Primetals Technologies\n  source_url: https://www.primetals.com/en/portfolio/solutions/cold-rolling/tandem-cold-mill/\n  locator: Maximum Application of UC-Mill Principle and Advantages；paragraph XPath: /html/body/main/section/article/section/section[3]/div/p[2]\n  source_sha256: c15ec498c15e7acc2468cfeeddafc439a75058c01b0b51874f3866a784cdaf20"
+        }
+      ]
+    },
+    {
+      "id": "DOC-09",
+      "title": "冷轧常用设备与控制术语",
+      "fileName": "docs/knowledge-seed/09-冷轧常用设备与控制术语.md",
+      "kind": "general",
+      "sha256": "829b1af76f6d3b7a1b08cdce5d88f79d8bfc8230fe7c82fc7bc387eb9564ccf5",
+      "chunks": [
+        {
+          "id": "DOC-09-c0001",
+          "heading": "冷轧常用设备与控制术语 / 带钢与机架 / 工作辊、中间辊、支承辊与六辊辊系 / 辊缝、中间辊移位与弯辊",
+          "locator": "L1–L20",
+          "text": "# 冷轧常用设备与控制术语\n\n## 带钢与机架\n\n带钢是沿长度方向连续送入轧机的板带材料；厚度、宽度和速度用于描述其几何及运动状态。这里的“板材 / 板带”是产品类别用语，不代表当前卷的钢种或质量已经确认。\n\n机架（stand）是容纳、支承轧辊及相关调节机构的轧制单元。在项目中，S1～S5 表示沿带钢运行方向依次排列的五个机架，编号是项目简称，不是厂家原文的统一命名。\n\n## 工作辊、中间辊、支承辊与六辊辊系\n\n工作辊（work roll）直接接触带钢，形成轧制接触区。中间辊（intermediate roll）位于工作辊与支承辊之间，参与辊系载荷传递及辊缝调节。支承辊（backup roll）支承其内侧辊系，帮助承受轧制载荷。\n\n项目六辊可视化采用一对工作辊、一对中间辊和一对支承辊的堆叠关系。该结构说明与冻结 equipment-base-c0001 中的可视化关系一致；不构成当前生产线部件、尺寸或型号的实测证明。UC-Mill 厂商结构及功能依据另见《六辊 UCM 轧机结构》，不能由“六辊”反推任意设备就是 UCM。\n\n## 辊缝、中间辊移位与弯辊\n\n辊缝（roll gap）表示轧辊之间供带钢通过的间隙，与减薄及厚度调节相关；几何辊缝不能无条件等同于实际出口厚度。\n\n中间辊移位是沿辊轴方向改变中间辊位置的调节方式。弯辊（bending）是通过施加弯辊力调节轧辊挠曲及辊缝形态的手段。弯辊力与轧制力是不同量，不能互换。移位与弯辊作为所引 UC-Mill 的功能已在 DOC-08 记录；DOC-05 的案例仅支持弯辊参与组合调节，不支持弯辊单独决定板形的结论。"
+        },
+        {
+          "id": "DOC-09-c0002",
+          "heading": "板形、板厚控制与 AGC / 轧制规程、入口侧、出口侧与机架间区域 / 适用边界",
+          "locator": "L21–L35",
+          "text": "## 板形、板厚控制与 AGC\n\n板形或平直度（flatness）描述板带是否平坦及其沿宽度方向的形状状态，不能仅由平均厚度判断。板厚控制（gauge control）关注带钢厚度与目标厚度的关系。\n\nAGC 是 Automatic Gauge Control，即自动板厚控制的简称；其作用是围绕厚度目标进行控制调节。术语解释不表示本软件已接入 AGC 控制器，也不提供设备控制命令。板形控制与板厚控制关注的对象不同，相关措施可能需要协调。\n\n## 轧制规程、入口侧、出口侧与机架间区域\n\n轧制规程或压下制度（rolling schedule / reduction schedule）描述各道次或机架的压下分配与相关工艺安排，属于多机架协调问题，不是从一个预测值自动生成的控制命令。\n\n入口侧是带钢进入所观察机架的一侧，出口侧是带钢离开该机架的一侧；相邻机架之间的带钢段是机架间区域。前张力、后张力也应相对于所观察机架定义，不能只按整线左右方向判断。\n\n## 适用边界\n\n本条目按本轮授权整理基础术语，关联已有 DOC-01、03、05、06、08 及冻结设备可视化知识，不冒充新增外部论文。这里的通用定义不证明当前 Snapshot 的物理根因；当前判断仍需对应 Finding/Evidence 和独立证据。本条目不提供设备参数、安全阈值或自动控制指令。"
+        }
+      ]
+    },
+    {
+      "id": "DOC-10",
+      "title": "冷轧润滑与冷却基础",
+      "fileName": "docs/knowledge-seed/10-冷轧润滑与冷却基础.md",
+      "kind": "general",
+      "sha256": "2574830b5ead175c174439f1206d181a4a21259f57377abead4bf515ba3cc020",
+      "chunks": [
+        {
+          "id": "DOC-10-c0001",
+          "heading": "冷轧润滑与冷却基础 / 冷轧润滑与摩擦 / 轧制油与乳化液 / 冷却、温升与润滑的区别 / 与现有知识的关系及适用边界",
+          "locator": "L1–L23",
+          "text": "# 冷轧润滑与冷却基础\n\n## 冷轧润滑与摩擦\n\n冷轧润滑（lubrication）是在轧辊与带钢接触过程中采用润滑介质调节摩擦条件的工艺环节。摩擦表示接触面相对运动受到的阻力，是理解轧制接触状态的一项基础概念。润滑条件会影响接触摩擦，但不能仅凭润滑名称推断当前轧制力、板形或产品质量。\n\n## 轧制油与乳化液\n\n轧制油（rolling oil）是用于轧制润滑的油类介质名称。乳化液（emulsion）是油相与水相形成分散体系的一类介质，冷轧中可用于润滑和冷却。轧制油与乳化液不是完全相同的名称，也不能从软件中的字段推断当前生产线正在使用哪一种介质。\n\n润滑介质的具体组成、配制和运行条件属于现场专业规程，本条目不提供配液比例、化学品操作方法或适用介质推荐。\n\n## 冷却、温升与润滑的区别\n\n冷却（cooling）指从轧辊、带钢等对象带走热量的过程。塑性变形和接触摩擦可能伴随温升；“冷轧”并不意味着加工温度绝不变化。\n\n润滑关注接触摩擦条件，冷却关注热量传递；同一介质可能参与两项作用，但两者不是同一个物理概念。实际效果需要结合工艺、供液方式及介质条件判断，不能用这一基础关系证明某卷带钢的异常原因。\n\n## 与现有知识的关系及适用边界\n\nDOC-04 已将摩擦条件列为轧制力基础模型的一个考虑因素；DOC-05 的厂商案例只支持多区冷却与其他措施共同参与平直度控制的组合描述。这些关系不能改写为单变量因果保证。\n\n本条目仅按本轮授权补充术语释义，不声称新增外部来源已经核验，也不编造当前设备使用的介质。本条目不提供危险值、报警值、安全区间或现场控制命令。当前 Snapshot 的根因判断仍需要独立 Finding/Evidence；通用润滑与冷却知识不能替代当前工况证据。"
+        }
+      ]
+    },
+    {
+      "id": "DOC-11",
+      "title": "DK-QKAR 25维输入字段释义",
+      "fileName": "docs/knowledge-seed/11-DKQKAR-25维输入字段释义.md",
+      "kind": "model",
+      "sha256": "a20e9236b0e76f7cbb8323f9b712fc62eb8c47686b698bb0b043d9e1e64adc9d",
+      "chunks": [
+        {
+          "id": "DOC-11-c0001",
+          "heading": "DK-QKAR 25维输入字段释义 / 契约来源 / 1. 入口设定厚度 / 2. 带钢宽度",
+          "locator": "L1–L20",
+          "text": "# DK-QKAR 25维输入字段释义\n\n知识类型：DK-QKAR-V5S2 主模型知识\n\n## 契约来源\n\n以下条目直接按 src/modelInputs.js 的 MODEL_FEATURES 与 server/prediction-contract.mjs 的 FEATURE_SCHEMA 相同字段顺序生成。保留正式键名，包括 S3rolling forces 的原拼写；本文不重新定义合同，也不改变输入数值或单位转换。已确认的原始与界面单位来自 src/engineeringUnits.js；prediction-contract 的单位元数据复用同一原始工程单位。\n\n## 1. 入口设定厚度\n\n正式键名：Entry set thickness。机架归属：机组入口设定；服务端标记 S1。入口设定厚度是机组入口厚度的设定字段，用来描述设定状态；它不是 S1 入口实际厚度的测量字段，不能用两者名称相近来认定数值相同。\n\n原始模型输入单位：mm；工程显示单位：mm。这是正式25维输入第 1 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 2. 带钢宽度\n\n正式键名：width。机架归属：机组整体。带钢宽度是带钢横向尺寸字段，属于机组材料几何输入，没有独立机架归属。\n\n原始模型输入单位：mm；工程显示单位：mm。这是正式25维输入第 2 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。"
+        },
+        {
+          "id": "DOC-11-c0002",
+          "heading": "3. S1 入口实际厚度 / 4. S1 轧制力 / 5. S2 轧制力 / 6. S3 轧制力",
+          "locator": "L21–L44",
+          "text": "## 3. S1 入口实际厚度\n\n正式键名：Entry actual thickness。机架归属：S1。S1 入口实际厚度是进入 S1 的实际厚度字段，用来描述实际入口状态；它与入口设定厚度分别占据一个输入位置。字段叫实际不等于当前数据已经具有现场测量凭证。\n\n原始模型输入单位：mm；工程显示单位：mm。这是正式25维输入第 3 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 4. S1 轧制力\n\n正式键名：S1 rolling forces。机架归属：S1。轧制力是本机架轧辊与带钢接触形成的载荷输入。此处上游载荷用于预测 S5，不能把 S5 目标值塞进这个输入位置。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 4 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 5. S2 轧制力\n\n正式键名：S2 rolling forces。机架归属：S2。轧制力是本机架轧辊与带钢接触形成的载荷输入。此处上游载荷用于预测 S5，不能把 S5 目标值塞进这个输入位置。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 5 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 6. S3 轧制力\n\n正式键名：S3rolling forces。机架归属：S3。轧制力是本机架轧辊与带钢接触形成的载荷输入。此处上游载荷用于预测 S5，不能把 S5 目标值塞进这个输入位置。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 6 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。"
+        },
+        {
+          "id": "DOC-11-c0003",
+          "heading": "7. S1 弯辊力 / 8. S2 弯辊力 / 9. S3 弯辊力 / 10. S4 弯辊力",
+          "locator": "L45–L68",
+          "text": "## 7. S1 弯辊力\n\n正式键名：S1 bending force。机架归属：S1。弯辊力是本机架弯辊调节使用的力值输入，与轧制力不同；它不证明当前板形或弯辊效果。\n\n原始模型输入单位：kN；工程显示单位：kN。这是正式25维输入第 7 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 8. S2 弯辊力\n\n正式键名：S2 bending force。机架归属：S2。弯辊力是本机架弯辊调节使用的力值输入，与轧制力不同；它不证明当前板形或弯辊效果。\n\n原始模型输入单位：kN；工程显示单位：kN。这是正式25维输入第 8 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 9. S3 弯辊力\n\n正式键名：S3 bending force。机架归属：S3。弯辊力是本机架弯辊调节使用的力值输入，与轧制力不同；它不证明当前板形或弯辊效果。\n\n原始模型输入单位：kN；工程显示单位：kN。这是正式25维输入第 9 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 10. S4 弯辊力\n\n正式键名：S4 bending force。机架归属：S4。弯辊力是本机架弯辊调节使用的力值输入，与轧制力不同；它不证明当前板形或弯辊效果。\n\n原始模型输入单位：kN；工程显示单位：kN。这是正式25维输入第 10 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。"
+        },
+        {
+          "id": "DOC-11-c0004",
+          "heading": "11. S1 轧制速度 / 12. S2 轧制速度 / 13. S3 轧制速度 / 14. S4 轧制速度",
+          "locator": "L69–L92",
+          "text": "## 11. S1 轧制速度\n\n正式键名：S1 rolling speed。机架归属：S1。轧制速度是本机架的速度字段输入。它不是所有接触位置的带钢速度定义，具体测量位置仍以现场数据契约为准。\n\n原始模型输入单位：m/min；工程显示单位：m/min。这是正式25维输入第 11 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 12. S2 轧制速度\n\n正式键名：S2 rolling speed。机架归属：S2。轧制速度是本机架的速度字段输入。它不是所有接触位置的带钢速度定义，具体测量位置仍以现场数据契约为准。\n\n原始模型输入单位：m/min；工程显示单位：m/min。这是正式25维输入第 12 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 13. S3 轧制速度\n\n正式键名：S3 rolling speed。机架归属：S3。轧制速度是本机架的速度字段输入。它不是所有接触位置的带钢速度定义，具体测量位置仍以现场数据契约为准。\n\n原始模型输入单位：m/min；工程显示单位：m/min。这是正式25维输入第 13 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 14. S4 轧制速度\n\n正式键名：S4 rolling speed。机架归属：S4。轧制速度是本机架的速度字段输入。它不是所有接触位置的带钢速度定义，具体测量位置仍以现场数据契约为准。\n\n原始模型输入单位：m/min；工程显示单位：m/min。这是正式25维输入第 14 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。"
+        },
+        {
+          "id": "DOC-11-c0005",
+          "heading": "15. S1 后张力 / 16. S2 后张力 / 17. S3 后张力 / 18. S4 后张力",
+          "locator": "L93–L116",
+          "text": "## 15. S1 后张力\n\n正式键名：S1 back tension。机架归属：S1。后张力是相对于本机架入口侧的纵向张力输入，不能与出口侧前张力混用，也不能凭名称推断具体传感器。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 15 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 16. S2 后张力\n\n正式键名：S2 back tension。机架归属：S2。后张力是相对于本机架入口侧的纵向张力输入，不能与出口侧前张力混用，也不能凭名称推断具体传感器。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 16 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 17. S3 后张力\n\n正式键名：S3 back tension。机架归属：S3。后张力是相对于本机架入口侧的纵向张力输入，不能与出口侧前张力混用，也不能凭名称推断具体传感器。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 17 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 18. S4 后张力\n\n正式键名：S4 back tension。机架归属：S4。后张力是相对于本机架入口侧的纵向张力输入，不能与出口侧前张力混用，也不能凭名称推断具体传感器。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 18 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。"
+        },
+        {
+          "id": "DOC-11-c0006",
+          "heading": "19. S1 前张力 / 20. S2 前张力 / 21. S3 前张力 / 22. S4 前张力",
+          "locator": "L117–L140",
+          "text": "## 19. S1 前张力\n\n正式键名：S1 front tension。机架归属：S1。前张力是相对于本机架出口侧的纵向张力输入，同一机架间带钢段对下游机架可称后张力。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 19 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 20. S2 前张力\n\n正式键名：S2 front tension。机架归属：S2。前张力是相对于本机架出口侧的纵向张力输入，同一机架间带钢段对下游机架可称后张力。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 20 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 21. S3 前张力\n\n正式键名：S3 front tension。机架归属：S3。前张力是相对于本机架出口侧的纵向张力输入，同一机架间带钢段对下游机架可称后张力。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 21 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 22. S4 前张力\n\n正式键名：S4 front tension。机架归属：S4。前张力是相对于本机架出口侧的纵向张力输入，同一机架间带钢段对下游机架可称后张力。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 22 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。"
+        },
+        {
+          "id": "DOC-11-c0007",
+          "heading": "23. S5 弯辊力 / 24. S5 轧制速度 / 25. S5 后张力 / S5轧制力与预测边界",
+          "locator": "L141–L163",
+          "text": "## 23. S5 弯辊力\n\n正式键名：S5 bending force。机架归属：S5。弯辊力是本机架弯辊调节使用的力值输入，与轧制力不同；它不证明当前板形或弯辊效果。\n\n原始模型输入单位：kN；工程显示单位：kN。这是正式25维输入第 23 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 24. S5 轧制速度\n\n正式键名：S5 rolling speed。机架归属：S5。轧制速度是本机架的速度字段输入。它不是所有接触位置的带钢速度定义，具体测量位置仍以现场数据契约为准。\n\n原始模型输入单位：m/min；工程显示单位：m/min。这是正式25维输入第 24 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## 25. S5 后张力\n\n正式键名：S5 back tension。机架归属：S5。后张力是相对于本机架入口侧的纵向张力输入，不能与出口侧前张力混用，也不能凭名称推断具体传感器。\n\n原始模型输入单位：t；工程显示单位：t。这是正式25维输入第 25 项，不是预测目标。模型与显示采用相同原始工程单位，本文不重新换算输入。\n\n## S5轧制力与预测边界\n\nS5 rolling forces（S5 轧制力）是预测目标，不属于25维输入；其原始单位为 t，工程显示为 t。S4 轧制力是独立工程上下文，也不属于这25维。S5观测值保持 observation 独立，不能回填为目标输入。\n\n本文仅解释字段身份，不声明模型结果就是安全结论。通用字段知识不能证明当前 Snapshot 的物理根因；当前诊断仍以匹配的 Finding/Evidence 为依据。"
+        }
+      ]
+    }
+  ]
+}

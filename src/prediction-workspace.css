@@ -1,0 +1,51 @@
+/* One workspace: prediction, mill and editable process remain mounted together. */
+.prediction-shell .s5-workbench { height:100%; }
+.prediction-workbench>.prediction-summary { flex:none; }
+.prediction-workbench .cockpit-toolbar { height:43px; flex-basis:43px; padding:0 20px; gap:18px; background:#18252d; }
+.prediction-workbench .scene-identity { min-width:175px; gap:8px; }
+.prediction-workbench .scene-identity .scene-line-mark svg { width:20px; height:20px; }
+.prediction-workbench .scene-identity b { font-size:12px; }
+.prediction-workbench .cockpit-segment { padding:2px; border-color:#344b55; }
+.prediction-workbench .cockpit-segment button { height:24px; font-size:11px; }
+.prediction-workbench .scene-toolbar-actions button { font-size:11px; height:28px; }
+.prediction-workbench .scene-view-selector { top:10px; }
+.prediction-workbench .scene-data-panel { top:12px; max-height:calc(100% - 30px); padding:14px; width:232px; background:#14252ef2; border:1px solid #506a753b; border-radius:4px; box-shadow:none; }
+.prediction-workbench .scene-data-left { left:16px; }
+.prediction-workbench .scene-data-right { right:16px; }
+.prediction-workbench .scene-transport-status { bottom:9px; height:24px; font-size:10px; }
+.prediction-quick-controls { border-top:1px solid #3c535d; padding-top:10px; margin-top:10px; }
+.quick-controls-heading { font-size:11px; color:#91aeba; margin-bottom:5px; }
+.prediction-quick-controls .cockpit-number { display:flex; align-items:center; justify-content:space-between; gap:10px; height:29px; font-size:12px; }
+.prediction-quick-controls .cockpit-number>span { margin:0; }
+.prediction-quick-controls .cockpit-number-input { height:25px!important; width:74px; background:#1c343e!important; }
+.prediction-quick-controls .cockpit-number-input input { text-align:right!important; font-size:13px!important; }
+.prediction-matrix-container { flex:none; min-width:0; position:relative; }
+.prediction-matrix-container[hidden] { display:none; }
+.prediction-reset-case { position:absolute; right:104px; top:7px; color:#7e9ca8; padding:4px 6px; border-radius:3px; }
+.prediction-reset-case:hover { color:#d6e9e5; background:#344c57; }
+.prediction-workbench .scene-reset { bottom:10px!important; right:16px!important; padding:3px 9px!important; border-radius:3px!important; }
+.prediction-shell .sidebar nav button>span { font-size:10px; }
+.prediction-shell .sidebar nav button { height:51px; gap:7px; }
+.prediction-shell .topbar-title { font-size:14px; font-weight:600; }
+@media(min-width:1650px) { .prediction-workbench .scene-data-panel { width:250px; top:18px; padding:16px; max-height:calc(100% - 42px); }.prediction-workbench .scene-data-left {left:24px}.prediction-workbench .scene-data-right {right:24px} }
+@media(max-width:1120px) { .prediction-workbench .scene-data-panel { width:194px; padding:11px; }.prediction-workbench .scene-data-left { left:10px; }.prediction-workbench .scene-data-right { right:10px; }.prediction-workbench .cockpit-toolbar { padding:0 12px; gap:10px; }.prediction-workbench .scene-identity { min-width:148px; }.prediction-workbench .cockpit-segment button { font-size:10px; padding:0 7px; } }
+@media(max-height:760px) { .prediction-workbench .scene-data-panel { top:9px; max-height:calc(100% - 25px); }.prediction-workbench .prediction-quick-controls { margin-top:6px; padding-top:6px; } }
+
+.prediction-workbench .prediction-panel-heading { margin-bottom:9px; }
+.prediction-workbench .prediction-driver { position:relative; padding:5px 3px 8px; }
+.prediction-workbench .prediction-driver-bottom { margin-top:3px; height:5px; }
+.prediction-workbench .prediction-driver-bottom>svg { position:absolute; right:3px; bottom:4px; width:10px; height:10px; }
+.prediction-workbench .prediction-driver-track { width:calc(100% - 16px); height:3px; }
+.prediction-workbench .prediction-driver-top { font-size:11px; line-height:14px; }
+.prediction-workbench .prediction-driver-top b { font-size:13px; }
+.prediction-workbench .prediction-drivers { gap:0; }
+.prediction-workbench .prediction-history { margin-top:10px; padding-top:9px; }
+.prediction-workbench .prediction-initial-result { padding-top:9px; margin-top:10px; }
+.prediction-workbench .prediction-ribbon { min-height:70px; padding-top:8px; padding-bottom:8px; }
+
+.prediction-mode { display:inline-block; font-size:10px; font-weight:400; color:#ab9572; border:1px solid #806c4b65; border-radius:3px; padding:1px 4px; vertical-align:1px; margin-left:5px; }
+
+.prediction-quick-controls label.cockpit-number { flex-direction:row; flex-wrap:nowrap; min-height:29px; }
+.prediction-quick-controls .cockpit-number-input { flex:0 0 74px; min-height:25px; }
+.prediction-quick-controls .cockpit-number>span { white-space:nowrap; }
+.prediction-shell .sidebar nav button>span { font-size:9px; white-space:nowrap; }

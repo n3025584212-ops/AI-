@@ -1,0 +1,7 @@
+{
+  "mode": "auto",
+  "expectedSha256": "7434f44356f15d4b69573c60cfc4c2a29f10da80c5355181474dc70b7070aefd",
+  "modelPath": "s5-dkqkar.pkl",
+  "metadataPath": "s5-dkqkar.json",
+  "examplePath": "example-case.json"
+}

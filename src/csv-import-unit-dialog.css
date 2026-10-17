@@ -1,0 +1,6 @@
+.csv-import-unit-dialog{max-width:580px;padding:24px;color:#cfe3ee;background:#102532;border:1px solid #458698;border-radius:12px}
+.csv-import-unit-dialog::backdrop{background:rgba(0,0,0,.6)}
+.csv-import-unit-dialog h2{font-size:20px;margin:0 0 16px}
+.csv-import-unit-dialog p{line-height:1.7;overflow-wrap:anywhere}
+.csv-import-unit-dialog div{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.csv-import-unit-dialog button{padding:9px 12px;background:#163747;color:#cfe3ee;border:1px solid #458698;border-radius:7px;cursor:pointer}

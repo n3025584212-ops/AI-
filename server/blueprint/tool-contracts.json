@@ -1,0 +1,833 @@
+{
+  "status": "DESIGN_CONTRACTS_NOT_IMPLEMENTED",
+  "notes": [
+    "tool专用output_schema必须在接入时补全并校验。",
+    "provider_name为兼容不允许点号的工具调用接口而设；适配器维护可逆映射，不创建第二套业务服务。认证身份、工件身份和可操作范围由宿主后端注入，不信任LLM声明。",
+    "数值finite、单位、字段角色等业务约束由服务器继续验证。"
+  ],
+  "tools": [
+    {
+      "name": "diagnostic.query",
+      "provider_name": "diagnostic__query",
+      "description": "只读本次冻结的当前诊断记录，不重新签发或计算",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": { "type": "string", "minLength": 1, "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。" },
+          "query": { "type": "string", "minLength": 1, "maxLength": 12000 }
+        },
+        "required": ["context_ref", "query"],
+        "additionalProperties": false
+      },
+      "required_output_contents": ["mode", "text", "findings", "evidence", "target"],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "mode": { "enum": ["ALL", "EXACT", "TARGET", "AMBIGUOUS", "NONE"] },
+          "text": { "type": "string" },
+          "findings": { "type": "array" },
+          "evidence": { "type": "array" },
+          "target": { "type": ["string", "null"] }
+        },
+        "required": ["mode", "text", "findings", "evidence", "target"],
+        "additionalProperties": false
+      },
+      "endpoint": null,
+      "implementation_status": "IMPLEMENTED"
+    },
+    {
+      "name": "runtime.get_context",
+      "provider_name": "runtime__get_context",
+      "description": "读取宿主已选择的当前对象与可用能力",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          }
+        },
+        "required": [
+          "context_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "snapshot_ref",
+        "selected_event_ref",
+        "schema_ref",
+        "data_source",
+        "capabilities"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "events.get_event",
+      "provider_name": "events__get_event",
+      "description": "读取一个授权事件的起止样本、规则依据与状态",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "event_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          }
+        },
+        "required": [
+          "context_ref",
+          "event_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "event_ref",
+        "rule_ref",
+        "segment_ref",
+        "state",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "events.search",
+      "provider_name": "events__search",
+      "description": "受限条件查询事件；不接收自由SQL",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "event_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start_time": {
+            "type": "string",
+            "minLength": 1
+          },
+          "end_time": {
+            "type": "string",
+            "minLength": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          }
+        },
+        "required": [
+          "context_ref",
+          "limit"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "events",
+        "total_matching",
+        "cursor",
+        "query_scope"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "data.validate",
+      "provider_name": "data__validate",
+      "description": "读取指定数据集或快照的完整程序校验结果",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "object_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          }
+        },
+        "required": [
+          "context_ref",
+          "object_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "valid_count",
+        "invalid_count",
+        "field_issues",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "data.get_segment",
+      "provider_name": "data__get_segment",
+      "description": "取事件前后片段；没有源时间则按样本定位",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "segment_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "before_samples": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "after_samples": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "detail_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          }
+        },
+        "required": [
+          "context_ref",
+          "segment_ref",
+          "before_samples",
+          "after_samples",
+          "detail_limit"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "segment_ref",
+        "coverage",
+        "summary",
+        "detail_refs",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "analysis.compare_segments",
+      "provider_name": "analysis__compare_segments",
+      "description": "在后端按完整选区计算差异，数值不由LLM生成",
+      "permission_class": "compute",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "baseline_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "target_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          }
+        },
+        "required": [
+          "context_ref",
+          "baseline_ref",
+          "target_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "comparison_ref",
+        "field_changes",
+        "coverage",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "analysis.sensitivity",
+      "provider_name": "analysis__sensitivity",
+      "description": "对真实模型输入计算局部响应，非因果贡献",
+      "permission_class": "compute",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "snapshot_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "feature_keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "maxItems": 25,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "context_ref",
+          "snapshot_ref",
+          "feature_keys"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "analysis_ref",
+        "perturbations",
+        "scores",
+        "statuses",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "prediction.predict_s5",
+      "provider_name": "prediction__predict_s5",
+      "description": "以引用方式取后端快照并调用唯一冻结模型",
+      "permission_class": "compute",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "snapshot_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          }
+        },
+        "required": [
+          "context_ref",
+          "snapshot_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "result_ref",
+        "snapshot_ref",
+        "prediction",
+        "model_identity",
+        "unit_status",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "history.find_similar",
+      "provider_name": "history__find_similar",
+      "description": "优先同规格，按已定义距离检索相似工况",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "snapshot_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "same_specification_only": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          }
+        },
+        "required": [
+          "context_ref",
+          "snapshot_ref",
+          "same_specification_only",
+          "limit"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "matches",
+        "distance_definition",
+        "scope",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "knowledge.search",
+      "provider_name": "knowledge__search",
+      "description": "在权限和版本适用性过滤后检索审核资料",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "max_passages": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "required": [
+          "context_ref",
+          "query",
+          "max_passages"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "passages",
+        "doc_versions",
+        "locators",
+        "conflicts",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "service.inspect",
+      "provider_name": "service__inspect",
+      "description": "只读检查数据、预测、AI或队列的实际状态",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "component": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "data",
+              "prediction",
+              "ai",
+              "queue",
+              "all"
+            ]
+          }
+        },
+        "required": [
+          "context_ref",
+          "component"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "status_ref",
+        "components",
+        "errors",
+        "checked_at",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "trials.create_preview",
+      "provider_name": "trials__create_preview",
+      "description": "创建隔离临时试算副本，不修改原始/生产工况",
+      "permission_class": "ephemeral",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "baseline_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "feature_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "必须在实际字段注册表中存在"
+                },
+                "value": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "feature_key",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 5
+          }
+        },
+        "required": [
+          "context_ref",
+          "baseline_ref",
+          "changes"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "trial_ref",
+        "snapshot_ref",
+        "diff",
+        "model_feature_changes",
+        "metadata_only_changes"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "rules.get",
+      "provider_name": "rules__get",
+      "description": "读取真实监测规则配置，区分精确规则与仅相关规则；相关规则不能作为修改目标。",
+      "permission_class": "read",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12000
+          },
+          "rule_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "仅由服务端精确实体解析提供。"
+          }
+        },
+        "required": [
+          "context_ref",
+          "query"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "scope",
+        "registry_version",
+        "rules_version",
+        "updated_at",
+        "exact_matches",
+        "related_matches",
+        "checked_at",
+        "evidence_refs"
+      ],
+      "endpoint": null,
+      "implementation_status": "IMPLEMENTED"
+    },
+    {
+      "name": "rules.preview_change",
+      "provider_name": "rules__preview_change",
+      "description": "预览规则改动和选定历史区间的影响，不应用",
+      "permission_class": "ephemeral",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "rule_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "proposed_config": {
+            "type": "object",
+            "properties": {
+              "threshold": {
+                "type": "number"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "minProperties": 1,
+            "additionalProperties": false
+          },
+          "evaluation_scope_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          }
+        },
+        "required": [
+          "context_ref",
+          "rule_ref",
+          "proposed_config"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "change_ref",
+        "rules_version",
+        "diff",
+        "impact",
+        "approval_required"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "rules.apply_change",
+      "provider_name": "rules__apply_change",
+      "description": "只通过后端签发的一次性确认引用应用具体变更",
+      "permission_class": "approved_write",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "change_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "approval_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "由受信UI确认并经后端签发；模型不能创建授权"
+          }
+        },
+        "required": [
+          "context_ref",
+          "change_ref",
+          "approval_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "new_rule_version",
+        "audit_ref",
+        "effective_at"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "events.add_note",
+      "provider_name": "events__add_note",
+      "description": "按已确认内容保存人工/AI来源明确的事件备注",
+      "permission_class": "approved_write",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "event_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approval_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          }
+        },
+        "required": [
+          "context_ref",
+          "event_ref",
+          "note",
+          "approval_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "note_ref",
+        "audit_ref",
+        "source_type"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "ui.open_replay",
+      "provider_name": "ui__open_replay",
+      "description": "发出受限回放动作，等待当前会话前端实际回执",
+      "permission_class": "ui",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "segment_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          }
+        },
+        "required": [
+          "context_ref",
+          "segment_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "action_ref",
+        "acknowledged",
+        "view_state_ref"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "ui.open_comparison",
+      "provider_name": "ui__open_comparison",
+      "description": "显示已计算比较；不从聊天文本重建结果",
+      "permission_class": "ui",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "comparison_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          }
+        },
+        "required": [
+          "context_ref",
+          "comparison_ref"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "action_ref",
+        "acknowledged",
+        "view_state_ref"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    },
+    {
+      "name": "ui.focus",
+      "provider_name": "ui__focus",
+      "description": "定位已存在的机架、字段或样本",
+      "permission_class": "ui",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "object_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "必须来自宿主或工具返回，禁止编造"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "stand",
+              "feature",
+              "sample",
+              "event"
+            ]
+          }
+        },
+        "required": [
+          "context_ref",
+          "object_ref",
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "required_output_contents": [
+        "action_ref",
+        "acknowledged",
+        "view_state_ref"
+      ],
+      "endpoint": null,
+      "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    }
+  ]
+}

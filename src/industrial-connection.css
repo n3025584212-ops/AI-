@@ -1,0 +1,63 @@
+.industrial-connection{max-width:1280px;height:100%;box-sizing:border-box;margin:0 auto;padding:30px 24px 24px;overflow-y:auto;color:#d4e6ef;scrollbar-width:thin;scrollbar-color:#36566b transparent}
+.industrial-connection>header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:22px}
+.industrial-connection h1{display:flex;align-items:center;gap:12px;font-size:26px;line-height:1.35;margin:0 0 12px}
+.industrial-connection p{color:#97bed1;line-height:1.65}
+.industrial-connection>header p{margin:0;font-size:13px}
+.comm-main{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(330px,1fr);gap:14px;background:radial-gradient(ellipse at 15% 15%,#12425735,transparent 60%),linear-gradient(130deg,#082332,#071c29);border:1px solid #194358;border-radius:14px;padding:12px}
+.comm-status-panel{min-width:0;padding:12px 14px}
+.comm-status-header{display:flex;align-items:center;gap:24px;min-height:88px;margin-bottom:22px}
+.comm-plug-icon{width:84px;height:84px;flex:none;display:grid;place-items:center;border-radius:50%;background:linear-gradient(145deg,#284555,#173244);border:1px solid #7babb922;color:#9fbdd1}
+.comm-status-header.is-connected .comm-plug-icon{color:#58d7b3;background:linear-gradient(145deg,#194b49,#12393b)}
+.comm-status-heading{min-width:0}.comm-status-heading h2{margin:0 0 8px;line-height:1.4;font-size:21px}
+.comm-status-heading .maint-badge{font-size:21px;font-weight:600;padding:0;gap:10px;border:0;background:none;color:#d5e9f4;white-space:normal}
+.comm-status-heading .maint-badge i{width:17px;height:17px;flex:none;background:#819cae;box-shadow:none}
+.comm-status-heading .maint-badge.is-good i{background:#52d8b2}
+.comm-status-heading p{font-size:12px;margin:0}
+.comm-connection-copy p{font-size:13px;margin:5px 0}
+.comm-main .comm-main-actions{margin:20px 0 22px;gap:10px}
+.comm-main .maint-button{font-size:12px;min-height:37px;padding:9px 15px;border-radius:7px;border-color:#2b6b8b;background:#0b2b3d;color:#d4eaf6}
+.industrial-connection .comm-primary{background:linear-gradient(130deg,#038ee8,#087bd1);border:1px solid #269de6;color:#f0f8ff;box-shadow:inset 0 1px #ffffff18}
+.industrial-connection .comm-primary:hover{background:linear-gradient(130deg,#159ef5,#108add);border-color:#68bcf2}
+.comm-readouts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:20px;border-top:1px solid #245063;padding-top:19px}
+.comm-readouts .comm-facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:12px 14px;align-content:start;margin:0;font-size:11px;line-height:1.6}
+.comm-readouts .comm-facts dt{color:#8fb7ce}.comm-readouts .comm-facts dd{color:#c8e3f2}
+.comm-status-panel>p{font-size:12px;margin:12px 0 0}
+.comm-guide-panel{min-width:0;border:1px solid #1d4b62;border-radius:14px;padding:13px 16px;background:linear-gradient(135deg,#08273940,#0a2330)}
+.comm-guide-panel>h2{font-size:14px;font-weight:600;color:#d2e6f2;margin:0 0 4px}
+.comm-equipment-diagram{display:block;width:100%;height:auto;margin:6px 0 0}
+.comm-equipment-captions{display:flex;justify-content:space-between;gap:16px;text-align:center;margin:0 0 23px}
+.comm-equipment-captions>div{display:flex;flex-direction:column;gap:7px;min-width:0}
+.comm-equipment-captions>div:first-child{width:33%}.comm-equipment-captions>div:last-child{width:42%}
+.comm-equipment-captions strong{font-size:13px;font-weight:600;color:#cee6f4}
+.comm-equipment-captions span{font-size:11px;color:#92bcd2;line-height:1.5}
+.comm-quick-guide{border:1px solid #1b4c66;border-radius:12px;background:linear-gradient(130deg,#123c514d,#12344438);padding:13px 14px}
+.comm-quick-guide h3{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#d1e4f0;margin:0 0 10px}
+.comm-quick-guide h3 svg{color:#29a9ed;fill:#1997d82b}
+.comm-quick-guide ol{display:flex;flex-direction:column;gap:7px;counter-reset:connection-step;list-style:none;margin:0 0 13px;padding:0}
+.comm-quick-guide li{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.55;color:#a0c8dc;counter-increment:connection-step}
+.comm-quick-guide li:before{content:counter(connection-step);display:grid;place-items:center;flex:0 0 18px;width:18px;height:18px;border-radius:50%;background:#3c657e;color:#d2e7f2;font-size:10px}
+.comm-quick-guide .maint-button{min-width:185px;justify-content:center;min-height:34px;padding:7px 15px;font-size:11px}
+.comm-feature-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.comm-feature-card{display:flex;align-items:flex-start;gap:14px;min-width:0;box-sizing:border-box;text-align:left;border:1px solid #153c51;border-radius:12px;background:linear-gradient(135deg,#0c28394d,#09212b);padding:17px 14px;color:#d4e6ef}
+.comm-feature-icon{display:grid;place-items:center;width:47px;height:48px;flex:none;border-radius:11px;background:linear-gradient(140deg,#123e57,#092b3e);color:#31b4f1}
+.comm-feature-safe .comm-feature-icon{color:#31d1ac;background:linear-gradient(140deg,#104443,#092c32)}
+.comm-feature-realtime .comm-feature-icon{color:#29d8b8;background:linear-gradient(140deg,#0b4141,#082d33)}
+.comm-feature-logs .comm-feature-icon{color:#76c8f6;background:linear-gradient(140deg,#183d55,#0a2b3d)}
+.comm-feature-card h3{font-size:12px;font-weight:600;margin:5px 0 9px;color:#d5e7f1}
+.comm-feature-card p{font-size:11px;line-height:1.65;margin:0;color:#8fb2c9}
+.comm-feature-logs{cursor:pointer;width:100%;font:inherit}.comm-feature-logs:hover{background:linear-gradient(135deg,#10344b,#0c293b);border-color:#35728f}
+.comm-feature-logs:focus-visible{outline:2px solid #7acded;outline-offset:3px}
+.comm-facts{display:grid;grid-template-columns:160px 1fr;gap:14px 24px;margin:26px 0}
+.comm-facts dt{color:#8ea8b8}.comm-facts dd{margin:0;overflow-wrap:anywhere}
+.comm-buttons{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0}.comm-buttons a{text-decoration:none}
+.comm-steps{padding-left:24px}.comm-steps li{padding:3px 0 10px 8px}.comm-steps h4{margin-bottom:6px}
+.comm-settings-form{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px}.comm-settings-form h4{grid-column:1/-1}
+.comm-settings-form label{display:flex;flex-direction:column;gap:8px;color:#9cb6c5}
+.comm-settings-form input,.comm-settings-form select,.comm-mapping input,.comm-mapping select{color:#d4e6ef;background:#081c2a;border:1px solid #2a4a5c;border-radius:5px;padding:9px;min-width:0}
+.comm-file-button{position:relative;cursor:pointer}.comm-file-button input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+.comm-table-scroll{overflow:auto}.comm-mapping table{width:100%;border-collapse:collapse;font-size:14px}.comm-mapping th,.comm-mapping td{padding:11px 9px;text-align:left;border-bottom:1px solid #234354;white-space:nowrap}.comm-mapping pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:280px;overflow:auto}
+.comm-confirm{display:flex;align-items:center;gap:10px;margin-top:22px}.comm-error{color:#f0aa87!important}.comm-message{color:#94d5ea!important}
+@media(max-width:1100px){.industrial-connection{padding:28px 18px 22px}.comm-status-panel{padding:10px 8px}.comm-status-header{gap:15px}.comm-plug-icon{width:70px;height:70px}.comm-status-heading .maint-badge{font-size:18px}.comm-readouts{gap:13px}.comm-readouts .comm-facts{gap:10px 9px}.comm-feature-card{gap:10px;padding:14px 10px}.comm-feature-icon{width:40px;height:43px}.comm-equipment-captions{gap:8px}}
+@media(max-width:900px){.comm-main{grid-template-columns:1fr}.comm-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.comm-guide-panel{padding:16px 20px}.comm-equipment-diagram{max-width:580px;margin-left:auto;margin-right:auto}.comm-equipment-captions{max-width:580px;margin-left:auto;margin-right:auto}}
+@media(max-width:720px){.industrial-connection{padding:24px 14px 20px}.industrial-connection>header{flex-wrap:wrap;gap:12px}.industrial-connection h1{font-size:23px}.comm-main{padding:10px}.comm-settings-form{grid-template-columns:1fr}.comm-facts{grid-template-columns:120px 1fr;gap:12px}.comm-status-heading .maint-badge{font-size:17px}.comm-status-header{margin-bottom:16px}.comm-feature-grid{gap:10px}.comm-feature-card{flex-direction:column;gap:8px}}
+@media(max-width:460px){.comm-readouts{grid-template-columns:1fr}.comm-feature-grid{grid-template-columns:1fr}.comm-feature-card{flex-direction:row}.comm-equipment-captions strong{font-size:11px}.comm-equipment-captions span{font-size:10px}}

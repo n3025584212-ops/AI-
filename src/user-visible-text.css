@@ -1,0 +1,6 @@
+.user-visible-text>span{white-space:pre-wrap;overflow-wrap:anywhere}
+.user-technical-text{margin-top:8px;font-size:12px;color:var(--muted,#8da9b7)}
+.user-technical-text>summary{cursor:pointer}
+.user-technical-text>pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;margin:8px 0}
+.prediction-record-technical>pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto}
+.ai-analysis-progress>.prediction-record-technical{flex-basis:100%;margin-top:0;padding-top:8px}

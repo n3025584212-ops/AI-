@@ -1,0 +1,57 @@
+/* Prediction surfaces: open instrument strip, one result emphasis, neutral scene. */
+.s5-shell.reference-shell .main-content.is-workbench,
+.s5-shell.reference-shell .dashboard-workspace { background:#10161d; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metrics { gap:5px; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric {
+  --dm-chart:#66cbb5; --dm-accent:#66cbb5;
+  background:transparent; border:0; border-radius:0; box-shadow:none;
+  border-right:1px solid #dbe8f011; transition:background .18s;
+}
+.s5-shell.reference-shell .dashboard-workspace .dm-metric:nth-child(2) { --dm-chart:#7cbde0; --dm-accent:#7cbde0; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric:nth-child(3) { --dm-chart:#ad9fe8; --dm-accent:#ad9fe8; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric:nth-child(4) { --dm-chart:#dfb67d; --dm-accent:#dfb67d; border-right:0; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric:hover { background:#ffffff05; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric.dm-selected { background:color-mix(in srgb,var(--dm-chart) 6%,transparent); box-shadow:inset 0 -2px var(--dm-chart); }
+.metric-projection { position:absolute; width:46px; height:39px; right:4px; top:4px; pointer-events:none; opacity:.87; }
+.s5-shell.reference-shell .dashboard-workspace .dm-channel-tag { display:none; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric-heading { padding-right:38px; color:#9daab6; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric-heading b { color:var(--dm-chart); font-weight:600; }
+.s5-shell.reference-shell .dashboard-workspace .dm-value-row { position:relative; z-index:1; }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric-value { color:#ebeff4; }
+.s5-shell.reference-shell .dashboard-workspace .dm-trend-grid { stroke:#c9d6e316; }
+.s5-shell.reference-shell .dashboard-workspace .dm-input-badge { padding:0; border:0; background:transparent; color:var(--dm-accent); }
+.s5-shell.reference-shell .dashboard-workspace .dm-metric-foot { color:#7c8995; }
+.s5-shell.reference-shell .dashboard-workspace .dm-trend-empty small { background:#10161d; color:#768390; }
+.s5-shell.reference-shell .dashboard-workspace .dm-prediction { border:1px solid #72c6b525; border-radius:12px; background:radial-gradient(ellipse at 0 50%,#5bad9a1c,transparent 60%),linear-gradient(115deg,#1b2d30,#1a242c); box-shadow:0 5px 18px #0002; }
+.s5-shell.reference-shell .dashboard-workspace .s5-main-heading h3 b,.s5-shell.reference-shell .dashboard-workspace .s5-main-value { color:#94e4d4; }
+.s5-shell.reference-shell .dashboard-workspace .s5-roll-illustration { filter:saturate(.65); }
+.s5-shell.reference-shell .dashboard-workspace .s5-main-actions button { color:#a6b9bd; border-color:#b6d9d11c; background:#e0f5ef05; border-radius:5px; }
+.s5-shell.reference-shell .dashboard-workspace .s5-main-actions .s5-primary-action { color:#c5ede4; border-color:#77c7b636; background:#438a7736; }
+.s5-shell.reference-shell .dashboard-workspace .s5-main-actions button:hover:enabled { background:#438a774d; border-color:#78b7a7; }
+.s5-shell.reference-shell .dashboard-workspace .stream-bar { color:#8f9da9; }
+.s5-shell.reference-shell .dashboard-workspace .source-chip { color:#aebfc6; }
+.s5-shell.reference-shell .dashboard-workspace:not(.live-expanded) .live-main { border:0; border-radius:10px; background:#141f28; box-shadow:none; }
+.s5-shell.reference-shell .dashboard-workspace:not(.live-expanded) .twin-heading { background:linear-gradient(180deg,#111b25ed,#111b2580,transparent); }
+.s5-shell.reference-shell .dashboard-workspace .scene-eyebrow { color:#8b9ca6; }
+.s5-shell.reference-shell .dashboard-workspace .scene-tools { border-color:#b6d0e31d; background:#171f29df; box-shadow:0 3px 10px #0002; border-radius:8px; }
+.s5-shell.reference-shell .dashboard-workspace .scene-tools>button.active { color:#bee6dd; background:#42857335; box-shadow:none; }
+.s5-shell.reference-shell .dashboard-workspace .spatial-card { background:#18242ed9; border-color:#bacddb25; box-shadow:0 3px 12px #0002; }
+.s5-shell.reference-shell .dashboard-workspace .spatial-card.spatial-s5 { background:#1b3436e0; border-color:#74ceba65; }
+.s5-shell.reference-shell .dashboard-workspace .spatial-card.spatial-s5 .spatial-card-metric strong { color:#8ce6d2; }
+.s5-shell.reference-shell .dashboard-workspace:not(.live-expanded) .dc-panel,
+.s5-shell.reference-shell .dashboard-workspace:not(.live-expanded) .s5-trend { background:transparent; border:0; border-radius:0; box-shadow:none; border-top:1px solid #c7d7e31c; }
+.s5-shell.reference-shell .dashboard-workspace:not(.live-expanded) .s5-trend { border-left:1px solid #c7d7e310; border-right:1px solid #c7d7e310; }
+.s5-shell.reference-shell .dashboard-workspace .dc-heading h3 { display:flex; align-items:center; gap:7px; color:#c8d2dd; }
+.s5-shell.reference-shell .dashboard-workspace .dc-heading h3:before { content:''; width:5px; height:11px; transform:skewY(-25deg); border-radius:1px; background:#7cbde0; box-shadow:3px 2px 0 #7cbde022; }
+.s5-shell.reference-shell .dashboard-workspace .dc-history-panel .dc-heading h3:before { background:#b2a0e7; box-shadow:3px 2px 0 #b2a0e722; }
+.s5-shell.reference-shell .dashboard-workspace .trend-heading>b { color:#c8d2dd; }
+.s5-shell.reference-shell .dashboard-workspace .trend-heading>b svg { color:#75c7b6; }
+.s5-shell.reference-shell .dashboard-workspace .trend-heading select,
+.s5-shell.reference-shell .dashboard-workspace .dc-history-tools select { background:#1a222d; border-color:#8497aa28; border-radius:5px; color:#b0bdc9; }
+.s5-shell.reference-shell .dashboard-workspace .dc-grid-line { stroke:#b9c9da14; }
+.s5-shell.reference-shell .dashboard-workspace .dc-foot { border-color:#b9c9da12; color:#7f91a0; }
+.s5-shell.reference-shell .dashboard-workspace .dc-history-link { border:0; background:transparent; color:#b2a0e7; }
+.s5-shell.reference-shell .dashboard-workspace .point-inspector { background:#1a232eee; border-color:#acbfcd26; }
+@media(min-width:1400px){ .metric-projection { width:57px; height:48px; right:7px; top:6px; } }
+@media(max-width:1100px){ .metric-projection { width:32px; height:27px; right:2px; top:3px; } .s5-shell.reference-shell .dashboard-workspace .dm-metric-heading { padding-right:25px; font-size:10px; } }
+@media(prefers-reduced-motion:reduce){.s5-shell.reference-shell .dashboard-workspace .dm-metric { transition:none; }}

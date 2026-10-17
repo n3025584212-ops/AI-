@@ -1,0 +1,75 @@
+{
+  "id": "CRD-6021",
+  "steelGrade": "公开数据未注明",
+  "width": 926,
+  "entrySetThickness": 3,
+  "target": 600,
+  "stands": [
+    {
+      "id": "S1",
+      "entryThickness": 2.897,
+      "exitThickness": 2.0059,
+      "force": 713,
+      "tension": 12.6,
+      "frontTension": 24.21,
+      "bendingForce": 49.42,
+      "speed": 224.8,
+      "temperature": 25
+    },
+    {
+      "id": "S2",
+      "entryThickness": 2.0059,
+      "exitThickness": 1.3888,
+      "force": 730.8,
+      "tension": 24.34,
+      "frontTension": 16.18,
+      "bendingForce": 77.85,
+      "speed": 342.7,
+      "temperature": 25
+    },
+    {
+      "id": "S3",
+      "entryThickness": 1.3888,
+      "exitThickness": 0.9616,
+      "force": 686.4,
+      "tension": 16.16,
+      "frontTension": 11.4,
+      "bendingForce": 74.14,
+      "speed": 488.5,
+      "temperature": 25
+    },
+    {
+      "id": "S4",
+      "entryThickness": 0.9616,
+      "exitThickness": 0.6658,
+      "force": 588.9,
+      "tension": 11.22,
+      "frontTension": 7.931,
+      "bendingForce": 55.93,
+      "speed": 675.5,
+      "temperature": 25
+    },
+    {
+      "id": "S5",
+      "entryThickness": 0.6658,
+      "exitThickness": 0.461,
+      "force": 591.7,
+      "tension": 7.783,
+      "frontTension": 2.069,
+      "bendingForce": 61.43,
+      "speed": 843.4,
+      "temperature": 25
+    }
+  ],
+  "importProvenance": {
+    "source_type": "PUBLIC_DATA",
+    "sample_timestamp": null,
+    "sourceName": "CRD 公开数据 · 原表第 6021 行",
+    "observed": 591.7,
+    "observedAvailable": true,
+    "observedSource": "CRD Thickness-flatness.xlsx 第 6021 行 S5 rolling forces",
+    "source_url": "https://github.com/DGlql/CRD/tree/8a20ca646c9ffe8577a9bd925b4c2aa0d1fdd5f0",
+    "display_geometry_note": "各架出口厚度按总厚度变化插值，仅用于三维显示；温度为展示值，均不参与模型。",
+    "target_source": "示例比较目标 600，非数据集标签输入"
+  }
+}

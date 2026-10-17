@@ -1,0 +1,22 @@
+/* One mascot entry, with room for a quiet listening indicator. */
+body:has(.app-shell.reference-shell) .ai-floating-dock{left:43px!important;right:auto!important;bottom:140px!important;z-index:142!important;gap:4px!important;filter:none;isolation:isolate;pointer-events:none;-webkit-app-region:no-drag}
+body:has(.app-shell.reference-shell.nav-collapsed) .ai-floating-dock{left:5px!important;bottom:24px!important}
+/* The maximized assistant owns this area; the launcher must not intercept its controls. */
+body:has(.ai-floating-window[data-state="MAXIMIZED"]:not([hidden])) .ai-floating-dock{visibility:hidden;pointer-events:none}
+body .ai-floating-dock .mascot-launcher{width:84px;min-width:44px;min-height:74px;display:flex;align-items:center;justify-content:center;border:0;border-radius:25px;background:none;cursor:pointer;pointer-events:auto;touch-action:manipulation;-webkit-app-region:no-drag}
+body .ai-floating-dock .mascot-launcher img{width:76px;height:76px;pointer-events:none;user-select:none;-webkit-user-drag:none}
+body .ai-floating-dock .mascot-launcher span{pointer-events:none;font-size:10px;margin-top:-8px;line-height:20px}
+body .ai-floating-dock .mascot-launcher:hover{filter:drop-shadow(0 3px 13px #20aaff85)}
+body .ai-floating-dock .mascot-launcher:focus-visible{outline:2px solid #69d2fc;outline-offset:2px}
+body:has(.app-shell.reference-shell.nav-collapsed) .ai-floating-dock .mascot-launcher{width:54px;min-height:65px}
+body:has(.app-shell.reference-shell.nav-collapsed) .ai-floating-dock .mascot-launcher img{width:52px;height:58px}
+body .ai-floating-window{border:1px solid #c6d1dd24;border-radius:18px!important;box-shadow:0 18px 48px #02060966,0 3px 10px #0004,inset 0 1px #f0f4fa0d;background:linear-gradient(140deg,#293139f0,#1b222aef 60%,#222b31f2);backdrop-filter:blur(20px)}
+body .ai-floating-window .ai-window-titlebar{flex-basis:40px;padding:0 7px 0 10px;border-radius:17px 17px 0 0;background:linear-gradient(115deg,#b5c2cf0e,#d4dee703);border-bottom-color:#c6d1dd14}
+body .ai-floating-window .ai-window-mascot{width:27px;height:29px;flex-basis:27px}
+body .ai-floating-window .ai-window-controls button{width:27px;height:27px;border-radius:50%;color:#a7b5c0}
+body .ai-floating-window .ai-window-controls button:hover{background:#d4e0e713;color:#e2eaef}
+body .ai-floating-window .ai-window-controls .ai-window-close:hover{background:#a765602d;color:#ebc9c6}
+body .ai-floating-window .ai-window-title b{font-size:12px;letter-spacing:.5px;color:#d3dde5}
+body .ai-floating-window .ai-floating-body{border-radius:0 0 17px 17px}
+@media(max-height:540px){body:has(.app-shell.reference-shell) .ai-floating-dock{bottom:12px!important}.ai-floating-dock .mascot-launcher img{width:48px!important;height:48px!important}body .ai-floating-dock .mascot-launcher{min-height:54px}}
+@media print{body .ai-floating-dock{display:none!important}}
