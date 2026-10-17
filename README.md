@@ -1,14 +1,29 @@
-# DKQKAR / QCDKR V1.1.0 日志修复版：纯源码小包
+# QCDKR · 冷轧轧制力 AI 预测云平台
 
-包含前端、后端、Electron、构建脚本、配置、测试和必要的界面静态资产。
-不包含AI/预测模型权重、运行环境、node_modules、编译产物、EXE或安装包。
+AI 大模型与量子机器学习协同驱动的冷轧五机架 S5 轧制力预测系统（v1.1.0）。
 
-请先阅读 [运行与编译说明.md](运行与编译说明.md)。
+## 这是什么
 
-- 仅编译前端：准备Node/npm与锁定JS依赖后，执行 npm run build。
-- 完整运行、预测、AI、测试、生成安装包：先按说明从完整工程恢复外部资源和工具链。
-- qcdkr.cmd 保持原代码，需要恢复 toolchain 后使用。
+- React 19 + Vite 7 前端，Node 24 后端，Three.js 五机架 UCM 数字孪生
+- 25 维工况输入 → 冻结模型 S5 预测 → 误差分析 → 报告导出
+- 本地 Ollama `qwen3.5:4b` 工艺助手（Agent + RAG + 语音）
+- 60 条 CRD 真实数据回放与证据链快照
 
-原工程、原完整ZIP和原封存版均保留未动。此包不能直接替代自带运行环境的完整包。
-SOURCE_FILE_MANIFEST.json 记录所有源码/静态资产及新增说明的SHA256。
-EXTERNAL_RESOURCES_REQUIRED.json 列出需要外部恢复的资源。
+## 仓库包含 / 不包含
+
+包含：`src/`、`server/`、`desktop/`、`scripts/`、`tests/`、`docs/`、`public/assets/`、`models/`（冻结模型与元数据）。
+
+不包含（已由 `.gitignore` 排除）：`node_modules/`、`model-runtime/`、`data/local-llm/`、`dist/`、`tmp/`、`.runtime-data/`、`toolchain/`。
+
+## 运行
+
+1. Node.js 24.19+，执行 `npm ci`
+2. `npm run build`
+3. `node scripts/serve.mjs` → http://127.0.0.1:5189（或双击 `启动.cmd`）
+4. 完整预测需要 `models/` 与 `model-runtime/`；AI 助手需要本地 Ollama `qwen3.5:4b`
+5. 首次打开需创建本机账号（无默认密码）
+
+## 说明
+
+- 本仓库是源码协作库，不含 5GB 级 Ollama 模型与 Python 运行时；完整离线包见本地交付目录。
+- 原始纯源码包说明见 [运行与编译说明.md](运行与编译说明.md)。
