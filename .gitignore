@@ -13,3 +13,10 @@ dist/
 rebuild-output/
 .runtime-data/
 tmp/
+# 本地协作/备份文件不纳入版本库
+AGENTS.md
+MEMORY.md
+MEMORY.md.*
+.zcode/
+notes/
+*.bak-*
