@@ -12,13 +12,21 @@ const percent=value=>Number.isFinite(value)?(value*100).toFixed(1)+'%':'—';
 
 export const predictionRecordTime=value=>value&&Number.isFinite(new Date(value).getTime())?new Date(value).toLocaleTimeString('zh-CN',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
 export const predictionRecordStamp=value=>value&&Number.isFinite(new Date(value).getTime())?new Date(value).toLocaleString('zh-CN',{hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
-export function PredictionRecordValues({record,range}) {
+export function PredictionRecordValues({record,range,compact=false}) {
  const bounds=validatePredictionErrorAlarmRange(range),alarm=bounds?predictionErrorAlarm(record.rawPrediction,record.actualValue,bounds):null;
  const paired=Number.isFinite(record.rawPrediction)&&Number.isFinite(record.actualValue);
  const deviation=paired?formatSignedError(record.rawPrediction-record.actualValue)+' t':'—';
  const signed=value=>(value>0?'+':'')+String(value);
  const allowed=bounds?(bounds.lowerBound===-bounds.upperBound?'±'+String(bounds.upperBound)+' t':signed(bounds.lowerBound)+' t ～ '+signed(bounds.upperBound)+' t'):'未记录';
  const status=!Number.isFinite(record.actualValue)?'无法判断 / 暂无实际值':!Number.isFinite(record.rawPrediction)?'无法判断 / 暂无预测值':!alarm?'无法判断 / 未记录允许偏差':alarm.status==='NORMAL'?'正常':'超出允许偏差';
+ const shortStatus=status==='正常'?'正常':status==='超出允许偏差'?'超限':status.startsWith('无法判断')?'待判定':status;
+ if(compact)return <div className="prediction-record-inline">
+   <span><em>预测</em>{Number.isFinite(record.rawPrediction)?number(record.rawPrediction)+' t':'—'}</span>
+   <span><em>实际</em>{Number.isFinite(record.actualValue)?number(record.actualValue)+' t':'—'}</span>
+   <span><em>偏差</em>{deviation}</span>
+   <span><em>状态</em>{shortStatus}</span>
+   <span><em>允许</em>{allowed}</span>
+ </div>;
  return <div className="prediction-record-values">
   <p>预测值：{Number.isFinite(record.rawPrediction)?number(record.rawPrediction)+' t':'—'}</p>
   <p>实际值：{Number.isFinite(record.actualValue)?number(record.actualValue)+' t':'—'}</p>

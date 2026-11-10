@@ -19,6 +19,8 @@
     "package:nsis": "node scripts/package-nsis.mjs"
   },
   "dependencies": {
+    "@langchain/core": "1.1.48",
+    "@langchain/langgraph": "1.5.2",
     "docx": "^9.5.1",
     "jszip": "^3.10.1",
     "lucide-react": "^0.468.0",
@@ -26,7 +28,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "read-excel-file": "^9.3.10",
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "zod": "4.2.0"
   },
   "devDependencies": {
     "electron": "44.4.5",

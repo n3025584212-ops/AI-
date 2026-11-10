@@ -24,16 +24,17 @@ function installCoatedFinish(material) {
         float castVariation = coatNoise(vCoatingPosition * 3.2);
         float coatingGrain = coatNoise(vCoatingPosition * 38.0);
         float grainVisibility = 1.0 - smoothstep(0.45, 1.4, length(fwidth(vCoatingPosition * 38.0)));
-        diffuseColor.rgb *= 0.88 + castVariation * 0.20;
+        diffuseColor.rgb *= 0.94 + castVariation * 0.10;
       `)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-        roughnessFactor = clamp(roughnessFactor + (castVariation - 0.5) * 0.13 + (coatingGrain - 0.5) * 0.065 * grainVisibility, 0.18, 0.49);
+        roughnessFactor = clamp(roughnessFactor + (castVariation - 0.5) * 0.07 + (coatingGrain - 0.5) * 0.025 * grainVisibility, 0.22, 0.42);
       `)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-        normal = coatBump(-vViewPosition, normal, coatingGrain * 0.0007 * grainVisibility, faceDirection);
+        // 铸造/喷涂面的微起伏：没有法线贴图时，靠屏幕导数重建的凹凸维持近距细节。
+        normal = coatBump(-vViewPosition, normal, coatingGrain * 0.0011 * grainVisibility, faceDirection);
       `);
   };
-  material.customProgramCacheKey = () => 'industrial-enamel-cast-finish-v2';
+  material.customProgramCacheKey = () => 'industrial-enamel-cast-finish-v4';
 }
 
 // View-owned finishes: grazing highlights come from physical studio lights,
@@ -45,25 +46,25 @@ export function refineIndustrialMaterial(material, part = {}, environment = null
   const name = material.name || '';
   material.envMapIntensity = 0.65; material.emissive?.set('#000000'); material.emissiveIntensity = 0;
   if (name === 'Blue_Enamel' || name === 'Blue_Cast' || (/Frame_Cast/.test(name) && part.part === 'housing')) {
-    material.color.set(name === 'Blue_Enamel' ? '#0d4b78' : name === 'Blue_Cast' ? '#13364d' : '#184663');
+    material.color.set(name === 'Blue_Enamel' ? '#0c5180' : name === 'Blue_Cast' ? '#1b4a65' : '#235c7b');
     material.metalnessMap = null; material.roughnessMap = null;
     // The outer finish is pigmented dielectric enamel, not exposed blue metal.
     // Restrained specular layers keep the broad panels blue under the same
     // reflection cards that give bare shafts and fasteners their highlights.
-    material.metalness = 0.025; material.roughness = name === 'Blue_Enamel' ? 0.32 : 0.38; material.envMapIntensity = 0.58;
+    material.metalness = 0.025; material.roughness = name === 'Blue_Enamel' ? 0.27 : 0.34; material.envMapIntensity = 0.82;
     if (material.isMeshPhysicalMaterial) {
-      material.clearcoat = 0.10; material.clearcoatRoughness = 0.23; material.ior = 1.46;
+      material.clearcoat = 0.22; material.clearcoatRoughness = 0.20; material.ior = 1.46;
       material.specularIntensity = 0.32; material.polygonOffset = false;
     }
     installCoatedFinish(material);
   } else if (part.rollName) {
-    material.color.set('#92a3ac'); material.metalness = 1; material.roughness = 0.22; material.envMapIntensity = 1.05;
+    material.color.set('#aebbc2'); material.metalness = 1; material.roughness = 0.20; material.envMapIntensity = 1.12;
   } else if (/Chrome_Rod/.test(name)) {
     material.color.set('#b3c1c7'); material.metalness = 1; material.roughness = 0.21; material.envMapIntensity = 0.8;
   } else if (/Machined_Steel|Ground_Roll/.test(name)) {
     material.color.set('#798d99'); material.metalness = 0.96; material.roughnessMap = null; material.roughness = 0.27; material.envMapIntensity = 0.92;
   } else if (/Chock_Cast|Frame_Cast/.test(name)) {
-    material.color.set('#52616c'); material.metalnessMap = null; material.metalness = 0.85; material.roughnessMap = null; material.roughness = 0.32; material.envMapIntensity = 0.95;
+    material.color.set('#687985'); material.metalnessMap = null; material.metalness = 0.85; material.roughnessMap = null; material.roughness = 0.32; material.envMapIntensity = 0.95;
   } else if (/Bolt_Zinc/.test(name)) {
     // Existing source bolts and washers catch the operator-side softbox;
     // presentation finishes do not add outlines or change their geometry.

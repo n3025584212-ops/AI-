@@ -1,0 +1,159 @@
+/* 孪生舞台（twin stage）· 2026-11-01 v2 双侧环绕
+   3D 工作台常驻为全屏舞台；业务页以侧挂面板环绕：
+   左侧 = 数据接入 / 系统状态与维护，右侧 = 工业设备连接 / 运行日志。
+   两侧可同时打开（both-docks），3D 在中间继续运转。
+   面板内容用容器查询做窄宽适配，不再依赖窗口宽度媒体查询。 */
+
+.twin-stage{position:relative;width:100%;height:100%;min-height:0}
+.twin-stage-3d{position:relative;height:100%;min-height:0}
+
+/* 面板展开时对应一侧渐隐压暗，突出中间 3D 的可读性 */
+.twin-stage.has-right .twin-stage-3d::after{
+  content:'';position:absolute;inset:0;z-index:5;pointer-events:none;
+  background:linear-gradient(270deg,rgba(3,9,17,.62) 0%,transparent 46%);
+}
+.twin-stage.has-left .twin-stage-3d::before{
+  content:'';position:absolute;inset:0;z-index:5;pointer-events:none;
+  background:linear-gradient(90deg,rgba(3,9,17,.62) 0%,transparent 46%);
+}
+.twin-stage.stage-docked .twin-stage-3d{filter:saturate(.94) brightness(.92)}
+
+/* 侧挂面板（左/右共用） */
+.twin-stage-panel{
+  position:absolute;top:0;bottom:0;z-index:6;
+  width:min(620px,44vw);min-width:420px;
+  display:flex;flex-direction:column;overflow:hidden;
+  background:linear-gradient(180deg,rgba(9,19,32,.94),rgba(6,13,23,.97));
+  border-left:1px solid #3d5a7466;
+  box-shadow:-26px 0 54px rgba(0,0,0,.5),inset 1px 0 0 #cfe4ff0d;
+  backdrop-filter:blur(10px);
+  animation:twinStageIn .26s cubic-bezier(.22,.8,.32,1);
+}
+.twin-stage-panel.dock-right{right:0}
+.twin-stage-panel.dock-left{
+  left:0;border-left:0;border-right:1px solid #3d5a7466;
+  box-shadow:26px 0 54px rgba(0,0,0,.5),inset -1px 0 0 #cfe4ff0d;
+  animation-name:twinStageInL;
+}
+/* 两侧同开：面板各收窄一些，把中间让给 3D */
+.both-docks .twin-stage-panel{width:min(560px,40vw);min-width:400px}
+@keyframes twinStageIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+@keyframes twinStageInL{from{transform:translateX(-30px);opacity:0}to{transform:none;opacity:1}}
+
+.twin-stage-panel-head{
+  display:flex;align-items:center;gap:9px;flex:none;
+  padding:9px 14px;border-bottom:1px solid #7ba7c41f;background:rgba(13,28,45,.66);
+}
+.twin-stage-live-dot{
+  width:7px;height:7px;border-radius:50%;background:#43d9b0;
+  box-shadow:0 0 8px #43d9b088;animation:twinStagePulse 1.6s ease-in-out infinite;
+}
+@keyframes twinStagePulse{50%{opacity:.35}}
+.twin-stage-panel-head small{color:#8ba3b8;font-size:11px;letter-spacing:.4px}
+.twin-stage-close{
+  margin-left:auto;display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border:1px solid #52768f55;border-radius:5px;
+  background:#12283c;color:#b3c8d8;cursor:pointer;transition:background .14s,border-color .14s;
+}
+.twin-stage-close:hover{background:#1c3a52;border-color:#7ba7c480}
+.twin-stage-panel-body{flex:1;min-height:0;overflow:auto;container-type:inline-size;container-name:drawer}
+/* 业务页根节点在面板内按内容自然撑高并可滚动，同时保证深色底铺满 */
+.twin-stage-panel-body>*{min-height:100%}
+
+/* 顶栏提示（替代原「3D孪生」按钮）：提示 3D 仍在运行 */
+.twin-stage-topbar-hint{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border:1px solid #2f7d6b66;border-radius:5px;
+  background:#0d2b2699;color:#7fd8bd;font-size:12px;
+}
+
+/* ===== 面板内容窄宽适配（按面板实际宽度，而非窗口宽度） ===== */
+@container drawer (max-width:880px){
+  .comm-main{grid-template-columns:1fr}
+  .comm-readouts{grid-template-columns:1fr}
+  .comm-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .comm-settings-form{grid-template-columns:1fr}
+  .data-kpi-band{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .logs-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .maint-panels-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ops-event-counters{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@container drawer (max-width:600px){
+  .comm-feature-grid{grid-template-columns:1fr}
+  .comm-equipment-diagram{max-width:100%;margin:0 auto}
+  .comm-equipment-captions{max-width:100%;margin:0 auto}
+  .data-kpi-band{grid-template-columns:1fr}
+  .logs-kpis{grid-template-columns:1fr}
+  .maint-panels-grid{grid-template-columns:1fr}
+  .ops-event-counters{grid-template-columns:1fr}
+}
+
+/* 窄窗口收窄面板宽度 */
+@media(max-width:1280px){.twin-stage-panel{width:min(560px,52vw);min-width:400px}}
+/* 100vw 会把纵向滚动条宽度也算进去：面板比可视区宽十几像素，右侧的关闭键、
+   卡片右边框和内容内边距全被裁掉。用 100% 取舞台实际宽度。 */
+@media(max-width:960px){.twin-stage-panel,.both-docks .twin-stage-panel{width:100%;min-width:0;border-left:0}}
+/* 面板 body 已经是滚动容器；页面自己再 height:100%+overflow:auto 会形成双层滚动，
+   滚动条缩在内容内侧、标题与状态头容易被滚出视野。面板内改为自然高度。 */
+.twin-stage-panel-body>.industrial-connection{height:auto;min-height:100%;overflow:visible}
+
+/* ===== 视频对标：实体检查卡（右栏接管）+ 状态 chip + 负荷条 ===== */
+.scene-interaction-card{right:16px;top:214px;width:300px;z-index:9}
+.scene-interaction-state{font-style:normal;font-size:10px;padding:2px 8px;border-radius:20px;white-space:nowrap;margin-right:2px}
+.scene-interaction-state.is-running{color:#43d9b0;background:#0b3a2e;border:1px solid #2f7d6b66}
+.scene-interaction-state.is-idle{color:#9fb3c1;background:#142b38;border:1px solid #45637766}
+.scene-interaction-load{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:10px;color:#8fb7ce}
+.scene-interaction-load>i{height:6px;border-radius:3px;background:linear-gradient(90deg,#2f6fd4,#43d9b0);flex:none;max-width:200px}
+.scene-interaction-load>b{font-weight:500;color:#cfe4f2}
+
+/* 机架条行内负荷进度（对标视频清单行进度条） */
+.s5-shell.workbench-shell .station-strip>button{position:relative;overflow:hidden}
+.station-strip .strip-meter{position:absolute;left:0;bottom:0;height:2px;background:linear-gradient(90deg,#3f7fd4,#43d9b0);opacity:.6;pointer-events:none}
+
+/* ===== 工况流程条（twin-bottom stepper）· 对标 WareTrack 运单流程条 ===== */
+.twin-bottom.twin-flow{gap:8px}
+.flow-cond{
+  display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;
+  width:68px;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;
+  font-size:10px;color:#cfe4f2;background:#0e1e2ee8;border:1px solid #3b5264;
+  border-radius:4px;padding:0 9px;height:26px;backdrop-filter:blur(8px);
+}
+.flow-steps{
+  display:flex;align-items:center;margin:0;padding:0;list-style:none;overflow:hidden;
+  background:#0e1e2ee8;border:1px solid #3b5264;border-radius:4px;height:26px;backdrop-filter:blur(8px);
+}
+.flow-steps li{display:flex;align-items:center;gap:5px;padding:0 9px;font-size:10px;color:#8aa3b8;white-space:nowrap}
+.flow-steps li+li{border-left:1px solid #3b526455}
+.flow-steps li i{width:5px;height:5px;border-radius:50%;background:#5c7a92;flex:none}
+.flow-steps li small{font-size:9px;color:#6f8ba0;display:inline-block;width:30px;text-align:left;overflow:hidden;text-overflow:ellipsis}
+/* 状态文字长短不一（完整/待更新、完成/更新中、暂无/已对照、已保存/待保存），
+   不给固定槽位的话整条流程条每次刷新都会缩或胀；这里把状态槽固定为 28px，
+   工况编号用等宽数字 + 最小宽度，钢带状态文案固定 102px，整条宽度恒定。 */
+.flow-steps li.is-done{color:#cfe4f2}
+.flow-steps li.is-done i{background:#43d9b0;box-shadow:0 0 6px #43d9b066}
+.flow-steps li.is-done small{color:#7fc9b1}
+.flow-steps li.is-active{color:#ffd98a}
+.flow-steps li.is-active i{background:#d2b381;box-shadow:0 0 8px #d2b38199;animation:twinStagePulse 1.4s ease-in-out infinite}
+.flow-steps li.is-active small{color:#d2b381}
+.flow-steps li.is-error{color:#f18182}
+.flow-steps li.is-error i{background:#ef8182;box-shadow:0 0 8px #ef818288}
+.flow-steps li.is-error small{color:#ef8182}
+.flow-steps li.is-muted{opacity:.55}
+.flow-strip{display:inline-block;width:102px;text-align:center;overflow:hidden;text-overflow:ellipsis;font-size:10px;color:#7d97ad;white-space:nowrap}
+
+/* 机架条（沉浸桌面默认模式）：右下角与工况流程条同排——左流程、右清单 */
+.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .station-strip{
+  display:flex;position:absolute;right:14px;bottom:222px;left:auto;z-index:6;
+  width:auto;min-width:0;height:33px;flex:none;
+  border:1px solid #3b5264;border-radius:6px;overflow:hidden;
+  background:#0e1e2ee8;backdrop-filter:blur(8px);
+}
+.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .station-strip>button{
+  flex:0 0 auto;padding:0 14px;gap:6px;background:transparent;border-right:1px solid #293c50;
+}
+.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .station-strip>button.selected{background:#183756;border-top:0}
+/* 窄屏非沉浸：机架条回到画布下方原位，流程条上移让位 */
+.s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded):not(.live-immersive) .station-strip{display:flex}
+.s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded):not(.live-immersive) .twin-bottom{bottom:56px}
+.s5-shell.workbench-shell .station-strip>button>span{color:#9db8cf}
+.s5-shell.workbench-shell .station-strip>button.is-s5>span{color:#a6d0ff}

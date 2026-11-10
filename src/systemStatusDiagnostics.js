@@ -5,8 +5,8 @@ import { modelDisplayName } from './userVisibleText.js';
 export const DK_AI_DIAGNOSTIC_STATES = Object.freeze({
   NOT_CHECKED: { label: '尚未检查', recovery: null },
   NOT_CONFIGURED: { label: '尚未配置', recovery: '请先完成AI服务配置。' },
-  SERVICE_UNREACHABLE: { label: 'AI服务无法连接', recovery: '确认当前AI服务已启动，并检查服务地址。' },
-  MODEL_NOT_AVAILABLE: { label: '配置的AI模型不可用', recovery: '检查当前配置的AI模型是否已安装/可用。' },
+  SERVICE_UNREACHABLE: { label: 'AI服务无法连接', recovery: '检查网络与 AI 服务地址配置。' },
+  MODEL_NOT_AVAILABLE: { label: '配置的AI模型不可用', recovery: '检查 AI 模型配置与可用性。' },
   REQUEST_FAILED: { label: 'AI测试请求失败', recovery: '检查AI服务运行状态后重新检查。' },
   INVALID_RESPONSE: { label: 'AI响应异常', recovery: 'AI服务已响应，但返回格式异常，请重新检查或查看技术信息。' },
   AVAILABLE: { label: '可正常使用', recovery: null },

@@ -1,9 +1,10 @@
 {
-  "status": "DESIGN_CONTRACTS_NOT_IMPLEMENTED",
+  "status": "PARTIALLY_IMPLEMENTED_SEE_RUNTIME_MAPPING",
   "notes": [
     "tool专用output_schema必须在接入时补全并校验。",
     "provider_name为兼容不允许点号的工具调用接口而设；适配器维护可逆映射，不创建第二套业务服务。认证身份、工件身份和可操作范围由宿主后端注入，不信任LLM声明。",
-    "数值finite、单位、字段角色等业务约束由服务器继续验证。"
+    "数值finite、单位、字段角色等业务约束由服务器继续验证。",
+    "2026-10-23运行映射：以new_runtime_mapping和实际capability-registry为准，不以本文件20项工具数量作为已接通数量。"
   ],
   "tools": [
     {
@@ -14,23 +15,65 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "context_ref": { "type": "string", "minLength": 1, "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。" },
-          "query": { "type": "string", "minLength": 1, "maxLength": 12000 }
+          "context_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "宿主创建的不可变请求上下文引用，用于权限、Run作用域和工具审计。"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12000
+          }
         },
-        "required": ["context_ref", "query"],
+        "required": [
+          "context_ref",
+          "query"
+        ],
         "additionalProperties": false
       },
-      "required_output_contents": ["mode", "text", "findings", "evidence", "target"],
+      "required_output_contents": [
+        "mode",
+        "text",
+        "findings",
+        "evidence",
+        "target"
+      ],
       "output_schema": {
         "type": "object",
         "properties": {
-          "mode": { "enum": ["ALL", "EXACT", "TARGET", "AMBIGUOUS", "NONE"] },
-          "text": { "type": "string" },
-          "findings": { "type": "array" },
-          "evidence": { "type": "array" },
-          "target": { "type": ["string", "null"] }
+          "mode": {
+            "enum": [
+              "ALL",
+              "EXACT",
+              "TARGET",
+              "AMBIGUOUS",
+              "NONE"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "findings": {
+            "type": "array"
+          },
+          "evidence": {
+            "type": "array"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         },
-        "required": ["mode", "text", "findings", "evidence", "target"],
+        "required": [
+          "mode",
+          "text",
+          "findings",
+          "evidence",
+          "target"
+        ],
         "additionalProperties": false
       },
       "endpoint": null,
@@ -828,6 +871,172 @@
       ],
       "endpoint": null,
       "implementation_status": "TO_BE_MAPPED_TO_EXISTING_CODE"
+    }
+  ],
+  "implementation_metadata": {
+    "updated_at": "2026-10-23",
+    "legacy_runtime": "server/blueprint-agent.mjs",
+    "task_runtime": "server/capability-registry.mjs",
+    "mapping_is_not_schema_alias": true,
+    "scope": "旧合同输入输出保持兼容；新能力具有独立schema，不能以同名或映射声称旧合同全部实现。"
+  },
+  "new_runtime_mapping": [
+    {
+      "legacy_tool": "diagnostic.query",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [],
+      "new_runtime_status": "EXISTING_DIAGNOSTIC_PIPELINE_RETAINED"
+    },
+    {
+      "legacy_tool": "runtime.get_context",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "runtime.get_context"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "events.get_event",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "events.get_event"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "events.search",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "events.search"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "data.validate",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "data.validate"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "data.get_segment",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "data.get_segment"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "analysis.compare_segments",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "analysis.compare_segments"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "analysis.sensitivity",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "analysis.sensitivity"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "prediction.predict_s5",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "prediction.predict_s5"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "history.find_similar",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "history.find_similar"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "knowledge.search",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "knowledge.search"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "service.inspect",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "service.inspect"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "trials.create_preview",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "trial.preview",
+        "trial.predict"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "rules.get",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "rules.get"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "rules.preview_change",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "rules.preview_change"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "rules.apply_change",
+      "legacy_status": "NO_LEGACY_HANDLER",
+      "new_capability_ids": [
+        "rules.apply"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
+    },
+    {
+      "legacy_tool": "events.add_note",
+      "legacy_status": "NO_LEGACY_HANDLER",
+      "new_capability_ids": [],
+      "new_runtime_status": "UNAVAILABLE_NO_BUSINESS_IMPLEMENTATION"
+    },
+    {
+      "legacy_tool": "ui.open_replay",
+      "legacy_status": "HANDLER_PRESENT_CLIENT_MANUAL_GUARD",
+      "new_capability_ids": [
+        "ui.open_replay"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA_AND_VERIFIED_UI_ACK"
+    },
+    {
+      "legacy_tool": "ui.open_comparison",
+      "legacy_status": "HANDLER_PRESENT_CLIENT_MANUAL_GUARD",
+      "new_capability_ids": [
+        "ui.open_comparison"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA_AND_VERIFIED_UI_ACK"
+    },
+    {
+      "legacy_tool": "ui.focus",
+      "legacy_status": "HANDLER_PRESENT",
+      "new_capability_ids": [
+        "ui.focus"
+      ],
+      "new_runtime_status": "IMPLEMENTED_WITH_INDEPENDENT_SCHEMA"
     }
   ]
 }

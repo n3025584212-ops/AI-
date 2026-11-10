@@ -1,0 +1,1735 @@
+/* ==========================================================================
+   QCDKR · 全息主题（干净版）
+   只做三件事：换色、换字体、加发光。不改任何布局与组件结构。
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root{
+  --holo:        #B6FF3C;
+  --holo-hi:     #E2FFA0;
+  --holo-dim:    rgba(182,255,60,.55);
+  --holo-line:   rgba(182,255,60,.22);
+  --holo-line-hi:rgba(182,255,60,.58);
+  --acid:        #B6FF3C;
+  --font-display:"Bebas Neue","Microsoft YaHei",sans-serif;
+  --font-num:    "Rajdhani","JetBrains Mono",Consolas,monospace;
+
+  /* 覆盖项目原有变量 */
+  --cyan:#B6FF3C;
+  --muted:#7A979C;
+  --border:rgba(182,255,60,.22);
+  --surface:rgba(6,16,20,.86);
+  --green:#B6FF3C;
+  --orange:#FFB13C;
+}
+
+html,body{ background:#03080A !important }
+
+/* ---------------- 侧边栏 ---------------- */
+.sidebar button:hover{
+  color:var(--holo) !important;
+  border-color:rgba(182,255,60,.32);
+}
+.sidebar button.active{
+  color:var(--acid) !important;
+  border-color:rgba(182,255,60,.45);
+  background:rgba(182,255,60,.07);
+  box-shadow:0 0 22px -6px rgba(182,255,60,.75), inset 0 0 14px rgba(182,255,60,.10);
+}
+
+/* ---------------- 顶栏 ---------------- */
+.topbar-product,
+.topbar-product strong,
+.topbar-product h1{
+  font-family:var(--font-display) !important;
+  letter-spacing:.9px !important;
+}
+.topbar-product strong,
+.topbar-product h1{
+  color:#EAFBF6 !important;
+  text-shadow:0 0 18px rgba(182,255,60,.35);
+}
+.topbar-action{
+  font-family:var(--font-num) !important;
+  letter-spacing:1px;
+  color:#9FD6CE !important;
+}
+.topbar-action:hover{
+  color:var(--holo-hi) !important;
+  border-color:var(--holo-line-hi) !important;
+  box-shadow:0 0 18px -6px rgba(182,255,60,.75);
+}
+
+/* ---------------- 面板：只加背景/边框/发光，不动尺寸与定位 ---------------- */
+.twin-stage-panel{
+  background:linear-gradient(180deg,rgba(182,255,60,.05),rgba(0,0,0,0) 34%),rgba(4,9,6,.92) !important;
+  border-color:rgba(182,255,60,.20) !important;
+  box-shadow:0 0 40px -18px rgba(182,255,60,.4) !important;
+}
+.twin-stage-panel-head{
+  background:linear-gradient(180deg,rgba(182,255,60,.08),rgba(0,0,0,0)) !important;
+  border-bottom:1px solid rgba(182,255,60,.18) !important;
+}
+.twin-stage-panel-head small{
+  font-family:var(--font-num);
+  letter-spacing:1.1px;
+  color:#8FD8CA !important;
+}
+
+/* 底部三块数据面板：加深 + 荧光边 */
+.s5-trend,
+.dc-panel,
+.key-parameter-panel{
+  background:linear-gradient(180deg,rgba(182,255,60,.05),rgba(0,0,0,0) 40%),rgba(4,9,6,.90) !important;
+  border-color:rgba(182,255,60,.22) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(226,255,180,.26),
+    0 0 40px -18px rgba(182,255,60,.42) !important;
+}
+.trend-heading,.dc-heading{
+  font-family:var(--font-num) !important;
+  letter-spacing:1.5px !important;
+  color:#CFF7EE !important;
+}
+
+/* ---------------- 数值字体 ---------------- */
+.time-plot text,
+.dc-chart text{
+  font-family:var(--font-num) !important;
+}
+
+/* ---------------- 3D 空间标签 ---------------- */
+.twin-spatial-label,
+.spatial-anchor{
+  font-family:var(--font-num) !important;
+  border-color:rgba(182,255,60,.30) !important;
+  color:var(--acid) !important;
+  box-shadow:0 0 18px -8px rgba(182,255,60,.8) !important;
+}
+
+/* ---------------- 全息 HUD（只在沉浸式 3D 页显示） ---------------- */
+.holo-hud{
+  position:fixed;inset:0;z-index:2147483000 !important;pointer-events:none;
+  font-family:var(--font-num);letter-spacing:1.4px;
+}
+.holo-hud .hc{
+  position:absolute;width:52px;height:52px;border:2px solid var(--holo);
+  box-shadow:0 0 18px rgba(182,255,60,.55), inset 0 0 12px rgba(182,255,60,.18);
+}
+.holo-hud .hc.tl{left:14px;top:64px;border-right:0;border-bottom:0}
+.holo-hud .hc.tr{right:14px;top:64px;border-left:0;border-bottom:0}
+.holo-hud .hc.bl{left:14px;bottom:210px;border-right:0;border-top:0}
+.holo-hud .hc.br{right:14px;bottom:210px;border-left:0;border-top:0}
+
+.holo-hud .ruler-t{
+  position:absolute;left:80px;right:80px;top:66px;height:8px;
+  background:repeating-linear-gradient(90deg,rgba(182,255,60,.55) 0 1px,transparent 1px 24px);
+  opacity:.55;
+}
+.holo-hud .ruler-l{
+  position:absolute;left:66px;top:120px;bottom:220px;width:8px;
+  background:repeating-linear-gradient(180deg,rgba(182,255,60,.55) 0 1px,transparent 1px 24px);
+  opacity:.45;
+}
+.holo-hud .ring{
+  position:absolute;left:50%;top:46%;width:1180px;height:520px;
+  transform:translate(-50%,-50%);
+  opacity:.28;
+}
+.holo-hud .ring ellipse{
+  fill:none;stroke:rgba(182,255,60,.6);stroke-width:1;stroke-dasharray:6 10;
+  transform-origin:center;
+  animation:holoSpin 46s linear infinite;
+}
+.holo-hud .ring ellipse:nth-child(2){stroke-dasharray:2 16;opacity:.7;animation-duration:70s;animation-direction:reverse}
+@keyframes holoSpin{to{transform:rotate(360deg)}}
+
+.holo-hud .scan{
+  position:absolute;left:0;right:0;height:2px;top:20%;
+  background:linear-gradient(90deg,transparent,rgba(182,255,60,.65),transparent);
+  filter:blur(1px);
+  animation:holoScan 9s linear infinite;
+}
+@keyframes holoScan{
+  0%{top:14%;opacity:0}
+  12%{opacity:1}
+  88%{opacity:1}
+  100%{top:88%;opacity:0}
+}
+.holo-hud .tag{
+  position:absolute;font-size:10px;color:rgba(182,255,60,.78);
+  text-shadow:0 0 10px rgba(182,255,60,.6);
+}
+.holo-hud .tag.a{left:84px;top:82px}
+.holo-hud .tag.b{right:84px;top:82px;text-align:right}
+.holo-hud .tag.c{left:84px;bottom:240px}
+.holo-hud .tag.d{right:84px;bottom:240px;text-align:right}
+
+
+/* 左栏收窄 */
+
+
+/* 表格搬到右侧，480px 才放得下 9 列 */
+
+/* 表格在 480px 内按内容排，不截断、不横向滚动 */
+
+
+
+
+
+/* 标题横跨两列 */
+
+/* 左列：KPI 四卡 */
+
+
+/* 右列：页签 + 参数矩阵 */
+
+
+
+
+/* 面板要给两栏足够宽度：左 280 + 右 420 */
+
+
+/* 右列内容必须能撑开 */
+
+
+
+/* 标题占顶部一整行 */
+
+/* 左列：KPI 四卡 */
+
+
+/* 右列：页签 + 参数矩阵 */
+
+
+
+
+/* 两栏模式下 KPI 竖排 */
+
+
+
+
+/* 左栏：KPI */
+
+/* 右栏：页签 + 参数矩阵 */
+
+
+
+/* 左列也固定 */
+
+/* 面板要容得下 268+420+gap+padding */
+
+
+/* 右栏：480px 绝对定位贴右，9 列够宽 */
+
+/* 右栏内表格按 480 排，不截断 */
+
+
+
+
+
+/* 2. 右栏压在 3D 之上，且半透明让场景透出 */
+
+/* 右栏内的模板说明跟着走，不留在面板外面 */
+
+
+
+
+/* 左栏：KPI 内容，无板 */
+
+
+/* 右栏：表格内容，无板 */
+
+
+
+
+
+
+/* 左：KPI 浮层 */
+
+
+/* 右：参数表浮层 */
+
+
+
+
+
+
+
+/* 左栏：KPI 2x2 + 页签 */
+
+
+
+
+
+/* 右栏：参数矩阵 */
+
+
+
+
+
+
+/* 左栏页签到底部 */
+
+
+
+/* 只有左右两栏自己做轻模糊 */
+
+
+/* ==========================================================================
+   三分栏（最终）：左 KPI+页签 / 中 3D / 右 参数矩阵
+   ========================================================================== */
+.twin-stage.stage-docked[data-stage-page="data"] .twin-stage-panel.dock-left{
+  position:absolute !important; inset:0 !important;
+  width:auto !important; max-width:none !important;
+  background:transparent !important; border:0 !important; box-shadow:none !important;
+  overflow:visible !important; pointer-events:none !important;
+  backdrop-filter:none !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .twin-stage-panel-head{ display:none !important }
+.twin-stage.stage-docked[data-stage-page="data"] .twin-stage-panel-body{
+  overflow:visible !important; pointer-events:none !important; height:100% !important;
+  backdrop-filter:none !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-workspace.data-access{
+  background:transparent !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-split{
+  position:static !important; height:100% !important; padding:0 !important;
+  pointer-events:none !important;
+}
+/* 左：KPI 2x2 + 页签 */
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+  position:absolute !important; left:8px !important; top:58px !important; bottom:186px !important;
+  width:340px !important; padding:10px !important;
+  overflow-y:auto !important; pointer-events:auto !important;
+  background:rgba(3,10,12,.62) !important;
+  border-left:2px solid rgba(182,255,60,.35) !important;
+  display:flex !important; flex-direction:column !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-band{
+  flex:0 0 auto !important; display:grid !important;
+  grid-template-columns:1fr 1fr !important; grid-template-rows:auto auto !important;
+  gap:10px !important; min-height:0 !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi{
+  min-height:0 !important; height:auto !important; padding:10px 12px !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-bar{
+  margin-top:10px !important; flex:0 0 auto !important; flex-wrap:wrap !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-heading{ display:none !important }
+/* 右：参数矩阵 */
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  position:absolute !important; right:8px !important; top:58px !important; bottom:186px !important;
+  width:480px !important; min-width:480px !important; max-width:480px !important;
+  padding:10px !important; overflow:auto !important; pointer-events:auto !important;
+  background:rgba(3,10,12,.62) !important;
+  border-right:2px solid rgba(182,255,60,.35) !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right table{
+  table-layout:auto !important; width:100% !important; min-width:0 !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right th,
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right td{
+  font-size:9px !important; padding:2px 2px !important; white-space:nowrap !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right input{
+  width:100% !important; min-width:0 !important; font-size:9px !important;
+}
+
+/* 左右栏按窗口比例适配，不再写死 */
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+  width:clamp(280px, 17.5vw, 360px) !important;
+  min-width:280px !important;
+  max-width:360px !important;
+  flex:0 0 auto !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  width:clamp(420px, 25vw, 500px) !important;
+  min-width:420px !important;
+  max-width:500px !important;
+  flex:0 0 auto !important;
+}
+/* 左栏 KPI 在窄宽下改成单列竖排，避免横向挤压 */
+@media(max-width:1800px){
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-band{
+    grid-template-columns:1fr !important;
+    grid-template-rows:repeat(4,1fr) !important;
+  }
+}
+
+/* 侧栏尺寸回归理性：3D 是主角，两侧只占必要宽度 */
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+  width:300px !important;
+  min-width:280px !important;
+  max-width:320px !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  width:420px !important;
+  min-width:380px !important;
+  max-width:440px !important;
+}
+/* 左栏窄了，KPI 改单列竖排，每个卡横向铺满 */
+@media(max-width:1860px){
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-band{
+    grid-template-columns:1fr !important;
+    grid-template-rows:repeat(4,1fr) !important;
+  }
+}
+
+/* 三分栏面板：荧光边 + 内高光 + 外发光 */
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+  border:1px solid rgba(182,255,60,.38) !important;
+  border-left:2px solid #B6FF3C !important;
+  box-shadow:
+    inset 0 1px 0 rgba(226,255,180,.30),
+    inset 0 0 30px rgba(182,255,60,.05),
+    0 0 44px -16px rgba(182,255,60,.55) !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  border:1px solid rgba(182,255,60,.38) !important;
+  border-right:2px solid #B6FF3C !important;
+  box-shadow:
+    inset 0 1px 0 rgba(226,255,180,.30),
+    inset 0 0 30px rgba(182,255,60,.05),
+    0 0 44px -16px rgba(182,255,60,.55) !important;
+}
+/* KPI 卡与表格也点亮 */
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi{
+  border:1px solid rgba(182,255,60,.22) !important;
+  background:linear-gradient(180deg,rgba(182,255,60,.06),rgba(0,0,0,0) 42%),rgba(4,12,15,.72) !important;
+  box-shadow:0 0 24px -12px rgba(182,255,60,.5) !important;
+}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-right table{
+  filter:drop-shadow(0 0 6px rgba(182,255,60,.12));
+}
+
+/* ==========================================================================
+   全息感增强：底座光晕 + 更强环 + 扫描带 + 粒子
+   ========================================================================== */
+.holo-hud .ring{ opacity:.55 !important }
+.holo-hud .ring ellipse{ stroke-width:1.4 !important; stroke:rgba(182,255,60,.75) !important }
+.holo-hud .scan{
+  height:3px !important;
+  filter:blur(2px) !important;
+  background:linear-gradient(90deg,transparent,rgba(182,255,60,.85) 45%,rgba(226,255,160,1) 50%,rgba(182,255,60,.85) 55%,transparent) !important;
+}
+/* 全息底座：地面椭圆光晕 */
+.holo-hud::after{
+  content:"";
+  position:absolute;
+  left:50%; bottom:150px;
+  width:min(1180px,72vw); height:280px;
+  transform:translateX(-50%);
+  background:radial-gradient(ellipse at center,rgba(182,255,60,.14) 0%,rgba(182,255,60,.05) 42%,transparent 72%);
+  pointer-events:none;
+  z-index:-1;
+}
+/* 竖向光带：四条从底座向上的淡光 */
+.holo-hud .beam{
+  position:absolute;width:2px;bottom:200px;
+  background:linear-gradient(0deg,rgba(182,255,60,.30),rgba(182,255,60,.06) 55%,transparent);
+  filter:blur(.6px);
+  animation:holoBeam 5.5s ease-in-out infinite;
+}
+.holo-hud .beam.b1{left:32%;height:190px;animation-delay:0s}
+.holo-hud .beam.b2{left:44%;height:240px;animation-delay:.9s}
+.holo-hud .beam.b3{left:56%;height:210px;animation-delay:1.8s}
+.holo-hud .beam.b4{left:68%;height:170px;animation-delay:2.7s}
+@keyframes holoBeam{0%,100%{opacity:.25}50%{opacity:.7}}
+/* 漂浮粒子 */
+.holo-hud .dot-p{
+  position:absolute;width:3px;height:3px;border-radius:50%;
+  background:rgba(182,255,60,.85);
+  box-shadow:0 0 8px rgba(182,255,60,.8);
+  animation:holoFloat 7s linear infinite;
+}
+@keyframes holoFloat{
+  0%{transform:translateY(0);opacity:0}
+  15%{opacity:.8}
+  85%{opacity:.6}
+  100%{transform:translateY(-160px);opacity:0}
+}
+
+/* 3D 场景保持原始工业色，不做色相旋转（hue-rotate 会把蓝青场景整片变绿） */
+.three-host canvas,
+.three-viewer canvas{
+  filter:saturate(1.04) contrast(1.02);
+}
+/* 画布底色跟随场景自身的深蓝青，避免加载/透明处透出绿底 */
+.twin-scene{
+  background:radial-gradient(60% 50% at 50% 52%,#0b1a21 0%,#070f14 62%,#04080b 100%) !important;
+}
+
+/* ==========================================================================
+   页面 3/4/5 · 双栏工作台（左栏 + 3D + 右栏）
+   维护 / 工业设备连接 / 运行日志：内容真正分到两侧，不再是单列窄滑板
+   ========================================================================== */
+/* 默认（非舞台态）：包裹层不改变原布局 */
+.maint-col{display:contents}
+.comm-col{display:flex;flex-direction:column;min-width:0}
+.logs-col{display:contents}
+
+@media (min-width:1281px){
+
+/* ---------- 面板退成透明舞台层 ---------- */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .twin-stage-panel[data-page="maintenance"],
+.twin-stage.stage-docked[data-stage-page="communication"] .twin-stage-panel[data-page="communication"],
+.twin-stage.stage-docked[data-stage-page="logs"] .twin-stage-panel[data-page="logs"]{
+  position:absolute !important;inset:0 !important;
+  width:auto !important;max-width:none !important;min-width:0 !important;
+  background:transparent !important;border:0 !important;box-shadow:none !important;
+  overflow:visible !important;pointer-events:none !important;
+  backdrop-filter:none !important;animation:none !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .twin-stage-panel[data-page="maintenance"] .twin-stage-panel-head,
+.twin-stage.stage-docked[data-stage-page="communication"] .twin-stage-panel[data-page="communication"] .twin-stage-panel-head,
+.twin-stage.stage-docked[data-stage-page="logs"] .twin-stage-panel[data-page="logs"] .twin-stage-panel-head{display:none !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .twin-stage-panel[data-page="maintenance"] .twin-stage-panel-body,
+.twin-stage.stage-docked[data-stage-page="communication"] .twin-stage-panel[data-page="communication"] .twin-stage-panel-body,
+.twin-stage.stage-docked[data-stage-page="logs"] .twin-stage-panel[data-page="logs"] .twin-stage-panel-body{
+  height:100% !important;overflow:visible !important;pointer-events:none !important;backdrop-filter:none !important;
+}
+
+/* ---------- 栏体公共外观：玻璃 + 荧光边 + 内高光 ---------- */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col,
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col{
+  display:flex !important;flex-direction:column !important;gap:10px !important;
+  overflow:auto !important;pointer-events:auto !important;
+  scrollbar-width:thin;scrollbar-color:#2f6b52 transparent;
+  background:linear-gradient(180deg,rgba(182,255,60,.07),rgba(0,0,0,0) 26%),rgba(3,10,12,.78) !important;
+  border:1px solid rgba(182,255,60,.30) !important;
+  box-shadow:inset 0 1px 0 rgba(226,255,180,.22),inset 0 0 42px rgba(182,255,60,.04),0 0 48px -18px rgba(182,255,60,.55) !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-left,
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left{
+  position:absolute !important;left:10px !important;top:58px !important;bottom:205px !important;
+  border-left:2px solid #B6FF3C !important;padding:0 10px 10px !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right,
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right{
+  position:absolute !important;right:10px !important;top:58px !important;bottom:205px !important;
+  border-right:2px solid #B6FF3C !important;padding:0 10px 10px !important;
+}
+/* 栏头：编号 + 中文 + 英文，滚动时吸附在栏顶 */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col::before,
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col::before,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col::before{
+  content:"WORKBENCH";
+  position:sticky;top:0;z-index:4;flex:none;
+  margin:0 -10px;padding:9px 12px 7px;display:block;
+  font:10px/1 'Rajdhani','Segoe UI',sans-serif;letter-spacing:.22em;
+  color:#A8EE9E;background:linear-gradient(90deg,rgba(182,255,60,.12),rgba(0,0,0,0) 72%),rgba(4,14,10,.94);
+  border-bottom:1px solid rgba(182,255,60,.24);
+}
+
+/* ==========================================================================
+   页面 3 · 系统状态与维护
+   ========================================================================== */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maintenance-workspace{
+  position:absolute !important;inset:0 !important;display:block !important;
+  padding:0 !important;gap:0 !important;overflow:visible !important;
+  background:none !important;pointer-events:none !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading{
+  position:absolute !important;left:10px !important;top:6px !important;width:340px !important;height:44px !important;
+  display:flex !important;align-items:center !important;gap:10px !important;margin:0 !important;padding:0 12px !important;
+  background:linear-gradient(90deg,rgba(182,255,60,.09),rgba(0,0,0,0) 78%),rgba(4,12,15,.94) !important;
+  border:1px solid rgba(182,255,60,.30) !important;border-left:2px solid #B6FF3C !important;
+  box-shadow:0 0 34px -16px rgba(182,255,60,.6) !important;
+  pointer-events:auto !important;z-index:3 !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading h2{font-size:15px !important;letter-spacing:1px !important;white-space:nowrap !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading p{display:none !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading>div:last-child{margin-left:auto}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading .maint-button{min-height:24px !important;padding:3px 8px !important;font-size:9.5px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-foot{display:none !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panels-scroll{
+  position:absolute !important;inset:0 !important;overflow:visible !important;padding:0 !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panels-grid{display:block !important;min-height:0 !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-left{width:338px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right{width:374px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-left::before{content:"01 / 运行现状 · PLANT STATE"}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right::before{content:"02 / 处置与服务 · OPERATIONS"}
+/* 卡片压缩成仪表块 */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel{
+  min-height:0 !important;padding:5px 9px 6px !important;gap:0 !important;
+  background:linear-gradient(140deg,rgba(182,255,60,.05),rgba(0,0,0,0) 46%),rgba(5,15,17,.62) !important;
+  border:1px solid rgba(182,255,60,.15) !important;border-radius:5px !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel>header{min-height:28px !important;padding:0 0 4px !important;gap:7px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel-icon,
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maintenance-glyph{width:24px !important;height:26px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel-title h3{font-size:12.5px !important;letter-spacing:.2px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-badge{font-size:9px !important;padding:1px 6px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel dl{margin:4px 0 5px !important;gap:3px !important;justify-content:flex-start !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-fact{grid-template-columns:76px minmax(0,1fr) !important;gap:7px !important;font-size:10.5px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel-note{font-size:9.5px !important;line-height:1.5 !important;margin:0 0 6px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel-actions{padding:1px 0 0 !important;gap:4px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel-actions .maint-button{min-height:20px !important;padding:2px 6px !important;font-size:9px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-rules-list{max-height:96px !important}
+
+/* ==========================================================================
+   页面 4 · 工业设备连接
+   ========================================================================== */
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection{
+  position:absolute !important;inset:0 !important;display:block !important;
+  max-width:none !important;margin:0 !important;padding:0 !important;
+  overflow:visible !important;background:none !important;pointer-events:none !important;
+}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header{
+  position:absolute !important;left:10px !important;top:6px !important;width:372px !important;height:44px !important;
+  display:flex !important;align-items:center !important;justify-content:space-between !important;gap:8px !important;
+  margin:0 !important;padding:0 10px !important;
+  background:linear-gradient(90deg,rgba(182,255,60,.09),rgba(0,0,0,0) 78%),rgba(4,12,15,.94) !important;
+  border:1px solid rgba(182,255,60,.30) !important;border-left:2px solid #B6FF3C !important;
+  box-shadow:0 0 34px -16px rgba(182,255,60,.6) !important;
+  pointer-events:auto !important;z-index:3 !important;
+}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1{font-size:15px !important;margin:0 !important;gap:7px !important;white-space:nowrap !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1 svg{width:16px !important;height:16px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header p{display:none !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-header-actions .maint-button{min-height:24px !important;padding:3px 8px !important;font-size:9.5px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-main{
+  display:block !important;background:none !important;border:0 !important;padding:0 !important;margin:0 !important;
+}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left{top:58px !important;width:372px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right{width:456px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left::before{content:"01 / 连接状态 · LIVE LINK"}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right::before{content:"02 / 现场接入 · FIELD SETUP"}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left .comm-status-panel{padding:0 !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-status-heading .maint-badge{font-size:15px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-plug-icon{width:54px !important;height:54px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-connection-copy p{font-size:11px !important;line-height:1.6 !important;margin:6px 0 !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-main-actions{margin:10px 0 12px !important;gap:6px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-main-actions .maint-button{min-height:29px !important;padding:5px 9px !important;font-size:10px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-readouts{grid-template-columns:1fr !important;gap:8px !important;padding-top:10px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-readouts .comm-facts{grid-template-columns:max-content minmax(0,1fr) !important;gap:6px 12px !important;font-size:10.5px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-guide-panel{border:0 !important;background:none !important;padding:0 !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-guide-panel>h2{font-size:11px !important;letter-spacing:1.2px !important;color:#8FD8CA !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-equipment-diagram{max-height:112px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-quick-guide ol{font-size:9.3px !important;line-height:1.34 !important;gap:1px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-quick-guide h3{font-size:11.5px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-quick-guide .maint-button{min-height:26px !important;padding:4px 8px !important;font-size:9.5px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:4px !important;margin-top:0 !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-card{padding:4px 6px !important;gap:5px !important;border-radius:5px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-icon{width:22px !important;height:24px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-icon svg{width:16px !important;height:16px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-card h3{font-size:10.5px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-card p{font-size:8.5px !important;line-height:1.36 !important}
+/* ==========================================================================
+   页面 5 · 运行日志
+   ========================================================================== */
+.twin-stage.stage-docked[data-stage-page="logs"] .event-log-workspace{
+  position:absolute !important;inset:0 !important;display:block !important;
+  padding:0 !important;gap:0 !important;overflow:visible !important;
+  background:none !important;pointer-events:none !important;
+}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left{width:326px !important;top:58px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right{width:clamp(560px,42vw,700px) !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left::before{content:"01 / 检索与洞察 · QUERY"}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right::before{content:"02 / 日志流 · EVENT STREAM"}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-head{gap:8px !important;align-items:flex-start !important;flex-wrap:wrap !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-heading-identity{gap:8px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-workspace .log-module-icon.is-large,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-workspace .log-module-icon.is-large svg{width:24px !important;height:24px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-heading-identity h2{font-size:15px !important;letter-spacing:.6px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-heading-identity p{font-size:9px !important;line-height:1.45 !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-actions{gap:4px !important;flex-wrap:wrap !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-actions .maint-button{font-size:9px !important;min-height:23px !important;padding:3px 7px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-insight{border-color:rgba(182,255,60,.16) !important;background:rgba(4,14,10,.5) !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important;padding:6px 9px !important;gap:6px 0 !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-kpi{padding:0 9px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-kpi>strong{font-size:16px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-kpi>span,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-kpi>small{font-size:8.5px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-toolbar{gap:6px !important;flex-wrap:wrap !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-search{flex:1 1 100% !important;max-width:none !important;height:26px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-scope button{font-size:10px !important;padding:2px 9px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-sync{font-size:9px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-category button{font-size:9.5px !important;padding:1px 6px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-levels{padding-left:0 !important;border-left:0 !important;gap:4px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-level-row{font-size:9px !important;padding:1px 6px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-stream{flex:1 !important;min-height:0 !important;border:0 !important;background:transparent !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-stream-head{gap:9px !important;padding:6px 8px !important;font-size:9.5px !important;flex-wrap:wrap !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-table{min-width:0 !important;table-layout:fixed !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-table col.col-time{width:66px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-table col.col-content{width:auto !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-table th{font-size:9px !important;padding:5px 6px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-table td{font-size:9px !important;height:32px !important;padding:0 6px !important}
+
+/* ---------- 双栏同时打开：活动页栏位避开被固定的另一侧 ---------- */
+.twin-stage.has-pin-right[data-stage-page="maintenance"] .maint-col-right,
+.twin-stage.has-pin-right[data-stage-page="communication"] .comm-col-right{right:calc(min(560px,40vw) + 12px) !important}
+.twin-stage.has-pin-left[data-stage-page="communication"] .comm-col-left,
+.twin-stage.has-pin-left[data-stage-page="logs"] .logs-col-left{left:calc(min(560px,40vw) + 12px) !important}
+.twin-stage.has-pin-left[data-stage-page="logs"] .logs-col-right{width:clamp(520px,36vw,660px) !important}
+
+} /* media */
+
+/* 栏内子项不得被 flex 压缩（否则卡片被压扁、文字被裁） */
+@media (min-width:1281px){
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col>*,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col>*,
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col>*{flex:0 0 auto !important}
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right>.logs-stream{flex:1 1 auto !important}
+}
+
+/* 页面面板打开时，HUD 装饰文字不压业务栏；扫描线减淡 */
+body:has(.twin-stage.stage-docked) .holo-hud .tag{display:none !important}
+body:has(.twin-stage.stage-docked) .holo-hud .scan{opacity:.35 !important}
+
+/* 栏体按内容收口：不再用固定高度撑出大片空面板 */
+@media (min-width:1281px){
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+    bottom:auto !important;height:auto !important;
+    max-height:calc(100% - 58px - 200px) !important;
+  }
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col,
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left{
+    bottom:auto !important;height:auto !important;
+    max-height:calc(100% - 58px - 205px) !important;
+  }
+}
+
+/* ==========================================================================
+   控制台改版：去光污染，模块化排版
+   ========================================================================== */
+/* 整体压暗发光，只留细边线 */
+.twin-stage-panel{
+  background:linear-gradient(180deg,rgba(8,20,18,.55),rgba(3,8,9,.92)) !important;
+  border-color:rgba(126,255,178,.16) !important;
+  box-shadow:-18px 0 40px rgba(0,0,0,.55) !important;
+}
+.twin-stage-panel-head{
+  background:rgba(5,14,13,.9) !important;
+  border-bottom:1px solid rgba(126,255,178,.14) !important;
+}
+/* 栏体：细边 + 极淡内光，不再外扩光晕 */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col,
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col{
+  background:linear-gradient(180deg,rgba(10,26,24,.72),rgba(2,7,9,.88)) !important;
+  border:1px solid rgba(126,255,178,.18) !important;
+  box-shadow:inset 0 1px 0 rgba(190,255,210,.10) !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-left,
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left{
+  border-left:1px solid rgba(126,255,178,.55) !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right,
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right{
+  border-right:1px solid rgba(126,255,178,.55) !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col::before,
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col::before,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col::before{
+  background:linear-gradient(90deg,rgba(126,255,178,.08),rgba(0,0,0,0) 72%),rgba(3,10,10,.94) !important;
+  border-bottom:1px solid rgba(126,255,178,.16) !important;
+  color:#8FE9B4 !important;
+}
+/* 页头同样去光晕 */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading,
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header{
+  background:linear-gradient(90deg,rgba(126,255,178,.06),rgba(0,0,0,0) 78%),rgba(3,10,10,.94) !important;
+  border:1px solid rgba(126,255,178,.18) !important;
+  border-left:2px solid rgba(126,255,178,.7) !important;
+  box-shadow:none !important;
+}
+/* HUD：关掉扫描线与大环，保留四角框 */
+body:has(.twin-stage.stage-docked) .holo-hud .scan{display:none !important}
+body:has(.twin-stage.stage-docked) .holo-hud .ring{opacity:.10 !important}
+body:has(.twin-stage.stage-docked) .holo-hud .ruler-t,
+body:has(.twin-stage.stage-docked) .holo-hud .ruler-l{opacity:.18 !important}
+
+/* ==========================================================================
+   控制台模块化：指标网格 / 25格矩阵 / 机架快照 / 分类分布
+   ========================================================================== */
+.maint-panel dl{display:grid !important;grid-template-columns:1fr 1fr !important;gap:6px 14px !important;margin:7px 0 8px !important}
+.maint-fact{display:flex !important;flex-direction:column !important;gap:1px !important;align-items:flex-start !important}
+.maint-fact dt{font-size:9px !important;color:#6E9A8B !important;letter-spacing:.4px !important;line-height:1.4 !important}
+.maint-fact dd{font-size:11.5px !important;color:#DCF6EA !important;line-height:1.45 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+.hx-cells{display:grid;grid-template-columns:repeat(13,1fr);gap:3px}
+.hx-cells i{height:7px;background:rgba(126,255,178,.08);border:1px solid rgba(126,255,178,.10);border-radius:1px}
+.hx-cells i[data-on]{background:linear-gradient(180deg,#63E6A4,#1E9A62);border-color:rgba(126,255,178,.45)}
+.hx-legend{display:flex;align-items:baseline;gap:6px;margin-top:5px;font-size:9px;color:#74A695;letter-spacing:.4px}
+.hx-legend b{margin-left:auto;font-weight:500;color:#D8F8EA;font-variant-numeric:tabular-nums}
+
+.comm-read-cells{display:grid;grid-template-columns:repeat(25,1fr);gap:2px;margin-top:8px}
+.comm-read-cells i{height:8px;background:rgba(126,255,178,.07);border:1px solid rgba(126,255,178,.10)}
+.comm-read-cells i[data-read]{background:rgba(255,190,90,.55);border-color:rgba(255,190,90,.6)}
+.comm-read-cells i[data-valid]{background:linear-gradient(180deg,#63E6A4,#1E9A62);border-color:rgba(126,255,178,.5)}
+.comm-read-legend{display:flex;gap:12px;margin-top:6px;font-size:9px;color:#7AA897;letter-spacing:.3px}
+.comm-read-legend b{color:#D8F8EA;font-weight:500}
+
+.comm-check{margin-top:9px;border-top:1px solid rgba(126,255,178,.10);padding-top:6px;display:flex;flex-direction:column;gap:4px}
+.comm-check-row{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#7FA897}
+.comm-check-row b{font-weight:500;color:#E9B87A}
+.comm-check-row b[data-ok="true"]{color:#6FE6A8}
+
+.data-stand-snap{border-top:1px solid rgba(126,255,178,.12);margin-top:8px;padding-top:7px;display:flex;flex-direction:column;gap:3px}
+.data-stand-head{display:flex;justify-content:space-between;align-items:baseline;font-size:9px;color:#7AA897;letter-spacing:.5px;margin-bottom:2px}
+.data-stand-head small{font-size:8px;color:#5E8779}
+.data-stand-row{position:relative;display:grid;grid-template-columns:24px 1fr auto;gap:6px;align-items:center;font-size:10px;color:#B9D9CB;padding:2px 0}
+.data-stand-row b{color:#8FE9B4;font-weight:600;font-size:10px}
+.data-stand-row em{font-style:normal;color:#D8F4E8;font-variant-numeric:tabular-nums}
+.data-stand-row i{position:absolute;left:0;bottom:0;height:1px;background:linear-gradient(90deg,rgba(126,255,178,.55),transparent)}
+
+.logs-dist{border:1px solid rgba(126,255,178,.12);background:rgba(3,10,10,.45);border-radius:4px;padding:6px 8px;display:flex;flex-direction:column;gap:3px}
+.logs-dist-head{display:flex;justify-content:space-between;font-size:9px;color:#7AA897;letter-spacing:.5px}
+.logs-dist-head small{color:#5E8779}
+.logs-dist-row{display:grid;grid-template-columns:52px 1fr 36px;gap:6px;align-items:center;font-size:9px;color:#93B7A8}
+.logs-dist-row i{height:4px;background:rgba(126,255,178,.09);position:relative;overflow:hidden;border-radius:2px}
+.logs-dist-row i b{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#2BD98C,#A8F06A)}
+.logs-dist-row em{font-style:normal;text-align:right;color:#CFEBDC;font-variant-numeric:tabular-nums}
+
+/* 栏体回到满高，内容两端分布，避免半截空框 */
+@media (min-width:1281px){
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-left,
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col,
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left{
+    bottom:200px !important;height:auto !important;max-height:none !important;
+  }
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-left{justify-content:space-between !important}
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col{justify-content:space-between !important}
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col{justify-content:space-between !important}
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-status-panel{display:flex !important;flex-direction:column !important;justify-content:space-between !important;height:100% !important}
+}
+
+/* 通讯左栏收紧，保证 25 格矩阵与连接检查完整可见 */
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-status-header{margin-bottom:10px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-connection-copy p{margin:4px 0 !important;font-size:10.5px !important;line-height:1.55 !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-main-actions{margin:8px 0 10px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-readouts{padding-top:8px !important;gap:6px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-readouts .comm-facts{gap:5px 10px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-read-cells{margin-top:6px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-read-legend{margin-top:4px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-check{margin-top:6px !important;padding-top:5px !important;gap:3px !important}
+/* 维护页字号略提，别太小 */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel-title h3{font-size:13.5px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-fact dt{font-size:10px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-fact dd{font-size:12.5px !important}
+
+/* 通讯左栏：内容自上而下排，不再两端撑开导致溢出裁切 */
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-status-panel{justify-content:flex-start !important;gap:0 !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-status-header{margin-bottom:8px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-plug-icon{width:44px !important;height:44px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-status-heading .maint-badge{font-size:13px !important}
+
+/* ==========================================================================
+   tasteskill 整理：实底信息板、单强调色、去掉装饰与编号
+   —— 3D 场景保留为唯一主视觉，面板只做信息承载
+   ========================================================================== */
+@media (min-width:1281px){
+  /* 面板页隐藏整套 HUD 装饰（四角框/扫描线/环/刻度） */
+  body:has(.twin-stage.stage-docked) .holo-hud{display:none !important}
+
+  /* 栏体：实底 tone step，无描边无阴影，仅外沿一条强调线 */
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col,
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col,
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-left,
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+    background:rgba(6,16,14,.92) !important;
+    border:0 !important;border-radius:0 !important;
+    box-shadow:none !important;backdrop-filter:none !important;
+  }
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-left,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left,
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left,
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-left{border-left:2px solid #6FE6A8 !important}
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right,
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right,
+  .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{border-right:2px solid #6FE6A8 !important}
+
+  /* 栏头：去掉 01/02 与全大写英文，回到可读的中文标签 */
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col::before,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col::before,
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col::before{
+    font:12px/1.5 'Segoe UI','Microsoft YaHei',sans-serif !important;
+    letter-spacing:0 !important;color:#CFE9DF !important;
+    background:none !important;border:0 !important;
+    padding:10px 0 8px !important;margin:0 !important;
+  }
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-left::before{content:"运行现状"}
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right::before{content:"处置与服务"}
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left::before{content:"连接状态"}
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right::before{content:"现场接入"}
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left::before{content:"检索与洞察"}
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right::before{content:"日志流"}
+
+  /* 页头：实底、无渐变无描边 */
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading,
+  .twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header{
+    background:rgba(6,16,14,.94) !important;
+    border:0 !important;border-bottom:2px solid #6FE6A8 !important;
+    box-shadow:none !important;border-radius:0 !important;
+  }
+
+  /* 卡片：实底 tone step，无边框无渐变无圆角 */
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-guide-panel{
+    background:#0A1916 !important;
+    border:0 !important;border-radius:0 !important;
+  }
+  /* 按钮：平面单色 */
+  .twin-stage .maint-button{
+    background:#102420 !important;border:0 !important;border-radius:0 !important;
+    color:#DDF7EC !important;box-shadow:none !important;
+  }
+  .twin-stage .maint-button:hover:not(:disabled){background:#17332C !important}
+  /* 连接页能力卡：去图标、去卡片框，改成两条陈述 */
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-card{
+    background:none !important;border:0 !important;padding:2px 0 !important;gap:0 !important;
+  }
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-icon{display:none !important}
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-card h3{font-size:12px !important;color:#CFE9DF !important}
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-feature-card p{font-size:11px !important;line-height:1.5 !important;color:#8AA79B !important}
+
+  /* 字号整体上调：标签 11 / 值 13 / 数字 20 */
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-fact dt,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-facts dt,
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-kpi>span{font-size:11px !important;letter-spacing:0 !important}
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-fact dd,
+  .twin-stage.stage-docked[data-stage-page="communication"] .comm-facts dd{font-size:13px !important}
+  .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-panel-title h3{font-size:14px !important}
+  .twin-stage.stage-docked[data-stage-page="logs"] .logs-kpi>strong{font-size:20px !important}
+}
+
+/* ==========================================================================
+   2026-11-07：左右两栏改"全息玻璃底板"
+   只改底/边/发光，不动 position、尺寸与 padding；不用 backdrop-filter
+   （它会独立成层，截断内部 position:fixed，之前的右栏错位就是它）。
+   ========================================================================== */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  background:
+    linear-gradient(180deg, rgba(182,255,60,.07), rgba(182,255,60,0) 46%),
+    rgba(3,10,12,.26) !important;
+  border-color: rgba(182,255,60,.34) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(226,255,180,.16),
+    0 0 34px -22px rgba(182,255,60,.55) !important;
+}
+/* 左栏 KPI 卡：实底渐变 → 玻璃；顶部 2px 荧光条保留做层级 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi{
+  background: linear-gradient(150deg, rgba(12,38,54,.42), rgba(4,12,20,.34)) !important;
+  border-color: rgba(111,196,216,.26) !important;
+  box-shadow: inset 0 1px 0 rgba(180,240,255,.10) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi[data-focus=true]{
+  background: linear-gradient(150deg, rgba(16,56,74,.50), rgba(5,16,26,.38)) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-btn{
+  background: rgba(10,32,46,.50) !important;
+  border-color: rgba(123,167,196,.28) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-btn.is-primary{
+  background: linear-gradient(180deg, rgba(29,95,128,.72), rgba(17,56,78,.72)) !important;
+  border-color: rgba(87,169,205,.55) !important;
+}
+/* 右栏：工况参数头 / 输入框 / 表格行全部换成玻璃 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .process-matrix{
+  background: transparent !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-heading{
+  background: rgba(10,30,36,.42) !important;
+  border-bottom-color: rgba(182,255,60,.18) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-case-fields input,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-case-fields select{
+  background: rgba(10,32,38,.55) !important;
+  border-color: rgba(123,167,196,.24) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table tbody tr:nth-child(even){
+  background: rgba(255,255,255,.016) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table tbody tr:hover{
+  background: rgba(111,196,216,.09) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table tbody .pm-target-row{
+  background: rgba(55,93,85,.12) !important;
+}
+
+/* ==========================================================================
+   2026-11-07 V3 · 侧挂页统一重排（2 数据 / 3 维护 / 4 连接 / 5 日志 同一套）
+   栏高吃满视口 · 栏宽按内容定 · 左栏压成仪表块 · 表格列固定不再压字
+   ========================================================================== */
+
+/* ---- 1. 几何：左右栏都拉到窗口底，去掉原来 205px 的空带 ---- */
+#root .twin-stage.stage-docked .maint-col-left,
+#root .twin-stage.stage-docked .comm-col-left,
+#root .twin-stage.stage-docked .logs-col-left,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+  top:54px !important; bottom:12px !important; left:12px !important;
+  width:308px !important; min-width:308px !important; max-width:308px !important;
+}
+#root .twin-stage.stage-docked .maint-col-right,
+#root .twin-stage.stage-docked .comm-col-right,
+#root .twin-stage.stage-docked .logs-col-right,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  top:54px !important; bottom:12px !important; right:12px !important;
+}
+#root .twin-stage.stage-docked .maint-col-right{width:396px !important;min-width:396px !important;max-width:396px !important}
+#root .twin-stage.stage-docked .comm-col-right{width:430px !important;min-width:430px !important;max-width:430px !important}
+#root .twin-stage.stage-docked .logs-col-right{width:clamp(600px,44vw,720px) !important;min-width:600px !important;max-width:720px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{width:clamp(520px,34vw,610px) !important;min-width:520px !important;max-width:610px !important}
+
+/* ---- 2. 3~5 页栏体：与数据页同一块全息玻璃，不再是 .78 实底 ---- */
+#root .twin-stage.stage-docked .maint-col,
+#root .twin-stage.stage-docked .comm-col,
+#root .twin-stage.stage-docked .logs-col{
+  background:
+    linear-gradient(180deg, rgba(182,255,60,.06), rgba(182,255,60,0) 40%),
+    rgba(3,10,12,.28) !important;
+  box-shadow: inset 0 1px 0 rgba(226,255,180,.16), 0 0 34px -22px rgba(182,255,60,.55) !important;
+}
+#root .twin-stage.stage-docked .maint-col::before,
+#root .twin-stage.stage-docked .comm-col::before,
+#root .twin-stage.stage-docked .logs-col::before{
+  background: linear-gradient(90deg, rgba(182,255,60,.10), rgba(0,0,0,0) 70%) !important;
+  border-bottom: 1px solid rgba(182,255,60,.20) !important;
+}
+#root .twin-stage.stage-docked .maint-panel,
+#root .twin-stage.stage-docked .comm-guide-panel,
+#root .twin-stage.stage-docked .logs-stream{
+  background: rgba(5,15,17,.34) !important;
+  border: 1px solid rgba(182,255,60,.20) !important;
+  box-shadow: none !important;
+}
+#root .twin-stage.stage-docked .logs-stream-head{background: rgba(8,26,26,.42) !important; border-bottom-color: rgba(182,255,60,.16) !important}
+#root .twin-stage.stage-docked .logs-table th{background: rgba(8,26,26,.50) !important}
+#root .twin-stage.stage-docked .logs-row.is-striped td{background: rgba(255,255,255,.015) !important}
+#root .twin-stage.stage-docked .logs-row:hover td{background: rgba(111,196,216,.08) !important}
+
+/* ---- 3. 日志左栏：四张高卡 → 2×2 仪表块，图与分布压到一屏内 ---- */
+#root .logs-col-left .logs-head{flex:none;padding:2px 2px 6px !important;gap:6px !important;align-items:flex-start !important}
+#root .logs-col-left .logs-heading-identity h2{font-size:16px !important;margin:0 !important;line-height:1.2 !important}
+#root .logs-col-left .logs-heading-identity p{font-size:9px !important;line-height:1.45 !important;margin:2px 0 0 !important;color:#7d949b !important}
+#root .logs-col-left .logs-actions{gap:5px !important}
+#root .logs-col-left .logs-actions .maint-button{min-height:24px !important;padding:3px 8px !important;font-size:9.5px !important}
+#root .logs-col-left .logs-insight{flex:none !important;gap:7px !important;padding:0 !important;border:0 !important;background:none !important}
+#root .logs-col-left .logs-kpis{grid-template-columns:1fr 1fr !important;gap:6px !important;padding:0 !important;border:0 !important}
+#root .logs-col-left .logs-kpi{
+  min-height:0 !important;padding:6px 8px !important;gap:1px !important;
+  border:1px solid rgba(111,196,216,.20) !important;border-radius:4px !important;
+  background:rgba(8,28,32,.40) !important;
+}
+#root .logs-col-left .logs-kpi>span{font-size:9px !important;letter-spacing:.4px;color:#8fb2b8}
+#root .logs-col-left .logs-kpi>strong{font-size:18px !important;line-height:1.15 !important}
+#root .logs-col-left .logs-kpi>small{font-size:8px !important;line-height:1.3 !important;color:#6d878e !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#root .logs-col-left .logs-chart{
+  padding:6px 8px !important;border:1px solid rgba(111,196,216,.18) !important;border-radius:4px !important;
+  background:rgba(8,28,32,.32) !important;
+}
+#root .logs-col-left .logs-chart>header{margin-bottom:0 !important;gap:6px}
+#root .logs-col-left .logs-chart svg{height:96px !important;min-height:96px !important}
+#root .logs-col-left .logs-dist{border:0 !important;padding:2px 0 0 !important;gap:0 !important;background:none !important}
+#root .logs-col-left .logs-dist-head{padding:0 0 3px !important;border:0 !important;background:none !important;font-size:9.5px !important}
+#root .logs-col-left .logs-dist-row{height:19px !important;font-size:9.5px !important;gap:6px !important}
+#root .logs-col-left .logs-controls{margin-top:auto !important;padding-top:6px !important;border-top:1px solid rgba(182,255,60,.16)}
+#root .logs-col-left .logs-toolbar{gap:5px !important;flex-wrap:wrap !important;padding:0 !important}
+#root .logs-col-left .logs-search{flex:1 1 100% !important;min-width:0 !important;order:2}
+#root .logs-col-left .logs-scope{order:1}
+#root .logs-col-left .logs-sync{order:3;margin-left:auto}
+#root .logs-col-left .logs-filters{gap:4px !important;padding:4px 0 0 !important;flex-direction:column !important}
+
+/* ---- 4. 日志表格：列宽固定 + 省略号，消除"预测值"压到标题上 ---- */
+#root .logs-table{min-width:0 !important;width:100% !important;table-layout:fixed !important}
+#root .logs-table col.col-time{width:72px !important}
+#root .logs-table col.col-content{width:auto !important}
+#root .logs-table col.col-metrics{width:326px !important}
+#root .logs-table col.col-action{width:46px !important}
+#root .logs-table td{height:32px !important}
+#root .logs-table .logs-cell-main{padding-right:8px !important}
+#root .logs-table .logs-main{min-width:0 !important;overflow:hidden !important;gap:5px !important;flex-wrap:nowrap !important}
+#root .logs-table .logs-title{min-width:0 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important}
+#root .logs-table .logs-sub{display:none !important}
+#root .logs-table .logs-metrics{grid-template-columns:76px 84px 78px 44px !important;gap:4px !important;justify-content:start !important}
+#root .logs-table .logs-gauge{display:none !important}
+#root .logs-table .logs-tag{flex:none !important}
+#root .logs-table .logs-cell-action{padding:0 4px !important;text-align:center !important}
+#root .logs-table .logs-detail{font-size:0 !important;gap:0 !important}
+#root .logs-table .logs-detail svg{width:14px;height:14px}
+
+/* ---- 5. 数据页：KPI 恢复 2×2，不再被 <1800 的媒体查询压成竖排四卡 ---- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-band{
+  grid-template-columns:1fr 1fr !important;grid-template-rows:auto auto !important;gap:8px !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi{
+  min-height:0 !important;height:auto !important;padding:8px 10px !important;
+}
+
+/* ==========================================================================
+   2026-11-07 V4 · 高度纪律
+   原来 .live-workspace 在 ≥1600px 宽时写死 min-height:720px，
+   窗口高 707 时整页比视口高 100px → 顶栏被顶出画面、左栏标题看不见。
+   这里把"整页不滚动"钉死，各个区域内部自己滚。
+   ========================================================================== */
+#root .app-shell{height:100vh !important;max-height:100vh !important;overflow:hidden !important}
+#root .live-workspace{min-height:0 !important;height:100% !important}
+#root .live-main{min-height:0 !important}
+#root .twin-canvas{min-height:0 !important}
+
+/* 左侧栏头吸附：栏内滚动时"运行日志 / 保存 / 导出"不跟着走 */
+#root .logs-col-left .logs-head{
+  position:sticky !important;top:0;z-index:6;
+  margin:0 -10px !important;padding:8px 12px 7px !important;
+  background:linear-gradient(180deg,rgba(4,14,16,.97),rgba(4,14,16,.86)) !important;
+  border-bottom:1px solid rgba(182,255,60,.18) !important;
+}
+/* 栏头已经有"运行日志"，英文编号条与它抢同一个吸附位，去掉 */
+#root .logs-col-left::before{display:none !important}
+/* 预测/实际/偏差 与内容列之间加分隔线，并把重复的"预测"标签去掉（表头已写明） */
+#root .logs-table .logs-cell-metrics{border-left:1px solid rgba(182,255,60,.14) !important;padding-left:10px !important}
+#root .logs-table .logs-metrics>span:first-child em{display:none !important}
+
+/* 短屏（≤860px 高）：所有区域一起收，保证 3D + 底部三块 / 侧栏都完整可见 */
+@media (max-height: 860px){
+  #root .s5-shell .topbar{height:54px !important;min-height:54px !important}
+  #root .s5-trend{min-height:168px !important;padding:10px 18px 8px !important}
+  #root .time-plot svg{height:84px !important}
+  #root .s5-result strong{font-size:26px !important}
+  #root .key-parameter-panel .key-parameter-item{min-height:14px !important}
+  #root .logs-col-left .logs-chart svg{height:72px !important;min-height:72px !important}
+  #root .logs-col-left .logs-dist-row{height:17px !important}
+  #root .logs-col-left .logs-head{padding:6px 12px 5px !important}
+}
+
+/* ==========================================================================
+   2026-11-07 V5 · 舞台去重 + 左栏收口
+   侧挂页里 LiveWorkspace 的底部三块面板和侧栏 KPI 重复，还在 3D 下面漏出来，
+   一并收掉；日志左栏的"运行态势"胶囊行在 308px 下会挤成一坨，改成两行网格。
+   ========================================================================== */
+#root .twin-stage.stage-docked .station-strip,
+#root .twin-stage.stage-docked .twin-bottom{
+  display:none !important;
+}
+/* 底部三块面板保留：侧栏往上让位，别把它们盖住 */
+#root .twin-stage.stage-docked .maint-col-left,
+#root .twin-stage.stage-docked .maint-col-right,
+#root .twin-stage.stage-docked .comm-col-left,
+#root .twin-stage.stage-docked .comm-col-right,
+#root .twin-stage.stage-docked .logs-col-left,
+#root .twin-stage.stage-docked .logs-col-right,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  bottom:calc(var(--monitor-height, 210px) + 12px) !important;
+}
+#root .twin-stage.stage-docked .s5-trend{height:var(--monitor-height,210px) !important}
+#root .twin-stage.stage-docked .twin-canvas{height:100% !important}
+
+#root .logs-col-left .logs-insight.is-collapsed{
+  display:grid !important;grid-template-columns:1fr 1fr !important;
+  gap:3px 8px !important;align-items:center !important;
+  padding:6px 8px !important;font-size:9px !important;line-height:1.35 !important;
+  border:1px solid rgba(111,196,216,.18) !important;border-radius:4px !important;
+  background:rgba(8,28,32,.34) !important;
+}
+#root .logs-col-left .logs-insight.is-collapsed>strong{
+  grid-column:1 / -1;font-size:10px !important;letter-spacing:.6px;color:#cfeee0 !important;
+}
+#root .logs-col-left .logs-insight.is-collapsed>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#8fb2b8 !important}
+#root .logs-col-left .logs-insight-toggle{grid-column:2;justify-self:end;font-size:9px !important}
+#root .logs-col-left .logs-level-list{flex-wrap:wrap !important;gap:3px 4px !important}
+#root .logs-col-left .logs-level-row{min-width:0 !important;font-size:9px !important;padding:2px 5px !important}
+#root .logs-col-left .logs-category{flex-wrap:wrap !important;gap:3px 4px !important}
+#root .logs-col-left .logs-category button{font-size:9px !important;padding:2px 6px !important}
+
+/* 数据页参数矩阵：8 列在 610px 下最后一列被切，放宽 + 压字号 */#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  width:clamp(560px,38vw,660px) !important;min-width:560px !important;max-width:660px !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table th,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table td{
+  font-size:8.5px !important;padding:1px 2px !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right table{
+  min-width:0 !important;width:100% !important;table-layout:fixed !important;
+}
+
+/* ---- 6. 日志左栏收口：分类分布单列（两列会把标签和数字挤在一起）、筛选行压扁 ---- */
+#root .logs-col-left .logs-dist{display:flex !important;flex-direction:column !important;gap:0 !important;align-content:start}
+#root .logs-col-left{gap:6px !important;padding-bottom:10px !important}
+#root .logs-col-left .logs-dist-row{height:16px !important;font-size:9px !important;gap:5px !important}
+#root .logs-col-left .logs-insight.is-collapsed{padding:5px 8px !important;gap:2px 8px !important}
+#root .logs-col-left .logs-category button,
+#root .logs-col-left .logs-level-row{font-size:8.5px !important;padding:0 4px !important;min-height:18px !important}
+#root .logs-col-left .logs-controls{padding-top:5px !important}
+#root .logs-col-left .logs-toolbar{gap:4px !important}
+#root .logs-col-left .logs-search input{height:26px !important;font-size:10px !important}
+#root .logs-col-left .logs-search .maint-button{min-height:26px !important;padding:2px 8px !important}
+#root .logs-col-left .logs-category button,
+#root .logs-col-left .logs-level-row{font-size:9px !important;padding:1px 5px !important;min-height:20px !important}
+#root .logs-col-left .logs-filters{gap:3px !important}
+#root .logs-col-left .logs-heading-identity h2{font-size:15px !important}
+#root .logs-col-left .logs-heading-identity p{font-size:8.5px !important}
+#root .logs-col-left .logs-actions .maint-button{min-height:22px !important;padding:2px 7px !important;font-size:9px !important}
+
+/* ==========================================================================
+   2026-11-07 V7 · 内容重排（底部三块保留，侧栏往后让；左栏按"先筛选、后洞察"重排）
+   ========================================================================== */
+
+/* ---------- 日志左栏：标题 → 筛选 → 运行态势 → 分类分布 → AI 分析 ---------- */
+#root .logs-col-left .logs-head{order:1}
+#root .logs-col-left .logs-controls{order:2;margin-top:0 !important;padding-top:0 !important;border-top:0 !important}
+#root .logs-col-left .logs-insight{order:3}
+#root .logs-col-left .logs-dist{order:4}
+#root .logs-col-left .logs-analysis{order:5}
+#root .logs-col-left{overflow-y:auto !important}
+
+/* 筛选条：页签与同步状态一行，搜索独占一行 */
+#root .logs-col-left .logs-toolbar{display:grid !important;grid-template-columns:1fr auto;gap:5px !important}
+#root .logs-col-left .logs-scope{grid-column:1}
+#root .logs-col-left .logs-sync{grid-column:2;justify-self:end;font-size:9px !important}
+#root .logs-col-left .logs-search{grid-column:1 / -1}
+
+/* 分类分布：标签 + 计数一行，进度线贴行底 2px，不再压字 */
+#root .logs-col-left .logs-dist-row{
+  position:relative !important;display:grid !important;grid-template-columns:1fr auto !important;
+  align-items:center !important;height:21px !important;padding:0 0 5px !important;gap:8px !important;
+  font-size:9.5px !important;
+}
+#root .logs-col-left .logs-dist-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#root .logs-col-left .logs-dist-row>i{
+  position:absolute !important;left:0 !important;right:0 !important;bottom:1px !important;
+  height:2px !important;margin:0 !important;border-radius:1px !important;
+  background:rgba(255,255,255,.07) !important;overflow:hidden !important;
+}
+#root .logs-col-left .logs-dist-row>i>b{display:block !important;height:2px !important;border-radius:1px !important;background:linear-gradient(90deg,#2f7fa0,#6fc4d8) !important}
+#root .logs-col-left .logs-dist-row>em{margin:0 !important;font-size:9px !important;color:#9fc4cf !important;font-style:normal}
+
+/* AI 运行分析压成一块小卡，不再占半栏 */
+#root .logs-col-left .ai-analysis-progress{
+  padding:6px 8px !important;gap:4px !important;font-size:9.5px !important;line-height:1.4 !important;
+  border-radius:4px !important;background:rgba(8,28,32,.34) !important;border-color:rgba(111,196,216,.16) !important;
+}
+#root .logs-col-left .ai-analysis-progress small{font-size:9px !important}
+#root .logs-col-left .ai-analysis-progress button{min-height:20px !important;padding:1px 6px !important;font-size:9px !important}
+
+/* ---------- 数据左栏：卡 → 操作条 → 机架快照，按流程从上到下 ---------- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+  justify-content:flex-start !important;gap:7px !important;overflow-y:auto !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-band{order:1}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-bar{order:2;margin-top:0 !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left>.data-stand-snap,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-snap{order:3}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi{padding:7px 9px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-label{font-size:9.5px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value{font-size:17px !important;line-height:1.15 !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value.is-number{font-size:16px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-note{
+  font-size:8px !important;white-space:normal !important;line-height:1.3 !important;
+  display:-webkit-box !important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-ring{width:30px !important;height:30px !important}
+
+/* ==========================================================================
+   2026-11-07 V8 · 左栏内容去重（分类分布与"分类"页签的计数完全重复，直接去掉）
+   ========================================================================== */
+#root .logs-col-left .logs-dist{display:none !important}
+/* 运行态势四个指标压成一行，不再 2×2 占两行 */
+#root .logs-col-left .logs-kpis{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:4px !important}
+#root .logs-col-left .logs-kpi{padding:5px 6px !important;border-radius:4px !important}
+#root .logs-col-left .logs-kpi>span{font-size:7.5px !important;letter-spacing:0 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#root .logs-col-left .logs-kpi>strong{font-size:14px !important;line-height:1.2 !important}
+#root .logs-col-left .logs-kpi>small{display:none !important}
+#root .logs-col-left .logs-chart{margin-top:2px}
+#root .logs-col-left .logs-controls{margin-top:0 !important}
+/* 数据卡：五机架压下的双数值不许被省略号截断 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value.is-number{font-size:13px !important;white-space:nowrap !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value.is-number small{font-size:8px !important}
+
+/* ---- V9 · 把两栏压进 377px（底部三块恢复后的实际可视高度） ---- */
+#root .logs-col-left .logs-heading-identity p{display:none !important}
+#root .logs-col-left .logs-head{padding:6px 12px 5px !important}
+#root .logs-col-left .ai-analysis-progress{padding:4px 6px !important;gap:3px !important;font-size:8.5px !important}
+#root .logs-col-left .ai-analysis-progress small{font-size:8px !important}
+#root .logs-col-left .ai-analysis-progress button{min-height:17px !important;padding:0 5px !important;font-size:8px !important}
+#root .logs-col-left .logs-category,
+#root .logs-col-left .logs-levels{gap:3px !important}
+#root .logs-col-left .logs-category button,
+#root .logs-col-left .logs-level-row{font-size:8px !important;padding:0 3px !important;min-height:16px !important;line-height:16px !important}
+#root .logs-col-left .logs-category-label{font-size:8px !important;min-width:22px !important}
+#root .logs-col-left .logs-toolbar{grid-template-columns:auto 1fr auto !important}
+#root .logs-col-left .logs-scope{grid-column:1 !important}
+#root .logs-col-left .logs-search{grid-column:2 !important}
+#root .logs-col-left .logs-sync{grid-column:3 !important;font-size:8px !important}
+/* 数据页左栏：副标题占位去掉，卡再压一格 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-access-sub{display:none !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi{padding:5px 8px !important;min-height:0 !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value{font-size:15px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row{height:20px !important;font-size:9px !important}
+
+/* ---- V10 · 分类/级别筛选改等宽网格，不再参差换行 ---- */
+#root .logs-col-left .logs-category{display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:3px !important}
+#root .logs-col-left .logs-category-label{grid-column:1 / -1 !important}
+#root .logs-col-left .logs-category button{justify-content:space-between !important;width:100% !important;padding:0 5px !important}
+#root .logs-col-left .logs-levels .logs-level-list{display:grid !important;grid-template-columns:repeat(5,minmax(0,1fr)) !important;gap:3px !important}
+#root .logs-col-left .logs-level-row{width:100% !important;justify-content:space-between !important;padding:0 4px !important}
+#root .logs-col-left .logs-level-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ==========================================================================
+   2026-11-07 V12 · 左侧图标导航栏搬到顶部（透明）
+   .sidebar 原来是 172/64px 的竖栏，.main-shell 用 margin-left 让位；
+   改成 fixed 顶部横条后，main-shell 改 margin-left:0 + margin-top。
+   ========================================================================== */
+#root .sidebar{
+  position:fixed !important; top:0 !important; left:0 !important; right:0 !important;
+  width:auto !important; height:46px !important; min-height:46px !important;
+  margin:0 !important;
+  display:flex !important; flex-direction:row !important; align-items:center !important;
+  padding:0 12px !important;
+  background:transparent !important;
+  border:0 !important; border-bottom:1px solid rgba(182,255,60,.18) !important;
+  box-shadow:none !important; z-index:120 !important;
+}
+#root .sidebar nav{
+  display:flex !important; flex-direction:row !important; align-items:center !important;
+  gap:6px !important; width:auto !important; height:100% !important; flex:0 0 auto !important;
+}
+#root .sidebar nav button{
+  width:auto !important; height:34px !important; min-width:0 !important;
+  padding:0 11px !important; flex-direction:row !important; gap:7px !important;
+  border-radius:6px !important;
+}
+#root .sidebar nav button>span{display:inline !important; font-size:10.5px !important; line-height:1 !important; white-space:nowrap !important}
+#root .sidebar nav button svg{width:16px !important; height:16px !important}
+#root .shell-nav-glyph{width:auto !important; height:auto !important; display:inline-flex !important}
+#root .sidebar-bottom{display:none !important}
+#root .sidebar-process{display:none !important}
+/* 主区：不再左移，改为让出顶部 46px */
+#root .main-shell,
+#root .s5-shell.workbench-shell .main-shell,
+#root .s5-shell.workbench-shell.nav-collapsed .main-shell{
+  margin-left:0 !important; width:100% !important; margin-top:46px !important;
+}
+#root .main-shell{height:calc(100vh - 46px) !important}
+
+/* ==========================================================================
+   2026-11-07 V13 · 数据页 KPI 卡尺寸锁定
+   刷新/预测到达时卡片会"长个"：data-focus 把数值 23px、备注换行 1→2 行、
+   卡片本身 min-height:0 跟着内容走。这里把高度、字号、备注行数全部钉死。
+   ========================================================================== */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi[data-focus="true"]{
+  height:96px !important; min-height:96px !important; max-height:96px !important;
+  padding:7px 9px !important; overflow:hidden !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value.is-number,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi[data-focus="true"] .data-kpi-value.is-number{
+  font-size:15px !important; line-height:20px !important; height:20px !important;
+  white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-note{
+  height:24px !important; min-height:24px !important; max-height:24px !important;
+  display:-webkit-box !important; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden !important; font-size:8px !important; line-height:12px !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-label{
+  height:14px !important; line-height:14px !important; overflow:hidden !important; white-space:nowrap !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-bullet,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-spark,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-chain{
+  flex:0 0 auto !important; height:18px !important; min-height:18px !important; margin:0 !important;
+}
+
+/* ==========================================================================
+   2026-11-07 V14 · 顶部导航搬上去之后的遮挡修正
+   3D 舞台是全屏 fixed 的，顶栏变透明后 HUD/模型会透到顶栏文字下面。
+   这里把顶栏和导航条压成实底，并把全屏 HUD 整体下移 46px。
+   ========================================================================== */
+#root .sidebar{
+  background:linear-gradient(180deg,#050d12,#040a0f) !important;
+  border-bottom:1px solid rgba(182,255,60,.22) !important;
+}
+#root .topbar{
+  background:linear-gradient(100deg,#0a1420,#08111b) !important;
+}
+#root .holo-hud{inset:46px 0 0 0 !important}
+#root .twin-stage-topbar-hint{display:none !important}
+
+/* HUD 挂在 body 上，不在 #root 里，上一版选择器没命中，这里补一条 */
+.holo-hud{inset:46px 0 0 0 !important}
+
+/* KPI 标签上的"更新中"小标：沿用旧值时的提示 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-label em.is-stale{
+  margin-left:6px;padding:0 4px;border-radius:3px;
+  background:rgba(111,196,216,.16);color:#8fd0dd;font-size:7.5px;font-style:normal;letter-spacing:.4px;
+}
+
+/* ==========================================================================
+   2026-11-07 V15 · 导航改"顶栏内文字页签"
+   上一版是独立 46px 图标条：位置悬空、形式像五个色块按钮。
+   改回与顶栏同一行，放在产品名右侧的空档里，用小图标 + 文字页签。
+   ========================================================================== */
+#root .sidebar{
+  position:fixed !important; top:0 !important; left:430px !important; right:auto !important;
+  width:auto !important; height:64px !important; min-height:0 !important;
+  display:flex !important; align-items:center !important;
+  padding:0 !important; margin:0 !important;
+  background:none !important; border:0 !important; box-shadow:none !important;
+  z-index:130 !important;
+}
+#root .sidebar nav{
+  display:flex !important; flex-direction:row !important; align-items:center !important;
+  gap:2px !important; height:auto !important; width:auto !important;
+}
+#root .sidebar nav button{
+  width:auto !important; height:32px !important; min-width:0 !important;
+  padding:0 11px !important; flex-direction:row !important; gap:6px !important;
+  border:1px solid transparent !important; border-radius:4px !important;
+  background:transparent !important; color:#93a9b8 !important;
+  font-size:11px !important; letter-spacing:.4px;
+}
+#root .sidebar nav button>span{display:inline !important;font-size:11px !important;white-space:nowrap !important}
+#root .sidebar nav button:hover{color:#d9f2ea !important;background:rgba(182,255,60,.05) !important}
+#root .sidebar nav button.active{
+  color:#e6ffe9 !important;background:rgba(182,255,60,.08) !important;
+  border-color:rgba(182,255,60,.28) !important;box-shadow:none !important;
+}
+/* 彩色图标块退成单色线性图标 */
+#root .shell-nav-glyph{
+  width:15px !important;height:15px !important;background:none !important;
+  border:0 !important;border-radius:0 !important;box-shadow:none !important;
+  display:inline-flex !important;align-items:center !important;justify-content:center !important;
+  opacity:.85;
+}
+#root .shell-nav-glyph svg{width:15px !important;height:15px !important}
+#root .sidebar nav button.active .shell-nav-glyph{opacity:1;color:#c8ff9a}
+#root .sidebar nav button.active svg{filter:none !important}
+/* 主区恢复全高（不再让 46px） */
+#root .main-shell,
+#root .s5-shell.workbench-shell .main-shell,
+#root .s5-shell.workbench-shell.nav-collapsed .main-shell{
+  margin-top:0 !important; margin-left:0 !important; width:100% !important; height:100vh !important;
+}
+.holo-hud{inset:64px 0 0 0 !important}
+@media (max-width: 1440px){
+  #root .sidebar{left:330px !important}
+  #root .sidebar nav button{padding:0 8px !important}
+  #root .sidebar nav button>span{font-size:10px !important}
+}
+
+/* ==========================================================================
+   2026-11-07 V16 · 导航改成顶部全宽页签条（带文字的 tab，不是五个色块）
+   位置：页面最顶一条 44px，跨满宽度；形式：图标 + 文字 + 选中下划线
+   ========================================================================== */
+#root .sidebar{
+  position:fixed !important; top:0 !important; left:0 !important; right:0 !important;
+  width:auto !important; height:44px !important; min-height:44px !important;
+  display:flex !important; align-items:stretch !important;
+  padding:0 14px !important; margin:0 !important;
+  background:linear-gradient(180deg,#08141b,#050e14) !important;
+  border:0 !important; border-bottom:1px solid rgba(182,255,60,.20) !important;
+  box-shadow:none !important; z-index:130 !important;
+}
+#root .sidebar nav{
+  display:flex !important; flex-direction:row !important; align-items:stretch !important;
+  gap:2px !important; height:100% !important; width:auto !important;
+}
+#root .sidebar nav button{
+  width:auto !important; height:100% !important; min-width:0 !important;
+  padding:0 16px !important; flex-direction:row !important; gap:7px !important;
+  border:0 !important; border-bottom:2px solid transparent !important; border-radius:0 !important;
+  background:transparent !important; color:#93a9b8 !important;
+  font-size:12px !important; letter-spacing:.4px !important;
+}
+#root .sidebar nav button>span{
+  display:inline !important; visibility:visible !important; opacity:1 !important;
+  font-size:12px !important; line-height:1 !important; white-space:nowrap !important;
+}
+#root .sidebar nav button svg{width:15px !important; height:15px !important}
+#root .sidebar nav button:hover{color:#d7f2e8 !important; background:rgba(182,255,60,.05) !important}
+#root .sidebar nav button.active{
+  color:#eafff0 !important; border-bottom-color:#b6ff3c !important;
+  background:linear-gradient(180deg,rgba(182,255,60,.10),rgba(182,255,60,0)) !important;
+  box-shadow:none !important;
+}
+#root .shell-nav-glyph{
+  width:16px !important; height:16px !important; background:none !important;
+  border:0 !important; border-radius:0 !important; box-shadow:none !important;
+  display:inline-flex !important; align-items:center !important; justify-content:center !important;
+  opacity:.9 !important;
+}
+#root .shell-nav-glyph svg{width:16px !important; height:16px !important}
+#root .sidebar nav button.active .shell-nav-glyph{opacity:1 !important; color:#c9ff9b !important}
+/* 主区让出 44px */
+#root .main-shell,
+#root .s5-shell.workbench-shell .main-shell,
+#root .s5-shell.workbench-shell.nav-collapsed .main-shell{
+  margin-top:44px !important; margin-left:0 !important; width:100% !important;
+  height:calc(100vh - 44px) !important;
+}
+.holo-hud{inset:44px 0 0 0 !important}
+
+/* 没有设置目标时的空进度槽：就是那张卡里那条深色空条，去掉 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-bullet.is-empty{display:none !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-note{margin-top:2px !important}
+
+/* ==========================================================================
+   2026-11-07 V17 · 面向操作员，不显示原始 JSON
+   "查看技术信息"里的 pre(JSON.stringify(...)) 是给开发排障用的，
+   在业务页面里整块隐藏；报告页保留表格、只藏 JSON。
+   ========================================================================== */
+#root .twin-stage .prediction-record-technical,
+#root .main-content .prediction-record-technical,
+#root .logs-workspace .prediction-record-technical,
+#root .data-workspace .prediction-record-technical{
+  display:none !important;
+}
+#root .report-sheet .prediction-record-technical{display:block !important}
+#root .report-sheet .prediction-record-technical>pre{display:none !important}
+/* 数据页底栏那个浮层技术信息 */
+#root .data-access-foot .prediction-record-technical{display:none !important}
+
+/* ==========================================================================
+   2026-11-07 V18 · 顶部导航定稿：独立 46px 导航条 + 各自带 3D 立体图标
+   1) 按钮按内容定宽，不再被压成 62px 导致文字互相压住
+   2) 恢复 shell-visual.css 里的立体图标板（旋转底板 + 投影），每个页签自己的强调色
+   ========================================================================== */
+#root .sidebar{
+  position:fixed !important; top:0 !important; left:0 !important; right:0 !important;
+  height:46px !important; min-height:46px !important; width:auto !important;
+  display:flex !important; align-items:stretch !important;
+  padding:0 12px !important; margin:0 !important;
+  background:linear-gradient(180deg,#08141b,#050e14) !important;
+  border:0 !important; border-bottom:1px solid rgba(182,255,60,.20) !important;
+  box-shadow:none !important; z-index:130 !important;
+}
+#root .sidebar nav{
+  display:flex !important; flex-direction:row !important; align-items:stretch !important;
+  gap:2px !important; height:100% !important; width:auto !important;
+}
+#root .sidebar nav button{
+  flex:0 0 auto !important; width:auto !important; min-width:0 !important; max-width:none !important;
+  height:100% !important; padding:0 14px 0 10px !important;
+  display:inline-flex !important; flex-direction:row !important; align-items:center !important; gap:8px !important;
+  border:0 !important; border-bottom:2px solid transparent !important; border-radius:0 !important;
+  background:transparent !important; color:#93a9b8 !important;
+  font-size:12px !important; letter-spacing:.3px !important;
+}
+#root .sidebar nav button>span{
+  display:inline-block !important; visibility:visible !important; opacity:1 !important;
+  font-size:12px !important; line-height:1 !important; white-space:nowrap !important;
+}
+#root .sidebar nav button.active{
+  color:#eafff0 !important; border-bottom-color:#b6ff3c !important;
+  background:linear-gradient(180deg,rgba(182,255,60,.10),rgba(182,255,60,0)) !important;
+}
+#root .sidebar nav button:hover{color:#d7f2e8 !important; background:rgba(182,255,60,.05) !important}
+
+/* 立体图标板：恢复被前面几版压平的 :before/:after */
+#root .shell-nav-glyph{
+  position:relative !important; isolation:isolate !important;
+  flex:0 0 26px !important; width:26px !important; height:26px !important;
+  display:grid !important; place-items:center !important;
+  background:none !important; border:0 !important; border-radius:0 !important;
+  box-shadow:none !important; color:var(--nav-accent, #8fd0e8) !important; opacity:1 !important;
+}
+#root .shell-nav-glyph:before{
+  content:"" !important; position:absolute !important; z-index:-1 !important;
+  inset:3px 1px 2px !important; border-radius:8px !important;
+  border:1px solid color-mix(in srgb, var(--nav-accent, #8fd0e8) 30%, transparent) !important;
+  background:linear-gradient(145deg,
+    color-mix(in srgb, var(--nav-accent, #8fd0e8) 26%, #242a31),
+    var(--nav-shade, #0c1218)) !important;
+  opacity:.9 !important; transform:rotate(-8deg) !important;
+  box-shadow:2px 3px 0 #090d1038, inset 1px 1px #ffffff0e !important;
+}
+#root .shell-nav-glyph:after{
+  content:"" !important; position:absolute !important; z-index:-2 !important;
+  left:3px !important; right:1px !important; bottom:-1px !important; height:5px !important;
+  border-radius:50% !important; background:#05090e66 !important;
+  filter:blur(2px) !important; transform:skewX(-18deg) !important;
+}
+#root .shell-nav-glyph svg{width:14px !important; height:14px !important}
+#root .sidebar nav button.active .shell-nav-glyph{filter:drop-shadow(0 0 6px color-mix(in srgb, var(--nav-accent, #b6ff3c) 55%, transparent)) !important}
+
+#root .main-shell,
+#root .s5-shell.workbench-shell .main-shell,
+#root .s5-shell.workbench-shell.nav-collapsed .main-shell{
+  margin-top:46px !important; margin-left:0 !important; width:100% !important;
+  height:calc(100vh - 46px) !important;
+}
+.holo-hud{inset:46px 0 0 0 !important}
+
+/* 导航只留 4 个业务页（预测工作台从页面里的"预测工作台 →"按钮进入） */
+#root .sidebar nav button[data-page="overview"]{display:none !important}
+
+/* nav-collapsed 模式下 span 被写成了"悬浮 tooltip"，顶部横排必须复位成行内文字 */
+#root .sidebar nav{margin-top:0 !important; height:100% !important}
+#root .sidebar nav button>span{
+  display:inline-block !important;
+  position:static !important; left:auto !important; top:auto !important;
+  opacity:1 !important; visibility:visible !important; transform:none !important;
+  padding:0 !important; border:0 !important; border-radius:0 !important;
+  background:none !important; box-shadow:none !important;
+  font-size:12px !important; line-height:1 !important; white-space:nowrap !important;
+}
+
+/* ==========================================================================
+   2026-11-07 V19 · 顶部导航最终版（强制 4 页签 + 文字 + 3D 图标，杜绝挤压）
+   ========================================================================== */
+#root .sidebar{
+  position:fixed !important; top:0 !important; left:0 !important; right:0 !important;
+  height:46px !important; min-height:46px !important; width:auto !important;
+  display:flex !important; align-items:center !important; justify-content:flex-start !important;
+  gap:2px !important; padding:0 12px !important; margin:0 !important;
+  background:linear-gradient(180deg,#08141b,#050e14) !important;
+  border:0 !important; border-bottom:1px solid rgba(182,255,60,.22) !important;
+  box-shadow:0 4px 18px -12px #000 !important; z-index:140 !important;
+}
+#root .sidebar .brand,
+#root .sidebar-bottom,
+#root .sidebar-process{display:none !important}
+#root .sidebar nav{
+  display:flex !important; flex-direction:row !important; align-items:center !important;
+  gap:4px !important; height:46px !important; margin:0 !important; padding:0 !important; width:auto !important;
+}
+#root .sidebar nav button{
+  display:inline-flex !important; flex:0 0 auto !important;
+  width:auto !important; min-width:0 !important; max-width:none !important;
+  height:32px !important; min-height:32px !important;
+  padding:0 13px !important; margin:0 !important;
+  flex-direction:row !important; align-items:center !important; gap:8px !important;
+  border:1px solid transparent !important; border-radius:5px !important;
+  background:transparent !important; color:#93a9b8 !important;
+  font-size:12px !important; letter-spacing:.3px !important; box-shadow:none !important;
+}
+#root .sidebar nav button>span{
+  display:inline-block !important; position:static !important; left:auto !important; top:auto !important;
+  opacity:1 !important; visibility:visible !important; transform:none !important;
+  padding:0 !important; border:0 !important; background:none !important; box-shadow:none !important;
+  font-size:12px !important; line-height:1 !important; white-space:nowrap !important; font-weight:400 !important;
+}
+#root .sidebar nav button.active{
+  color:#eafff0 !important; border-color:rgba(182,255,60,.45) !important;
+  background:linear-gradient(180deg,rgba(182,255,60,.16),rgba(182,255,60,.04)) !important;
+}
+#root .sidebar nav button:hover{color:#dcf5ea !important; background:rgba(182,255,60,.07) !important}
+#root .main-shell,
+#root .s5-shell.workbench-shell .main-shell,
+#root .s5-shell.workbench-shell.nav-collapsed .main-shell{
+  margin-top:46px !important; margin-left:0 !important; width:100% !important;
+  height:calc(100vh - 46px) !important;
+}
+
+/* ==========================================================================
+   2026-11-07 V20 · 关掉界面里的闪烁/呼吸/旋转动画
+   数据每 3 秒刷新一次，卡片上的角标、呼吸灯、旋转图标跟着一亮一灭，
+   看着非常刺眼。这里统一停掉 UI 动画与过渡（3D 是 JS 驱动，不受影响）。
+   ========================================================================== */
+#root *,
+#root *::before,
+#root *::after{
+  animation: none !important;
+  transition: none !important;
+}
+/* "更新中"角标跟着预测周期一亮一灭，直接不显示 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-label em.is-stale{display:none !important}
+
+/* 卡片不再随 data-focus 换底色（每 3 秒预测一到就闪一下），固定成同一套外观 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi[data-focus="true"]{
+  background:rgba(8,28,32,.42) !important;
+  border-color:rgba(111,196,216,.24) !important;
+  box-shadow:none !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi:before{
+  background:linear-gradient(90deg,rgba(111,196,216,.55),transparent 72%) !important;
+}
+
+/* ==========================================================================
+   2026-11-07 V21 · 导航搬进"页面标题行" + 四色立体图标
+   标题行中部是空的（左边标题、右边按钮），导航居中放进去；每页对准自己的标题行 y。
+   ========================================================================== */
+#root .sidebar{
+  position:fixed !important; top:166px !important; left:50% !important; right:auto !important;
+  transform:translateX(-50%) !important;
+  width:auto !important; height:34px !important; min-height:34px !important;
+  display:flex !important; align-items:center !important; gap:4px !important;
+  padding:0 !important; margin:0 !important;
+  background:transparent !important; border:0 !important; box-shadow:none !important;
+  z-index:135 !important;
+}
+#root .sidebar .brand,
+#root .sidebar-bottom,
+#root .sidebar-process{display:none !important}
+#root .sidebar nav{
+  display:flex !important; flex-direction:row !important; align-items:center !important;
+  gap:4px !important; height:34px !important; margin:0 !important; padding:0 !important;
+}
+#root .sidebar nav button{
+  display:inline-flex !important; flex:0 0 auto !important; align-items:center !important;
+  width:auto !important; height:32px !important; padding:0 12px 0 8px !important;
+  flex-direction:row !important; gap:8px !important;
+  border:1px solid rgba(255,255,255,.07) !important; border-radius:16px !important;
+  background:rgba(4,14,18,.55) !important; color:#cfe6df !important;
+  font-size:12px !important; letter-spacing:.3px !important; box-shadow:none !important;
+}
+#root .sidebar nav button>span{
+  display:inline-block !important; position:static !important; left:auto !important; top:auto !important;
+  opacity:1 !important; visibility:visible !important; transform:none !important;
+  padding:0 !important; border:0 !important; background:none !important; box-shadow:none !important;
+  font-size:12px !important; line-height:1 !important; white-space:nowrap !important; font-weight:400 !important;
+  color:#cfe6df !important;
+}
+#root .sidebar nav button.active{
+  border-color:rgba(182,255,60,.45) !important;
+  background:rgba(182,255,60,.10) !important;
+}
+/* 每页一个颜色 */
+#root .sidebar nav button[data-page="data"]{--nav-accent:#3ce0ff}
+#root .sidebar nav button[data-page="maintenance"]{--nav-accent:#b6ff3c}
+#root .sidebar nav button[data-page="communication"]{--nav-accent:#9b8cff}
+#root .sidebar nav button[data-page="logs"]{--nav-accent:#ffc857}
+/* 立体图标板：旋转底板 + 底部投影 + 高光 */
+#root .shell-nav-glyph{
+  position:relative !important; isolation:isolate !important;
+  flex:0 0 24px !important; width:24px !important; height:24px !important;
+  display:grid !important; place-items:center !important;
+  background:none !important; border:0 !important; border-radius:0 !important;
+}
+#root .shell-nav-glyph:before{
+  content:"" !important; position:absolute !important; z-index:-1 !important;
+  inset:2px 0 1px !important; border-radius:7px !important;
+  border:1px solid color-mix(in srgb, var(--nav-accent, #8fd0e8) 55%, transparent) !important;
+  background:linear-gradient(145deg,
+    color-mix(in srgb, var(--nav-accent, #8fd0e8) 45%, #0d1a20),
+    color-mix(in srgb, var(--nav-accent, #8fd0e8) 8%, #0a1218)) !important;
+  transform:rotate(-8deg) !important;
+  box-shadow:2px 3px 0 rgba(0,0,0,.35), inset 1px 1px rgba(255,255,255,.18) !important;
+}
+#root .shell-nav-glyph:after{
+  content:"" !important; position:absolute !important; z-index:-2 !important;
+  left:2px !important; right:0 !important; bottom:-1px !important; height:5px !important;
+  border-radius:50% !important; background:rgba(0,0,0,.45) !important;
+  filter:blur(2px) !important; transform:skewX(-18deg) !important;
+}
+#root .shell-nav-glyph svg{width:13px !important; height:13px !important; color:#fff !important}
+/* 主区回到顶（导航已不在顶部占位） */
+#root .main-shell,
+#root .s5-shell.workbench-shell .main-shell,
+#root .s5-shell.workbench-shell.nav-collapsed .main-shell{
+  margin-top:0 !important; margin-left:0 !important; width:100% !important; height:100vh !important;
+}
+.holo-hud{inset:64px 0 0 0 !important}
+/* 各页对准自己的标题行 */
+body:has(.twin-stage[data-stage-page="maintenance"]) #root .sidebar{top:108px !important}
+body:has(.twin-stage[data-stage-page="communication"]) #root .sidebar{top:108px !important}
+body:has(.twin-stage[data-stage-page="logs"]) #root .sidebar{top:118px !important}

@@ -17,7 +17,7 @@ const bytes = url => Uint8Array.from(atob(url.split(',')[1]), character => chara
 function filename(input, ext) { return `${String(input.id || 'QCDKR').replace(/[^\p{L}\p{N}_-]/gu, '_')}_工艺报告.${ext}`; }
 function download(blob, name) { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); }
 function imageData(data) { let binary = ''; for (let i = 0; i < data.length; i += 8192) binary += String.fromCharCode(...data.subarray(i, i + 8192)); return `data:image/png;base64,${btoa(binary)}`; }
-async function preview() { const response = await fetch('/assets/line-preview.png', { cache: 'no-store' }); if (!response.ok) throw new Error('最终母版预览读取失败。'); return new Uint8Array(await response.arrayBuffer()); }
+async function preview() { const response = await fetch('/assets/factory-preview.png', { cache: 'no-store' }); if (!response.ok) throw new Error('最终母版预览读取失败。'); return new Uint8Array(await response.arrayBuffer()); }
 
 export function exportJSON(data) {
   const report = data.input && data.prediction ? buildReport(data) : undefined;

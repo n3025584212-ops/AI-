@@ -1,0 +1,425 @@
+/* 3D-first cockpit: the factory scene owns the workbench; data becomes HUD glass. */
+.dashboard-workspace.live-immersive:not(.live-expanded){
+  position:relative;
+  display:block;
+  height:100%;
+  min-height:0;
+  padding:0;
+  gap:0;
+  overflow:hidden;
+  background:#050d15;
+  isolation:isolate;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .dashboard-grid,
+.dashboard-workspace.live-immersive:not(.live-expanded) .dashboard-primary{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:0;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .live-main{
+  position:absolute;
+  inset:0;
+  display:block;
+  min-height:0;
+  border:0;
+  border-radius:0;
+  background:#08131d;
+  box-shadow:none;
+  overflow:hidden;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .twin-scene{
+  position:absolute;
+  inset:0;
+  display:block;
+  min-height:0;
+  border-radius:0;
+  overflow:hidden;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .twin-canvas{
+  position:absolute;
+  inset:0;
+  height:100%;
+  min-height:0;
+  border-radius:0;
+  background:#071521;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .twin-canvas>.three-viewer{
+  height:100%!important;
+  min-height:0!important;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics{
+  position:absolute;
+  z-index:6;
+  top:8px;
+  left:auto;
+  right:10px;
+  width:min(440px,calc(100vw - 120px));
+  height:144px;
+  min-height:0;
+  padding:6px 8px;
+  border:1px solid #2b556b66;
+  border-radius:10px;
+  background:linear-gradient(180deg,#04111cf2,#061b2a80 72%,#061b2a33);
+  box-shadow:0 12px 32px #00000059,inset 0 1px 0 #9fd8ff12;
+  backdrop-filter:blur(12px);
+  grid-template-columns:repeat(4,minmax(0,1fr)) minmax(320px,1.75fr);
+  align-items:stretch;
+  overflow:hidden;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics .dm-card{
+  background:linear-gradient(145deg,#071e2cd9,#04131ed9);
+  border-color:#2d5a7080;
+  box-shadow:inset 0 1px 0 #8fd4ff0d;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics .dm-prediction{
+  background:linear-gradient(135deg,#0b2a3ad9,#051821e6);
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .twin-heading{
+  /* HUD 底板已收窄到右上角，标题与工具条回到画面顶端，填住左上原本的空白带；
+     right 让开 S5 卡宽度（440px + 边距），避免工具条压在卡片上。 */
+  top:10px;
+  left:14px;
+  right:460px;
+  padding:0;
+  background:none;
+  align-items:center;
+  pointer-events:none;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .twin-heading h2{
+  font-size:17px;
+  text-shadow:0 2px 12px #000;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .scene-tools{
+  background:#061723e6;
+  border-color:#2e5a7280;
+  box-shadow:0 6px 22px #0006;
+  backdrop-filter:blur(10px);
+  pointer-events:auto;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .s5-trend{
+  position:absolute;
+  z-index:6;
+  left:14px;
+  bottom:14px;
+  width:min(47%,680px);
+  height:200px;
+  min-height:0;
+  padding:10px 14px 6px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr);
+  gap:0;
+  border:1px solid #2e5a7280;
+  border-radius:10px;
+  background:linear-gradient(145deg,#061a28f0,#04121be8);
+  box-shadow:0 14px 38px #0008,inset 0 1px 0 #9fd8ff10;
+  backdrop-filter:blur(12px);
+  overflow:hidden;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .s5-trend .trend-body{
+  height:100%;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .s5-trend .time-plot{
+  flex:1;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .s5-trend .time-plot svg{
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .dc-comparisons{
+  position:absolute;
+  z-index:6;
+  right:14px;
+  bottom:14px;
+  width:min(47%,680px);
+  height:200px;
+  min-height:0;
+  margin:0;
+  gap:8px;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .dc-panel{
+  background:linear-gradient(145deg,#061a28f0,#04121be8);
+  border-color:#2e5a7280;
+  box-shadow:0 14px 38px #0006,inset 0 1px 0 #9fd8ff10;
+  backdrop-filter:blur(12px);
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .twin-bottom{
+  bottom:222px;
+  left:16px;
+  right:auto;
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .twin-bottom>span{
+  background:#04121bd9;
+  border:1px solid #2e5a7270;
+  border-radius:5px;
+  padding:4px 8px;
+  backdrop-filter:blur(8px);
+}
+.dashboard-workspace.live-immersive:not(.live-expanded) .station-strip{display:none}
+.dashboard-workspace.live-immersive:not(.live-expanded) .scene-reset{
+  right:14px!important;
+  bottom:222px!important;
+  background:#061723e6!important;
+  border-color:#2e5a7280!important;
+}
+.engineer-dock{
+  position:absolute;
+  z-index:7;
+  top:204px;
+  left:14px;
+  right:auto;
+  width:242px;
+  padding:10px 12px 9px;
+  border:1px solid #2e5a7280;
+  border-radius:10px;
+  background:linear-gradient(150deg,#071e2cf2,#04121be8);
+  box-shadow:0 14px 38px #0008,inset 0 1px 0 #9fd8ff12;
+  backdrop-filter:blur(12px);
+  color:#cfe5f3;
+}
+.character-ai-anchor{position:absolute;z-index:6;transform:translate(-50%,-100%);pointer-events:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 9px 4px 6px;border:1px solid #67cfc0;border-radius:999px;background:#07242de8;color:#d7fff7;font:inherit;font-size:10px;line-height:1;white-space:nowrap;cursor:pointer;box-shadow:0 0 0 3px #51b9a21f,0 5px 14px #0008;backdrop-filter:blur(8px)}
+.character-ai-anchor>span{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#38a99a;color:#04211d;font-size:8px;font-weight:700}
+.character-ai-anchor:hover{border-color:#9af5e7;background:#0b3540f0}
+.engineer-dock-chip{position:absolute;z-index:7;top:204px;left:14px;display:flex;align-items:center;gap:7px;max-width:190px;padding:7px 10px 7px 8px;border:1px solid #2e5a7280;border-radius:9px;background:linear-gradient(150deg,#071e2cf2,#04121be8);box-shadow:0 10px 26px #0007,inset 0 1px 0 #9fd8ff12;backdrop-filter:blur(12px);color:#cfe5f3;font:inherit;text-align:left;cursor:pointer}
+.engineer-dock-chip:hover{border-color:#46bfe6}
+.engineer-dock-chip b{display:block;font-size:11px;color:#e6f4fd;font-weight:600}
+.engineer-dock-chip small{display:block;font-size:9px;color:#86a9bd;margin-top:1px}
+.engineer-dock-chip .engineer-dock-live{margin-left:auto}
+.engineer-dock-collapse{flex:none;width:20px;height:20px;display:grid;place-items:center;padding:0;border:1px solid #2f566b99;border-radius:4px;background:#0a2433cc;color:#a9c9d9;font:inherit;font-size:13px;line-height:1;cursor:pointer}
+.engineer-dock-collapse:hover{border-color:#46bfe6;color:#e7faff}
+.engineer-dock-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.engineer-dock-avatar{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 'Segoe UI',sans-serif;color:#dff7ff;background:linear-gradient(145deg,#1a6c8d,#0b3a52);border:1px solid #5bb5d580;box-shadow:0 0 12px #2ab7e92e}
+.engineer-dock-head b{display:block;font-size:12px;color:#e6f4fd;font-weight:600}
+.engineer-dock-head small{display:block;font-size:9px;color:#86a9bd;margin-top:2px}
+.engineer-dock-live{width:7px;height:7px;border-radius:50%;margin-left:auto;background:#3fe0a5;box-shadow:0 0 9px #3fe0a5}
+.engineer-dock-stands{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:7px}
+.engineer-dock-stands button{height:24px;padding:0;border-radius:4px;border:1px solid #2f566b99;background:#0a2433cc;color:#a9c9d9;font-size:10px;font-weight:600}
+.engineer-dock-stands button.active,.engineer-dock-stands button:hover{border-color:#46bfe6;background:#12415acc;color:#e7faff}
+.engineer-dock-form{display:flex;gap:5px}
+.engineer-dock-form input{flex:1;min-width:0;height:27px;padding:0 8px;border:1px solid #2f566b99;border-radius:4px;background:#041521d9;color:#dceef8;font-size:10px;outline:none}
+.engineer-dock-form input:focus{border-color:#46bfe6}
+.engineer-dock-form button{height:27px;padding:0 9px;border:1px solid #2b7c9a;border-radius:4px;background:linear-gradient(180deg,#12516b,#0a3448);color:#d8f5ff;font-size:10px}
+.engineer-dock-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px}
+.engineer-dock-foot>button{height:24px;padding:0 8px;border:1px solid #2f566b99;border-radius:4px;background:#0a2433cc;color:#a9c9d9;font-size:9px}
+.engineer-dock-foot>button:hover{border-color:#46bfe6;color:#e7faff}
+.engineer-dock-foot label{display:flex;align-items:center;gap:4px;font-size:9px;color:#8eabbb;white-space:nowrap}
+@media(max-width:1180px){
+  .dashboard-workspace.live-immersive:not(.live-expanded) .s5-trend,
+  .dashboard-workspace.live-immersive:not(.live-expanded) .dc-comparisons{width:48%}
+  .engineer-dock,.engineer-dock-chip{display:none}
+}
+/* Short viewports: the 3D scene must keep the middle of the screen. Shrink the
+   HUD instead of forcing the workbench taller than the window. */
+@media(max-height:820px){
+  .dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics{height:112px;padding:4px 6px}
+  .dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics .dm-card{height:96px}
+  .dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics .dm-prediction{min-height:96px}
+  .dashboard-workspace.live-immersive:not(.live-expanded) .s5-trend,
+  .dashboard-workspace.live-immersive:not(.live-expanded) .dc-comparisons{height:150px;bottom:8px}
+}
+@media(max-height:700px){
+  .dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics{height:96px}
+  .dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics .dm-card{height:82px}
+  .dashboard-workspace.live-immersive:not(.live-expanded) .s5-trend,
+  .dashboard-workspace.live-immersive:not(.live-expanded) .dc-comparisons{display:none}
+}
+
+/* Hard overrides for the existing workbench grid rules (the shell selectors are very specific). */
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .dashboard-grid{
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .dashboard-primary{
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  grid-template-columns:none!important;
+  grid-template-rows:none!important;
+  overflow:hidden!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .live-main{
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  border:0!important;
+  border-radius:0!important;
+  overflow:hidden!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .twin-scene{
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .twin-canvas{
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .twin-canvas>.three-viewer{
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .twin-canvas>.three-viewer>.three-host{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics{
+  display:grid!important;
+  position:absolute!important;
+  top:8px!important;
+  left:auto!important;
+  right:10px!important;
+  /* 顶部只有右上角一张 S5 卡，底板不再横贯整幅画面 */
+  width:min(440px,calc(100vw - 120px))!important;
+  bottom:auto!important;
+  height:144px!important;
+  min-height:0!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .s5-trend{
+  display:grid!important;
+  position:absolute!important;
+  left:14px!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:14px!important;
+  width:min(47%,680px)!important;
+  height:200px!important;
+  min-height:0!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  transform:none!important;
+  overflow:hidden!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .dc-comparisons{
+  display:grid!important;
+  position:absolute!important;
+  left:auto!important;
+  right:14px!important;
+  top:auto!important;
+  bottom:14px!important;
+  width:min(47%,680px)!important;
+  height:200px!important;
+  min-height:0!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+/* workbench 布局给 .dc-panel:first-child/last-child 定的 grid-column:1/3 是配
+   “左右面板夹中间趋势”的三列用的；immersive 下 .dc-comparisons 只有两列，
+   grid-column:3 会凭空造出隐式第三列（内容越宽左图越窄，曾把左图压成 52px）。
+   这里把面板放回自动列。 */
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .dc-comparisons .dc-panel{
+  grid-column:auto!important;
+  grid-row:auto!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .twin-heading{
+  position:absolute!important;
+  top:10px!important;
+  left:14px!important;
+  right:460px!important;
+  bottom:auto!important;
+  height:auto!important;
+}
+.app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .twin-bottom{
+  position:absolute!important;
+  left:16px!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:222px!important;
+}
+
+/* Game-like 3D scene interaction */
+.scene-hover-tip{position:absolute;z-index:6;pointer-events:none;padding:4px 9px;border:1px solid #3a7188;border-radius:5px;background:#04131ef2;color:#d9f4ff;font-size:11px;letter-spacing:.3px;box-shadow:0 6px 18px #0007;backdrop-filter:blur(8px);white-space:nowrap;display:none}
+.scene-interaction-card{position:absolute;z-index:7;right:16px;top:78px;width:282px;padding:12px 14px 11px;border:1px solid #2e5a72;border-radius:10px;background:linear-gradient(150deg,#071e2cf5,#04121be8);color:#d6eaf5;box-shadow:0 16px 40px #000a,inset 0 1px 0 #9fd8ff12;backdrop-filter:blur(12px)}
+.scene-interaction-card header{display:flex;align-items:center;gap:7px;padding-bottom:8px;border-bottom:1px solid #2e5a7266}
+.scene-interaction-card header strong{font-size:13px;color:#eaf8ff;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scene-interaction-kind{font-size:9px;padding:2px 5px;border-radius:3px;border:1px solid #3b6b84;background:#0d3245;color:#9fd9ef;white-space:nowrap}
+.scene-interaction-kind.is-stand{border-color:#3f7f9c;color:#a9e9ff}
+.scene-interaction-kind.is-pulpit{border-color:#8f7a3d;color:#f0d18a}
+.scene-interaction-kind.is-character{border-color:#3f8f70;color:#a9f0cf}
+.scene-interaction-card header button{width:22px;height:22px;border:0;background:transparent;color:#8fb1c3;font-size:16px;line-height:1;cursor:pointer;border-radius:4px}
+.scene-interaction-card header button:hover{background:#123346;color:#fff}
+.scene-interaction-card dl{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:9px 0 10px}
+.scene-interaction-card dl div{background:#061a27b8;border:1px solid #25485c;border-radius:5px;padding:5px 7px}
+.scene-interaction-card dt{font-size:9px;color:#7fa2b5;margin-bottom:2px}
+.scene-interaction-card dd{margin:0;font-size:13px;font-weight:600;color:#e7f7ff;font-variant-numeric:tabular-nums}
+.scene-interaction-card dd small{font-size:8px;font-weight:400;color:#7fa2b5}
+.scene-interaction-card p{margin:9px 0 10px;font-size:11px;line-height:1.55;color:#a8c2d1}
+.scene-interaction-actions{display:flex;flex-wrap:wrap;gap:6px}
+.scene-interaction-actions button{height:26px;padding:0 9px;border:1px solid #32738f;border-radius:4px;background:linear-gradient(180deg,#10506a,#0a3347);color:#d9f5ff;font-size:10px;cursor:pointer}
+.scene-interaction-actions button:hover{border-color:#53c6e8;background:linear-gradient(180deg,#17677f,#0d4157)}
+.scene-crosshair{position:absolute;left:50%;top:50%;z-index:6;width:16px;height:16px;transform:translate(-50%,-50%);pointer-events:none;transition:transform .12s ease}
+.scene-crosshair:before,.scene-crosshair:after{content:'';position:absolute;background:#8fe9ff;box-shadow:0 0 6px #4ed6ff;transition:background .12s ease,box-shadow .12s ease}
+.scene-crosshair:before{left:7px;top:0;width:2px;height:16px}
+.scene-crosshair:after{top:7px;left:0;height:2px;width:16px}
+.scene-crosshair.is-target{transform:translate(-50%,-50%) scale(1.3)}
+.scene-crosshair.is-target:before,.scene-crosshair.is-target:after{background:#ffc857;box-shadow:0 0 9px #ffb020}
+.three-viewer.is-walking:after{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(2,10,16,.48) 100%)}
+.scene-walk-hint{position:absolute;z-index:6;left:50%;bottom:16px;transform:translateX(-50%);padding:6px 12px;border:1px solid #2f5c72;border-radius:6px;background:#04131ee8;color:#b9d6e5;font-size:10px;letter-spacing:.4px;white-space:nowrap;pointer-events:none;animation:qcdkr-walk-hint-fade 10s forwards}
+@keyframes qcdkr-walk-hint-fade{0%,70%{opacity:1}100%{opacity:.35}}
+.scene-walk-prompt{position:absolute;z-index:6;left:50%;bottom:48px;transform:translateX(-50%);padding:5px 11px;border:1px solid #4f9cb8;border-radius:5px;background:#08232fe8;color:#c9f3ff;font-size:11px;white-space:nowrap;pointer-events:none}
+.scene-walk-exit{position:absolute;z-index:7;right:18px;bottom:18px;height:30px;padding:0 12px;border:1px solid #3f829e;border-radius:5px;background:#0a2a3be8;color:#c9eeff;font-size:11px;cursor:pointer}
+.scene-walk-exit:hover{border-color:#63d6f6;background:#0e3b52}
+.three-viewer.is-walking .scene-interaction-card{top:78px}
+.scene-walk-mode{font-size:10px;letter-spacing:1px;color:#9fe6ff;padding:0 6px;white-space:nowrap}
+.scene-tools .scene-game-button{display:inline-flex;align-items:center;gap:5px;border-color:#2f6a84;background:linear-gradient(180deg,#0c3348,#08202e);color:#c8f2ff}
+.scene-tools .scene-game-button:hover{border-color:#57c8ec;background:linear-gradient(180deg,#124a63,#0a2c3e)}
+
+/* 窄屏（≤1180）恢复五张卡横排：HUD 底板回到整宽，覆盖上面的右侧窄条规则 */
+@media(max-width:1180px){
+  .app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded)>.dm-metrics{
+    height:auto!important;
+    left:10px!important;
+    width:auto!important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) minmax(210px,1.2fr);
+  }
+}
+
+/* 窄屏整宽 HUD：标题与工具条回到 HUD 下方 */
+@media(max-width:1180px){
+  .dashboard-workspace.live-immersive:not(.live-expanded) .twin-heading{top:120px;right:14px}
+}
+
+/* 窄屏整宽 HUD：标题与工具条回到 HUD 下方（覆盖上面的 !important 硬规则） */
+@media(max-width:1180px){
+  .app-shell.s5-shell.workbench-shell .dashboard-workspace.live-immersive:not(.live-expanded) .twin-heading{
+    top:120px!important;
+    right:14px!important;
+  }
+}

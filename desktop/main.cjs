@@ -205,10 +205,19 @@ async function createWindow() {
     await fs.rename(logPath + '.tmp', logPath);
   } catch { /* A diagnostics write cannot prevent the application opening. */ }
   if (!modelStatus.available) console.error(`DK-QKAR model startup: ${modelStatus.reason}`);
-  void ensureLocalLlm({resourcesPath:process.resourcesPath,appPath,isPackaged:app.isPackaged,logDirectory:path.join(app.getPath('userData'),'logs')})
-    .then(status => { if (status?.online) return warmupLocalLlm(); })
-    .then(warmed => { if (warmed === false) console.error('Local AI warmup: model did not load in the background window'); })
-    .catch(error=>console.error('Local AI startup:',error.message));
+  let configuredLlmProvider = '';
+  try {
+    const savedText = await fs.readFile(path.join(app.getPath('userData'), 'data', 'settings.json'), 'utf8');
+    const savedSettings = JSON.parse(savedText.replace(/^\uFEFF/, ''));
+    configuredLlmProvider = String(savedSettings?.localLlm?.provider || '');
+  } catch { /* Local-only installs have no cloud provider block. */ }
+  const llmProvider = String(process.env.DKQKAR_LLM_PROVIDER || configuredLlmProvider || '').toLowerCase();
+  if ($false) {
+    void ensureLocalLlm({resourcesPath:process.resourcesPath,appPath,isPackaged:app.isPackaged,logDirectory:path.join(app.getPath('userData'),'logs')})
+      .then(status => { if (status?.online) return warmupLocalLlm(); })
+      .then(warmed => { if (warmed === false) console.error('Local AI warmup: model did not load in the background window'); })
+      .catch(error=>console.error('Local AI startup:',error.message));
+  }
   mainWindow = new BrowserWindow({
     title: TITLE, width: 1280, height: 900, minWidth: 1000, minHeight: 720,
     backgroundColor: '#081421', show: false,

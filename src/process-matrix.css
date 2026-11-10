@@ -18,15 +18,15 @@
 .process-matrix .pm-case-width input { width:74px; text-align:right; }
 .process-matrix .pm-case-entry input { width:66px; text-align:right; }
 .process-matrix .pm-case-fields small { color:#698793; font-size:10px; margin-left:-3px; }
-.process-matrix .pm-table-scroll { width:100%; max-width:100%; padding:0 19px 6px; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; }
-.process-matrix .pm-table-scroll:focus-visible { outline:1px solid #73978e; outline-offset:-1px; }
-.process-matrix .pm-table { width:100%; min-width:840px; table-layout:fixed; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+.process-matrix .pm-table-scroll { width:100%; max-width:100%; padding:0 19px 6px; overflow:visible; }
+.process-matrix .pm-table { width:100%; min-width:0; table-layout:fixed; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+.process-matrix .pm-table col.pm-col-stand { width:12%; }
+.process-matrix .pm-table col.pm-col-field { width:11%; }
 .process-matrix .pm-table th,.process-matrix .pm-table td { height:31px; padding:0 9px; border:0; border-bottom:1px solid #3a515a5c; background:transparent; white-space:nowrap; text-align:right; font-size:12px; color:#b7cbd2; }
 .process-matrix .pm-table thead th { height:30px; font-size:12px; font-weight:400; color:#8fa9b5; }
 .process-matrix .pm-table thead th small { margin-left:5px; color:#688695; font-size:10px; font-weight:400; }
 .process-matrix .pm-table thead th .pm-column-context { font-size:9px; color:#688695; }
-.process-matrix .pm-table th:first-child { width:106px; padding-left:0; text-align:left; }
-.process-matrix .pm-table th:nth-child(4) { width:126px; }
+.process-matrix .pm-table th:first-child { padding-left:0; text-align:left; }
 .process-matrix .pm-table tbody th button { display:flex; align-items:center; gap:9px; height:30px; width:100%; padding:0 6px 0 0; text-align:left; color:#9cb9c3; }
 .process-matrix .pm-table tbody th b { font:500 13px Bahnschrift,'Segoe UI',sans-serif; letter-spacing:.5px; }
 .process-matrix .pm-table tbody th span { font-size:9px; color:#8fbfaf; font-weight:400; }
@@ -70,7 +70,7 @@
 .pm-preference-error{color:#e1bb77;font-size:10px}
 .pm-context-fields{margin-top:14px;color:#9bb6c9;font-size:11px}.pm-context-fields>summary{cursor:pointer;padding:8px 0}
 .pm-context-row{padding:6px 0}
-.process-matrix .pm-process-option{display:flex;align-items:center;justify-content:flex-end;gap:5px;padding:3px 0 6px;color:#9dbbce;font-size:10px;white-space:nowrap}
+.process-matrix .pm-process-option{display:flex;align-items:center;justify-content:flex-end;gap:5px;padding:3px 0 6px;color:#9dbbce;font-size:10px;white-space:normal;line-height:1.15;text-align:right}
 .process-matrix .pm-process-option input{flex:none;display:inline-block;width:13px;height:13px;margin:0;padding:0;accent-color:#8bcec1}
 .process-matrix .pm-optional-cell{padding-top:3px;padding-bottom:3px}
 .process-matrix input[type=number]:disabled{opacity:.5}
@@ -78,7 +78,6 @@
 .process-matrix.pm-vertical .pm-case-fields label{display:grid;grid-template-columns:56px minmax(0,1fr) auto;min-width:0}
 .process-matrix.pm-vertical .pm-case-fields input{width:100%;box-sizing:border-box}
 .process-matrix.pm-vertical .pm-error{height:auto;min-height:29px;padding:5px 7px;margin-bottom:8px}
-.process-matrix .pm-table { min-width:940px; }
 .process-matrix .pm-table .pm-unavailable { color:#647f8a; padding-right:14px; }
 .process-matrix .pm-error { height:29px; padding:0 19px; display:flex; align-items:center; gap:7px; border-top:1px solid #775b3755; color:#d1b187; font-size:11px; background:#4a38252b; }
 .process-matrix .pm-error>span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }

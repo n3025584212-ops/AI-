@@ -6,7 +6,8 @@ AI 大模型与量子机器学习协同驱动的冷轧五机架 S5 轧制力预�
 
 - React 19 + Vite 7 前端，Node 24 后端，Three.js 五机架 UCM 数字孪生
 - 25 维工况输入 → 冻结模型 S5 预测 → 误差分析 → 报告导出
-- 本地 Ollama `qwen3.5:4b` 工艺助手（Agent + RAG + 语音）
+- 本地 Ollama `qwen3.5:4b` 工艺助手（Agent + RAG + 语音）；可选魔搭云端
+  OpenAI 兼容通道，见 `docs/reference/cloud-llm.md`
 - 60 条 CRD 真实数据回放与证据链快照
 
 ## 仓库包含 / 不包含

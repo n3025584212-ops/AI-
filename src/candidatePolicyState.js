@@ -54,7 +54,7 @@ export function createCandidatePolicyState({evaluateFrame,onChange=()=>{},cancel
    candidateIds:series.flatMap(point=>cache.get(point.key)?.run?.recommendations.map(p=>p.id)||[])};
  }
  const emit=()=>{if(!closed)onChange(projection());};
- const matchesJob=job=>!closed&&currentReady&&job.epoch===epoch&&sameCandidateSearchIdentity(job.identity,identityFor(frame(),config));
+  const matchesJob=job=>!closed&&currentReady&&job.epoch===epoch&&userJob===job&&sameCandidateSearchIdentity(job.identity,identityFor(frame(),config));
  const usable=()=>currentReady&&frame()?.result?.mode==='formal'&&(config?.target==null||config.target===''||Number.isFinite(config.target)&&config.target>0);
  function revoke(reason='STALE'){
   const invalidated={running:!!userJob,foreground:!!userJob||!!acceptedKey||lastState.status==='STALE'};
@@ -72,7 +72,7 @@ export function createCandidatePolicyState({evaluateFrame,onChange=()=>{},cancel
  // finish and cache it; only a real baseline/domain change cancels its work.
  const matchesMaximum=job=>!closed&&currentReady&&job.epoch===maxEpoch&&sameMaxReachabilityIdentity(job.identity,maxIdentityFor(frame(),config));
  function requestMaximum(){
-  if(closed||!currentReady||!config?.sectionOpen||frame()?.result?.mode!=='formal'||maxJob)return;
+  if(closed||userJob||!currentReady||!config?.sectionOpen||frame()?.result?.mode!=='formal'||maxJob)return;
   const identity=maxIdentityFor(frame(),config),key=maxReachabilityCacheKey(identity);
   if(maxRanges.has(key)){maxState={status:'COMPLETED'};return;}
   if(maxState.status==='FAILED')return;
@@ -111,6 +111,12 @@ export function createCandidatePolicyState({evaluateFrame,onChange=()=>{},cancel
  function generate(){
   if(userJob)return userJob.promise;
   if(!usable()){lastState={status:'FAILED',message:'请先完成当前有效正式预测。',recommendations:[]};emit();return Promise.resolve(null);}
+  // A user-requested candidate search has priority over the background range scan.
+  // Otherwise both 961-point scans compete for the same 8s budget and the user
+  // search is reported as a generic FAILED/TIMEOUT.
+  if(maxJob&&!maxJob.cancelled){
+   maxJob.cancelled=true;scanMetrics.cancelled++;maxJob=null;maxState={status:'IDLE'};cancelReachability('USER_SEARCH_PRIORITY');emit();
+  }
   const job={epoch,identity:identityFor(frame(),config),frame:structuredClone(frame()),config:structuredClone(config),
    state:{status:'SEARCHING',current_level:1,message:'正在搜索候选方案…',recommendations:[]}};
   userJob=job;lastState=job.state;emit();

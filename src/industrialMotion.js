@@ -1,7 +1,9 @@
 // View-owned finish cues. These alter only material response; the transport
 // distance and each body's radius-driven rotation remain the process controls.
 export function installStripFlow(material, distance, { pathAttribute = false } = {}) {
-  material.color.set('#aebcc4'); material.metalness = 0.98; material.roughness = 0.34;
+  // 0.98 金属度 + 0.34 粗糙度 = 镜面反射整片 HDR 环境，钢带在 bloom 里变成灯管。
+  // 降金属度、提粗糙度，让它读作拉丝钢而不是自发光条。
+  material.color.set('#aebcc4'); material.metalness = 0.80; material.roughness = 0.46;
   material.onBeforeCompile = shader => {
     shader.uniforms.uTransportDistance = distance;
     shader.vertexShader = `${pathAttribute ? 'attribute float stripDistance;\n' : ''}varying vec3 vProcessPosition; varying float vStripDistance;\n${shader.vertexShader}`
@@ -25,10 +27,12 @@ export function installStripFlow(material, distance, { pathAttribute = false } =
         float brushVisibility = 1.0 - smoothstep(0.45, 1.2, fwidth(vProcessPosition.z * 64.0));
         float scuff = smoothstep(0.43, 0.76, stripNoise(vec2(materialX * 3.1 + vProcessPosition.z * 0.35, vProcessPosition.z * 7.0)));
         float steelShade = 0.74 + millPatch * 0.17 - scuff * 0.06 + (brushing - 0.5) * 0.035 * brushVisibility;
-        diffuseColor.rgb = vec3(0.80, 0.86, 0.90) * steelShade;
+        // 原来是 0.80/0.86/0.90 + metalness 0.98，钢铁在 HDR 管线下直接顶到 1.0，
+        // 五条机架之间连成一条白炽灯带。压到 0.60 一档，保留金属亮部但不刺眼。
+        diffuseColor.rgb = vec3(0.60, 0.65, 0.69) * steelShade;
       `)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-        roughnessFactor = clamp(0.21 + millPatch * 0.15 + scuff * 0.045, 0.21, 0.41);`);
+        roughnessFactor = clamp(0.34 + millPatch * 0.14 + scuff * 0.045, 0.34, 0.52);`);
   };
   material.customProgramCacheKey = () => `continuous-steel-advection-v4-${pathAttribute ? 'path' : 'world'}`;
 }

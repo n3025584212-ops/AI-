@@ -7,6 +7,20 @@ export const LOCAL_LLM_DEFAULTS = Object.freeze({ model: 'qwen3.5:4b', endpoint:
 // Must stay >= the desktop runtime's OLLAMA_KEEP_ALIVE so an idle gap never
 // unloads the model and forces a full cold load onto the next question.
 const KEEP_ALIVE = '1h';
+// Callers already choose 640/1200/1800-token budgets for brief/detail answers.
+// The old hard 512 cap silently discarded those budgets and cut long answers.
+// Keep a ceiling for runaway generations, but never below the caller's budget.
+const MAX_OUTPUT_TOKENS = 2048;
+const LOCAL_CONTEXT_TOKENS = 4096;
+function outputBudget(messages, maxTokens) {
+  const requested = Number.isFinite(maxTokens) ? Math.max(64, Math.trunc(maxTokens)) : 384;
+  // Conservative token estimate for Chinese text; this keeps num_ctx from
+  // being overrun when a long RAG prompt and a long answer are requested.
+  const chars = messages.reduce((sum, message) => sum + String(message?.content ?? '').length, 0);
+  const estimatedInput = Math.ceil(chars / 2);
+  const available = Math.max(256, LOCAL_CONTEXT_TOKENS - estimatedInput - 128);
+  return Math.min(MAX_OUTPUT_TOKENS, requested, available);
+}
 
 export function createLocalLlm({ settings = async () => ({}), fetchImpl = fetch, timeoutMs = 120000, ensureService, healthOptions={} } = {}) {
   async function configuration({ statusOnly = false } = {}) {
@@ -23,6 +37,9 @@ export function createLocalLlm({ settings = async () => ({}), fetchImpl = fetch,
   }
   async function httpError(response) {
     let responseBody = ''; try { responseBody = await boundedText(response); } catch (error) { responseBody = error.message; }
+    if (response.status === 400 && /context|num_ctx|too long|exceed|prompt.{0,20}(long|large)/i.test(responseBody)) {
+      return Object.assign(new StateError('问题超出本地模型上下文长度，请缩短后重试。', 503, 'LOCAL_LLM_CONTEXT'), { httpStatus: response.status, responseBody });
+    }
     return Object.assign(new StateError(`助手服务返回 HTTP ${response.status}。`, 503, 'LOCAL_LLM_HTTP'), { httpStatus: response.status, responseBody });
   }
   async function boundedJson(response) {
@@ -34,19 +51,21 @@ export function createLocalLlm({ settings = async () => ({}), fetchImpl = fetch,
     if (signal?.aborted) return signal.reason || error;
     if (error instanceof StateError) return error;
     const timeout = error.name === 'TimeoutError';
-    return Object.assign(new StateError('本地 AI 暂不可用。', 503, timeout ? 'LOCAL_LLM_TIMEOUT' : partial ? 'LOCAL_LLM_INTERRUPTED' : 'LOCAL_LLM_OFFLINE'), { cause: error });
+    const code = timeout ? 'LOCAL_LLM_TIMEOUT' : partial ? 'LOCAL_LLM_INTERRUPTED' : 'LOCAL_LLM_OFFLINE';
+    const message = timeout ? '本地 AI 回答超时，请重试。' : partial ? '回答生成中断，请重试。' : '本地 AI 暂不可用。';
+    return Object.assign(new StateError(message, 503, code), { cause: error });
   }
   function chatRequest(config, messages, { tools, signal, format, maxTokens = 384, stream = false } = {}) {
     return fetchImpl(`${config.endpoint}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'error',
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs),
       body: JSON.stringify({ model: config.model, messages, stream, think: false, keep_alive: KEEP_ALIVE, ...(tools ? { tools } : {}), ...(format ? { format } : {}),
-        options: { num_ctx: 4096, num_predict: Math.min(512, maxTokens), temperature: 0 } }) });
+        options: { num_ctx: LOCAL_CONTEXT_TOKENS, num_predict: outputBudget(messages, maxTokens), temperature: 0 } }) });
   }
-  const launch=ensureService??(fetchImpl===fetch&&process.platform==='win32'?async config=>{
+  const launch=ensureService??null; const _discardedLaunchFactory=(fetchImpl===fetch&&process.platform==='win32'?async config=>{
     if(config.endpoint!==LOCAL_LLM_DEFAULTS.endpoint)return {online:false,reason:'external_endpoint_not_owned'};
     const {ensureLocalLlm}=createRequire(import.meta.url)('../desktop/local-llm.cjs');
     return ensureLocalLlm({appPath:fileURLToPath(new URL('..',import.meta.url)),dataRoot:process.env.DKQKAR_LOCAL_LLM_ROOT});
-  }:null);
+  }:null); void _discardedLaunchFactory;
   const health=createLocalAiHealth({configuration,ensureService:launch,...healthOptions,
     jsonRequest:async(config,path)=>boundedJson(await fetchImpl(config.endpoint+path,{signal:AbortSignal.timeout(2500),redirect:'error'})),
     infer:async config=>boundedJson(await chatRequest(config,[{role:'user',content:'只返回 READY'}],{maxTokens:8}))});

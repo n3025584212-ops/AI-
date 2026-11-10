@@ -5,6 +5,9 @@
 .current-findings-count,.current-findings-expand,.current-findings-collapse{flex-shrink:0;color:#88a9bf}
 .current-findings-heading:focus-visible,.current-finding-evidence>summary:focus-visible{outline:2px solid #7ab9df;outline-offset:2px;border-radius:5px}
 .current-findings-preview{display:flex;flex:1;gap:8px;min-width:0;overflow-x:auto;white-space:nowrap;scrollbar-width:thin}
+.current-findings-sync{display:inline-flex;align-items:center;justify-content:center;flex:none;width:10px;height:10px;opacity:.2;transition:opacity .16s ease}
+.current-findings-sync.is-active{opacity:1}
+.current-findings-sync i{width:5px;height:5px;border-radius:50%;background:#d9a75e;box-shadow:0 0 0 2px #d9a75e1f}
 .current-finding-chip{display:inline-flex;align-items:center;gap:7px;padding:3px 7px;border:1px solid #25485c;border-radius:5px}
 .current-finding-chip b{font-weight:500;color:#cbdfea}
 .current-finding-chip>span,.current-finding-meta>span{color:#98b5c7}
@@ -75,3 +78,17 @@
 .s5-error-alarm{font-size:11px;color:#73cbd0}
 .s5-error-alarm:is(.is-low_error_alarm,.is-high_error_alarm){color:#ffac80;font-weight:600}
 .s5-error-alarm.is-unavailable{color:#86a6b8}
+
+/* —— 收进场景标题行：折叠成一颗小签，展开列表浮在画面上 —— */
+.twin-heading-left{display:flex;align-items:center;gap:12px;min-width:0}
+.twin-heading-left .scene-orbit-tip{font-size:9px!important;letter-spacing:.2px!important;color:#7fa2b5;white-space:nowrap;font-weight:400;text-shadow:none}
+@media(max-width:1150px){.twin-heading-left .scene-orbit-tip{display:none}}
+.current-findings{position:relative;border:0;background:none;padding:0;font-size:11px;color:#b7d1e3}
+.current-findings-heading{display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 10px;border-radius:12px;border:1px solid #17384f;background:rgba(8,25,39,.92);cursor:pointer}
+.current-findings-heading:hover{border-color:#24506b}
+.current-findings[open] .current-findings-heading{border-color:#2f6b8f}
+.current-findings-preview{display:inline-flex;align-items:center;gap:7px;min-width:0;max-width:46vw;overflow:hidden;white-space:nowrap}
+.current-finding-chip{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.current-findings-list{position:absolute;top:calc(100% + 6px);left:0;width:390px;max-width:min(390px,88vw);z-index:9;padding:10px;border-radius:10px;border:1px solid #24506b;background:#081927;box-shadow:0 18px 40px #0008}
+.current-findings-notice{display:inline-flex;align-items:center;gap:8px;height:24px;padding:0 10px;border-radius:12px;border:1px solid #17384f;background:rgba(8,25,39,.92)}
+.current-findings-count,.current-findings-expand,.current-findings-collapse{color:#7d9db3}

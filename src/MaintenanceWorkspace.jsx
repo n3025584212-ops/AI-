@@ -23,7 +23,7 @@ export function downloadOperationalFile(filename, payload, type = 'application/j
   anchor.href = href; anchor.download = filename; document.body.append(anchor); anchor.click(); anchor.remove();
   setTimeout(() => URL.revokeObjectURL(href), 1000);
 }
-export function ServiceBadge({ good, children }) { return <span className={`maint-badge ${good ? 'is-good' : 'is-idle'}`}><i/>{children}</span>; }
+export function ServiceBadge({ good, tone, children }) { const state = tone || (good ? 'good' : 'idle'); return <span className={`maint-badge is-${state}`}><i/>{children}</span>; }
 export function OperationsDialog({ title, children, onClose, footer, ...dialogProps }) {
   const dialog = useRef(null), closeRef = useRef(onClose); closeRef.current = onClose;
   useEffect(() => {
@@ -58,6 +58,13 @@ export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolu
  const [status,setStatus]=useState(null),[readState,setReadState]=useState('LOADING'),[modelReadFailed,setModelReadFailed]=useState(false);
  const [busy,setBusy]=useState(false),[refreshFailed,setRefreshFailed]=useState(false),[dialog,setDialog]=useState(null);
  const [diagnosticAi,setDiagnosticAi]=useState(null),[aiChecking,setAiChecking]=useState(false);
+ const [twinStand,setTwinStand]=useState(null);
+ useEffect(()=>{
+  const handler=event=>{const stand=String(event.detail?.stand||'').toUpperCase();if(/^S[1-5]$/.test(stand))setTwinStand(stand);};
+  window.addEventListener('qcdkr:stand-selected',handler);
+  return()=>window.removeEventListener('qcdkr:stand-selected',handler);
+ },[]);
+ const twinStandData=twinStand?caseData?.stands?.find(stand=>stand.id===twinStand):null;
  const diagnosticCheck=useRef(null),diagnosticPending=useRef(null);
  const alive=useRef(true),callbacks=useRef(null),readRevision=useRef(0);
  callbacks.current={api,onNotify,onRefreshModel,onRefreshAssistant};
@@ -106,30 +113,41 @@ export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolu
  const dataCardState=caseData&&stream?{label:'已载入',tone:'good'}:{label:READING,tone:'idle'};
  const inputCheckCardState={...checkState,label:checkState.status==='NORMAL'?'检查通过':checkState.label};
  return <section className="maintenance-workspace competition-system-status" aria-label="系统状态与维护">
-  <header className="maint-page-heading"><div><h2>系统状态与维护</h2><p>模型、数据、AI服务与当前运行状态</p></div>
+  <header className="maint-page-heading"><div><h2>系统状态与维护</h2><p>设备健康、模型与数据服务；异常会同步到全局状态与通知</p></div>
    <div><button type="button" className="maint-button" disabled={busy} onClick={()=>refresh(true)}><RefreshCw size={14}/>刷新状态</button></div>
   </header>
   {refreshFailed&&<div className="maint-error" role="alert">{UNAVAILABLE}<button type="button" onClick={()=>refresh(true)} disabled={busy}>刷新状态</button></div>}
   <div className="maint-panels-scroll"><div className="maint-panels-grid">
+   <div className="maint-col maint-col-left">
    <Panel kind="data" title="数据与工况" state={dataCardState}><dl>
     <Fact label="当前数据来源">{data.source}</Fact>{data.historyCount!==undefined&&<Fact label="工况记录">{data.historyCount} 条</Fact>}
     <Fact label="当前工况">{data.position?('第'+data.position+' / '+data.historyCount+'条'):caseData?readableConditionName(caseData.id):READING}</Fact>
    </dl><div className="maint-panel-actions">{onNavigate&&<button className="maint-button" onClick={()=>onNavigate('data')}>数据详情<ChevronRight size={14}/></button>}</div></Panel>
+   {twinStand&&<Panel kind="data" title="3D 孪生机架" state={{label:twinStand,tone:'good'}}><dl>
+    <Fact label="选中机架">{twinStand}</Fact>
+    <Fact label="轧制力">{twinStandData&&Number.isFinite(Number(twinStandData.force))?Number(twinStandData.force).toFixed(1)+' t':'—'}</Fact>
+    <Fact label="轧制速度">{twinStandData&&Number.isFinite(Number(twinStandData.speed))?Number(twinStandData.speed).toFixed(0)+' m/min':'—'}</Fact>
+   </dl><div className="maint-panel-actions"><button className="maint-button" onClick={()=>onNavigate?.('overview')}>在3D中查看<ChevronRight size={14}/></button></div></Panel>}
    <Panel kind="prediction" title="QCDKR预测模型" state={model}><p className="maint-panel-note">{MODEL_DESCRIPTION}</p><dl>
     <Fact label="模型用途">S5轧制力预测</Fact><Fact label="输入维度">{MODEL_INPUT_COUNT}维</Fact>
     <Fact label="模型校验" tone={modelStatus?.schema_status==='VERIFIED'?'good':'idle'}>{modelStatus?.schema_status==='VERIFIED'?'已验证':modelStatus?.schema_status?'待校验':model.label===UNAVAILABLE?UNAVAILABLE:READING}</Fact>
     <Fact label="最近预测处理">{latency}</Fact><Fact label="模型状态" tone={model.tone}>{model.label}</Fact>
-   </dl><div className="maint-panel-actions"><button className="maint-button" disabled={!modelStatus?.model_version} onClick={()=>setDialog('model')}>模型信息</button><button className="maint-button" disabled={busy} onClick={()=>refresh(true)}>检查服务</button></div></Panel>
-   <Panel kind="rules" title="智能调整方案" state={search}><dl>
-    {config&&<><Fact label="调节动作">{config.actions.length}项</Fact><Fact label="关联模型输入">{config.fields.length}项</Fact><Fact label="候选配置">最多{config.totalCandidates}个</Fact><Fact label="最大联合调整">{config.maxChangedActions}项</Fact></>}
-    <Fact label="当前搜索状态" tone={search.tone}>{search.label}</Fact><Fact label="最近搜索">{recentSearchDisplay(mostRecentCompletedSearch,searchState)}</Fact>
-   </dl><div className="maint-panel-actions"><button className="maint-button" disabled={!config} onClick={()=>setDialog('search')}>查看搜索配置</button>{onOpenSolutions&&<button className="maint-button" onClick={onOpenSolutions}>进入方案<ChevronRight size={14}/></button>}</div></Panel>
+   </dl>
+   <div className="hx-cells hx-cells-25" aria-label={`模型输入 ${completeText}`}>{Array.from({length:inputSummary?.total||MODEL_INPUT_COUNT},(_,i)=><i key={i} data-on={i<(inputSummary?.completeCount||0)?'true':undefined}/>)}</div>
+   <div className="hx-legend"><span>模型输入</span><b>{completeText}</b></div>
+   <div className="maint-panel-actions"><button className="maint-button" disabled={!modelStatus?.model_version} onClick={()=>setDialog('model')}>模型信息</button><button className="maint-button" disabled={busy} onClick={()=>refresh(true)}>检查服务</button></div></Panel>
    <Panel kind="rules" title="当前工况检查" state={inputCheckCardState}><dl>
     <Fact label="输入完整性" tone={inputSummary?.valid?'good':'notice'}>{inputSummary?completeText+'项完整':READING}</Fact>
     <Fact label="数据检查" tone={checkState.tone}>{checkState.label}</Fact><Fact label="当前预测" tone={predictionState==='READY'?'good':predictionState==='FAILED'?'error':'idle'}>{predictionLabels[predictionState]||READING}</Fact>
    </dl><div className="maint-panel-actions"><button className="maint-button" disabled={!historical.checked?.rows?.length} onClick={()=>setDialog('check')}>查看检查详情</button></div></Panel>
+   </div>
+   <div className="maint-col maint-col-right">
+   <Panel kind="rules" title="智能调整方案" state={search}><dl>
+    {config&&<><Fact label="调节动作">{config.actions.length}项</Fact><Fact label="关联模型输入">{config.fields.length}项</Fact><Fact label="候选配置">最多{config.totalCandidates}个</Fact><Fact label="最大联合调整">{config.maxChangedActions}项</Fact></>}
+    <Fact label="当前搜索状态" tone={search.tone}>{search.label}</Fact><Fact label="最近搜索">{recentSearchDisplay(mostRecentCompletedSearch,searchState)}</Fact>
+   </dl><div className="maint-panel-actions"><button className="maint-button" disabled={!config} onClick={()=>setDialog('search')}>查看搜索配置</button>{onOpenSolutions&&<button className="maint-button" onClick={onOpenSolutions}>进入方案<ChevronRight size={14}/></button>}</div></Panel>
    <Panel kind="assistant" title="DK AI服务" state={ai}><dl>
-    {safeStatusText(assistantStatus?.model)&&<Fact label="本地模型">{assistantStatus.model}</Fact>}
+    {safeStatusText(assistantStatus?.model)&&<Fact label={assistantStatus?.mode==='cloud'?'云端模型':'本地模型'}>{assistantStatus.model}</Fact>}
     <Fact label="服务状态" tone={ai.tone}>{ai.label}</Fact>{ai.load&&<Fact label="模型加载" tone={ai.tone}>{ai.load}</Fact>}
     <Fact label="响应延迟">{aiConnectionState(assistantStatus).latencyMs!==null?aiConnectionState(assistantStatus).latencyMs+' ms':'—'}</Fact>
    </dl>{ai.note&&<p className="maint-panel-note">{ai.note}</p>}<p className="maint-panel-note maint-capabilities">能力：工艺问答 / 辅助诊断 / 参数试算 / 方案解读</p>
@@ -138,6 +156,7 @@ export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolu
     <Fact label="最近状态读取" title={localStatusStamp(status?.checkedAt)||undefined}>{status?localStatusTime(status.checkedAt):readingState.label}</Fact>
     <Fact label="模型服务" tone={model.tone}>{model.label}</Fact><Fact label="DK AI服务" tone={ai.tone}>{ai.label}</Fact>
    </dl><div className="maint-panel-actions"><button className="maint-button" disabled={busy} onClick={()=>refresh(true)}>刷新状态</button>{admin&&<button className="maint-button" disabled={busy} onClick={showDiagnostics}>查看详情</button>}</div></Panel>
+   </div>
   </div></div>
   <footer className="maint-page-foot"><span><ShieldCheck size={13}/>{user?.role==='LOCAL_ADMIN'?user.display_role:admin?'管理员':'操作员'} · 本机维护</span></footer>
   {dialog==='model'&&<OperationsDialog title="模型信息" onClose={()=>setDialog(null)}><dl>

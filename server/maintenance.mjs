@@ -8,7 +8,7 @@ import { currentModelReferenceRanges } from '../src/inputRangeDefaults.js';
 import { monitorData } from '../src/dataMonitoring.js';
 
 const RULES = [
-  { id: 'prediction-error', name: 'S5 预测与实测偏差', enabled: true, metric: 'predictionErrorPercent', threshold: 5, severity: 'warning', unit: '%', source: '软件默认阈值，可由管理员确认修改' },
+  { id: 'prediction-error', name: 'S5 预测与实测偏差', enabled: true, metric: 'predictionErrorPercent', threshold: 5, severity: 'warning', unit: '%', source: '软件默认阈值，可由管理员确认修改', alarmRange: { lowerBound: -5, upperBound: 5 } },
   { id: 'input-completeness', name: '模型输入完整度', enabled: true, metric: 'completenessPercent', threshold: 100, severity: 'error', unit: '%', source: '冻结模型需要完整 25 维输入' },
   { id: 'input-drift', name: '输入窗口均值变化', enabled: true, metric: 'driftScore', threshold: 1, severity: 'warning', unit: '标准差', source: '软件统计提示，非设备安全限值' },
   { id: 'input-range', name: '输入超出参考范围', enabled: true, metric: 'outOfRangeCount', threshold: 1, severity: 'warning', unit: '项', source: '已确认PDF原始边界 / 冻结60条Demo逐侧兜底；范围仅作提示' },
@@ -16,6 +16,12 @@ const RULES = [
   { id: 'data-interruption', name: '现场数据源中断或延迟', enabled: false, supported: false, status: 'awaiting-source', metric: 'sourceDelaySeconds', threshold: 30, severity: 'warning', unit: 's', source: '待接入现场源；手动输入和回放暂停不判现场断流' },
 ];
 const DEFAULT_CONFIG = { voiceEnabled: true, eventRetentionDays: 30 };
+// activity-log.json 是整文件读-改-写：没有行数上限时，每完成一次 S5 预测
+// （实时流约 2 秒一次）都会把整份 JSON 重新 parse + stringify + 写盘。
+// 实测 7.5 万行 / 73MB 时单次成本 1.26s CPU，Node 主线程被占满，静态资源
+// （12.9MB 轧机 GLB）在本地都要 8 秒以上。默认只保留最近 5000 条；
+// 需要更长历史时用环境变量 QCDKR_ACTIVITY_LOG_MAX 调大。
+const ACTIVITY_LOG_MAX = Math.max(200, Number(process.env.QCDKR_ACTIVITY_LOG_MAX) || 5000);
 const admin = actor => { if (!['LOCAL_ADMIN','admin'].includes(actor?.role)) throw new StateError('此操作需要管理员账号。', 403, 'ADMIN_REQUIRED'); };
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
@@ -27,7 +33,13 @@ export function createMaintenance({ state, dataDir, cases, modelStatus, llm, get
   async function config() { return state.read('maintenance-config.json', { version: 1, config: DEFAULT_CONFIG }); }
   async function log(category, level, message, details = {}) {
     const item = { id: randomUUID(), category, level, message: String(message).slice(0, 2000), createdAt: now(), ...details };
-    await state.mutate(async () => { const rows = await state.read('activity-log.json', []); rows.unshift(item); await state.write('activity-log.json', rows); }); return item;
+    await state.mutate(async () => {
+      const rows = await state.read('activity-log.json', []);
+      rows.unshift(item);
+      if (rows.length > ACTIVITY_LOG_MAX) rows.length = ACTIVITY_LOG_MAX;
+      await state.write('activity-log.json', rows);
+    });
+    return item;
   }
   async function logs(query = {}) {
     let rows = await state.read('activity-log.json', []);
@@ -105,6 +117,17 @@ export function createMaintenance({ state, dataDir, cases, modelStatus, llm, get
     });
     if (!result.idempotent) await log('maintenance', 'info', `规则版本 ${result.version} 已生效。`, { actorId: actor.id, changeRef: input.changeRef }); return result;
   }
+  async function setAlarmRange(input) {
+    const lower = Number(input?.lowerBound), upper = Number(input?.upperBound);
+    if (!Number.isFinite(lower) || !Number.isFinite(upper) || !(lower < upper) || Math.abs(lower) > 50 || Math.abs(upper) > 50) throw new StateError('预测误差报警区间无效。', 400, 'ALARM_RANGE_INVALID');
+    await state.mutate(async () => { await state.write('prediction-error-alarm-range.json', { lowerBound: lower, upperBound: upper, updatedAt: now() }); });
+  }
+  async function getAlarmRange() {
+    const stored = await state.read('prediction-error-alarm-range.json', null);
+    if (stored && Number.isFinite(stored.lowerBound) && Number.isFinite(stored.upperBound) && stored.lowerBound < stored.upperBound && Math.abs(stored.lowerBound) <= 50 && Math.abs(stored.upperBound) <= 50) return { lowerBound: stored.lowerBound, upperBound: stored.upperBound };
+    const rule = (await rules()).rules.find(r => r.id === 'prediction-error');
+    return rule?.alarmRange ?? { lowerBound: -5, upperBound: 5 };
+  }
   async function recordPrediction(input, result, actor) {
     await state.mutate(async () => { await state.write('prediction-service-state.json', { failureCount: 0, lastSuccessAt: now() }); });
     const settings = await rules(), sample = input.importProvenance || {}, sampleId = sample.sample_id || sample.sampleId || result.input_snapshot?.sample_id || null;
@@ -157,7 +180,7 @@ export function createMaintenance({ state, dataDir, cases, modelStatus, llm, get
       await state.write('monitoring-events.json', rows);
     });
   }
-  return { status, rules, config, logs, log, events, preview, apply, recordPrediction, recordInput, recordServiceFailure,
+  return { status, rules, config, logs, log, events, preview, apply, recordPrediction, recordInput, recordServiceFailure, setAlarmRange, getAlarmRange,
     async getEvent(id) { return (await state.read('monitoring-events.json', [])).find(row => row.id === id) || null; },
     async updateConfig(input, actor) {
       admin(actor); const current = await config(); if (input.version !== current.version) throw new StateError('配置版本已变化，请刷新。', 409);

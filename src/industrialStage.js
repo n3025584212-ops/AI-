@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createIndustrialFactoryDetails } from './industrialFactoryDetails.js';
 
 // The presentation hall establishes scale around the original equipment asset.
 // Equipment coordinates are unchanged: X is strip travel, +Z is the operator side.
@@ -39,7 +40,8 @@ export function createIndustrialStage(scene) {
     return mesh;
   }
 
-  const floorMat = material('Resin_Concrete_Floor', '#20282c', 0.84, 0.01);
+  const floorMat = material('Resin_Concrete_Floor', '#303c43', 0.66, 0.04);
+  floorMat.envMapIntensity = 0.40;
   floorMat.onBeforeCompile = shader => {
     shader.vertexShader = `varying vec3 vFloorWorld;\n${shader.vertexShader}`
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFloorWorld = (modelMatrix * vec4(position, 1.0)).xyz;');
@@ -59,21 +61,21 @@ export function createIndustrialStage(scene) {
         float wheel = exp(-pow((abs(floorUV.y - 6.15) - 0.56) / 0.105, 2.0));
         diffuseColor.rgb *= 0.985 + (slabTone - 0.5) * 0.018 + (fine - 0.5) * 0.055 * grainVisibility - wheel * 0.025;
       `).replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-        roughnessFactor = clamp(roughnessFactor + 0.04 + (fine - 0.5) * 0.035 * grainVisibility, 0.74, 0.94);
+        roughnessFactor = clamp(roughnessFactor + (fine - 0.5) * 0.025 * grainVisibility, 0.58, 0.78);
       `);
   };
-  floorMat.customProgramCacheKey = () => 'industrial-fine-concrete-v3';
-  surface('Factory_Floor', floorMat, 0, -4, 180, 180, -0.085);
+  floorMat.customProgramCacheKey = () => 'industrial-resin-floor-v4';
+  surface('Factory_Floor', floorMat, 0, -4, 110, 110, -0.14);
 
   const jointMat = material('Concrete_Expansion_Joints', '#111b20', 0.95, 0);
-  for (let x = -48; x <= 48; x += 6) box(jointMat, [x, -0.082, -6], [0.014, 0.005, 84]);
-  for (let z = -48; z <= 36; z += 6) box(jointMat, [0, -0.082, z], [96, 0.005, 0.014]);
+  for (let x = -42; x <= 42; x += 6) box(jointMat, [x, -0.126, -6], [0.012, 0.004, 72]);
+  for (let z = -42; z <= 30; z += 6) box(jointMat, [0, -0.126, z], [84, 0.004, 0.012]);
 
-  const zoneMat = material('Machine_Bay_Concrete', '#26323a', 0.8, 0.03);
+  const zoneMat = material('Machine_Bay_Concrete', '#39474e', 0.64, 0.05);
   zoneMat.onBeforeCompile = floorMat.onBeforeCompile;
   zoneMat.customProgramCacheKey = floorMat.customProgramCacheKey;
   zoneMat.envMapIntensity = 0.32;
-  surface('Mill_Bay_Floor', zoneMat, 0, -2, 42.0, 13.6, -0.058);
+  surface('Mill_Bay_Floor', zoneMat, 0, -2, 42.0, 13.6, -0.08);
   const rimMat = material('Machine_Bay_Perimeter', '#2a3b48', 0.7, 0.12);
   box(rimMat, [0, -0.052, -8.78], [42.0, 0.008, 0.035]);
   box(rimMat, [0, -0.052, 4.78], [42.0, 0.008, 0.035]);
@@ -97,33 +99,36 @@ export function createIndustrialStage(scene) {
 
   // A scaled rear bay: concrete plinth, sheet cladding, columns and clerestory.
   // No roof or foreground posts cover the mill in overhead inspection views.
-  const wallZ = -17.8;
-  const wallMat = material('Hall_Cladding', '#1b2a33', 0.84, 0.08);
-  const dadoMat = material('Hall_Concrete_Dado', '#283238', 0.92, 0.01);
-  const steelMat = material('Structural_Steel', '#233640', 0.64, 0.42);
-  const trimMat = material('Cladding_Ribs', '#293a43', 0.70, 0.22);
+  const wallZ = -12.8;
+  const wallMat = material('Hall_Cladding', '#303d46', 0.82, 0.08);
+  const dadoMat = material('Hall_Concrete_Dado', '#363c40', 0.90, 0.01);
+  const steelMat = material('Structural_Steel', '#344b58', 0.58, 0.42);
+  const trimMat = material('Cladding_Ribs', '#3d505c', 0.65, 0.22);
   trimMat.envMapIntensity = 0.28;
-  box(wallMat, [0, 5.86, wallZ], [160, 11.9, 0.14]);
-  box(dadoMat, [0, 0.68, wallZ + 0.12], [160, 1.5, 0.22]);
-  for (let x = -79.2; x <= 79.2; x += 1.2) {
+  box(wallMat, [0, 5.86, wallZ], [64, 11.9, 0.14]);
+  box(dadoMat, [0, 0.68, wallZ + 0.12], [64, 1.5, 0.22]);
+  for (let x = -31.2; x <= 31.2; x += 1.2) {
     box(trimMat, [x, 4.78, wallZ + 0.10], [0.022, 6.72, 0.036]);
     box(trimMat, [x, 10.82, wallZ + 0.10], [0.022, 1.90, 0.036]);
   }
-  for (let x = -80; x <= 80; x += 10) {
+  for (let x = -30; x <= 30; x += 10) {
     for (const offset of [0.25, 0.65]) box(steelMat, [x, 5.90, wallZ + offset], [0.58, 11.9, 0.10]);
     box(steelMat, [x, 5.90, wallZ + 0.45], [0.10, 11.9, 0.44]);
     box(steelMat, [x, 0.03, wallZ + 0.45], [0.92, 0.16, 0.96]);
   }
-  for (const y of [1.43, 8.11, 9.72, 11.65]) box(steelMat, [0, y, wallZ + 0.26], [160, 0.12, 0.18]);
+  for (const y of [1.43, 8.11, 9.72, 11.65]) box(steelMat, [0, y, wallZ + 0.26], [64, 0.12, 0.18]);
 
-  const glassMat = material('Clerestory_Glass', '#293f4b', 0.52, 0.12, { emissive: '#20333e', emissiveIntensity: 0.10 });
-  const lampMat = material('Hall_Luminaire_Diffuser', '#afbdc5', 0.50, 0.04,
-    { emissive: '#b5c9d5', emissiveIntensity: 1.65, toneMapped: false });
-  for (let x = -75; x <= 75; x += 10) {
+  const glassMat = material('Clerestory_Glass', '#42677d', 0.42, 0.12, { emissive: '#466d88', emissiveIntensity: 0.45 });
+  const lampMat = material('Hall_Luminaire_Diffuser', '#e3c69b', 0.40, 0.04,
+    { emissive: '#ffdb9a', emissiveIntensity: 3.2, toneMapped: false });
+  for (let x = -25; x <= 25; x += 10) {
     box(glassMat, [x, 8.92, wallZ + 0.14], [8.70, 1.45, 0.035]);
     for (const offset of [-2.90, 0, 2.90]) box(trimMat, [x + offset, 8.92, wallZ + 0.20], [0.045, 1.45, 0.06]);
     box(steelMat, [x, 10.37, wallZ + 0.44], [3.7, 0.20, 0.24]);
     box(lampMat, [x, 10.33, wallZ + 0.60], [3.2, 0.06, 0.04]);
+    // Real fixtures and structural depth, kept behind the existing machinery.
+    box(steelMat, [x, 9.60, wallZ + 0.80], [0.85, 0.12, 1.4]);
+    box(lampMat, [x, 9.48, wallZ + 1.40], [0.65, 0.18, 0.38]);
   }
 
   // A few shut service doors give the rear wall a readable working scale.
@@ -178,13 +183,22 @@ export function createIndustrialStage(scene) {
   }
 
   scene.add(root);
+  const details = createIndustrialFactoryDetails(scene);
   return {
     root,
     backdrop,
     // Outside the presentation hall, cut away its rear wall for inspection.
-    updateCamera(camera) { backdrop.visible = camera.position.z > wallZ + 0.8; },
-    setScope() {},
+    // Hysteresis keeps a camera hovering near the threshold from toggling the
+    // large rear wall on/off and flashing the whole bay brightness.
+    updateCamera(camera) {
+      details.updateCamera(camera);
+      const z = camera.position.z;
+      if (z > wallZ + 1.2) backdrop.visible = true;
+      else if (z < wallZ + 0.4) backdrop.visible = false;
+    },
+    setScope(scope) { details.setScope(scope); },
     dispose() {
+      details.dispose();
       scene.remove(root);
       geometry.dispose();
       planeGeometry.dispose();

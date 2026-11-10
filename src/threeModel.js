@@ -8,7 +8,7 @@ import { classifyModelMesh } from './threeProcess.js';
 // parsing the meshopt-compressed engineering model again when navigating or in
 // React StrictMode.
 let cache = null;
-const pause = () => new Promise((resolve) => setTimeout(resolve, 0));
+const pause = () => Promise.resolve();
 
 export function disposeObject(root, includeMaterials = true) {
   const geometries = new Set(), materials = new Set(), textures = new Set();
@@ -60,21 +60,42 @@ function reverseWinding(geometry) {
 
 // Packed (interleaved) buffers decode to InterleavedBufferAttribute, which
 // mergeGeometries rejects — copy them out to standalone float attributes.
-function flattenInterleaved(geometry) {
+// meshopt/KHR_mesh_quantization 还会给出 normalized 整型属性：真实量纲只在
+// GPU 归一化后才存在。CPU 侧（applyMatrix4 烘节点缩放、包围盒、合并）必须
+// 先显式反量化成浮点，否则 ±32767 的原始值会被节点缩放放大成 ±5×10⁵，
+// 轧机包围盒炸掉后相机会被推到两百公里外。
+const NORMALIZED_SCALE = new Map([
+  [Int8Array, 1 / 127], [Uint8Array, 1 / 255],
+  [Int16Array, 1 / 32767], [Uint16Array, 1 / 65535],
+  [Int32Array, 1 / 2147483647], [Uint32Array, 1 / 4294967295],
+]);
+
+const dequant = (value, scale) => (scale === 1 ? value : Math.max(-1, Math.min(1, value * scale)));
+
+export function flattenInterleaved(geometry) {
   let packed = false;
   for (const attribute of Object.values(geometry.attributes)) {
     if (attribute.isInterleavedBufferAttribute) { packed = true; break; }
+    if (attribute.normalized && NORMALIZED_SCALE.has(attribute.array.constructor)) { packed = true; break; }
   }
   if (!packed) return geometry;
   const flat = new THREE.BufferGeometry();
   flat.setIndex(geometry.index);
   flat.morphAttributes = geometry.morphAttributes;
   for (const [name, attribute] of Object.entries(geometry.attributes)) {
-    if (!attribute.isInterleavedBufferAttribute) { flat.setAttribute(name, attribute); continue; }
-    const { array, stride } = attribute.data, offset = attribute.offset, size = attribute.itemSize;
+    const quantScale = attribute.normalized ? (NORMALIZED_SCALE.get(attribute.array.constructor) ?? null) : null;
+    if (!attribute.isInterleavedBufferAttribute && quantScale === null) { flat.setAttribute(name, attribute); continue; }
+    const size = attribute.itemSize;
     const output = new Float32Array(attribute.count * size);
-    for (let i = 0; i < attribute.count; i++) {
-      for (let j = 0; j < size; j++) output[i * size + j] = array[i * stride + offset + j];
+    if (attribute.isInterleavedBufferAttribute) {
+      const { array, stride } = attribute.data, offset = attribute.offset;
+      const scale = attribute.normalized ? (NORMALIZED_SCALE.get(array.constructor) ?? 1) : 1;
+      for (let i = 0; i < attribute.count; i++) {
+        for (let j = 0; j < size; j++) output[i * size + j] = dequant(array[i * stride + offset + j], scale);
+      }
+    } else {
+      const { array } = attribute;
+      for (let i = 0; i < array.length; i++) output[i] = dequant(array[i], quantScale ?? 1);
     }
     flat.setAttribute(name, new THREE.BufferAttribute(output, size));
   }
@@ -161,10 +182,9 @@ export function acquireModel(onProgress) {
     const update = (progress) => { entry.progress = progress; entry.listeners.forEach((listener) => listener(progress)); };
     entry.promise = new Promise((resolve, reject) => {
       const loader = new GLTFLoader();
-      // The engineering GLB ships meshopt-compressed with float32 attributes
-      // (13 MB vs 58 MB raw); the decoder is required by its
-      // EXT_meshopt_compression extension. Attributes stay float32 because the
-      // batching below transforms positions on the CPU.
+      // 五机架本体用回原 DKQKAR 六辊装配模型（用户 2026-11-01 选定，
+      // 取代 Blender 简化重建版 mill_5stand_blender(_mo).glb —— 后者缺中间辊/工作辊）；
+      // 保留 meshopt 解码器以兼容旧资产，不影响普通 GLB。
       loader.setMeshoptDecoder(MeshoptDecoder);
       loader.load('/assets/DKQKAR_5Stand.glb', resolve, (event) => {
         update({ percent: Math.min(74, Math.round(event.loaded / (event.total || 12967608) * 74)), message: '读取设备模型…' });

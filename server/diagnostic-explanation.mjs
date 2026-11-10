@@ -245,6 +245,8 @@ export async function explainDiagnostic({context, diagnostic, passages = [], llm
       if(signal?.aborted)throw error;
       if(trace.QWEN_RAW_RESULT_PRESENT)trace.OUTPUT_VALIDATION_RESULT='FAIL';
       primaryFailure ||= error.code==='LOCAL_LLM_TIMEOUT'||error.name==='TimeoutError'?'QWEN_TIMEOUT'
+        :error.code==='LOCAL_LLM_INTERRUPTED'?'QWEN_INTERRUPTED'
+        :error.code==='LOCAL_LLM_CONTEXT'?'QWEN_CONTEXT'
         :['LOCAL_LLM_OFFLINE','LOCAL_LLM_MODEL_MISSING','LOCAL_LLM_UNAVAILABLE'].includes(error.code)?'QWEN_UNAVAILABLE'
         :trace.QWEN_RAW_RESULT_PRESENT?'OUTPUT_VALIDATION_REJECTED':'QWEN_ERROR';
       trace.QWEN_HTTP_STATUS ??= error.httpStatus ?? null;trace.ERROR_CODE=error.code || error.name;

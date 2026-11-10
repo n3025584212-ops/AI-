@@ -1,0 +1,20 @@
+/* Contextual actions share the workbench surfaces instead of floating over them. */
+.app-shell.reference-shell .sidebar .sidebar-bottom{padding:10px 0 16px;display:flex;flex-direction:column;align-items:center}
+.s5-heading-actions,.key-parameter-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.s5-shell.workbench-shell .dashboard-workspace .workbench-context-action{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:5px;min-height:28px;padding:3px 7px;border:0;border-radius:4px;background:transparent;color:#b9d2e0;font:inherit;font-size:12px;line-height:18px;white-space:nowrap;cursor:pointer}
+.s5-shell.workbench-shell .dashboard-workspace .workbench-context-action:hover:enabled{background:#29404d;color:#eff8ff}
+.s5-shell.workbench-shell .dashboard-workspace .workbench-context-action:disabled{opacity:.55;cursor:default}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools .workbench-context-action{border-right:1px solid #475b6866;border-radius:0;padding-right:10px;margin-right:2px}
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-heading{gap:8px;flex-wrap:wrap}
+.s5-shell.workbench-shell .dashboard-workspace .s5-heading-actions{margin-left:auto}
+.s5-shell.workbench-shell .dashboard-workspace .s5-heading-actions .workbench-context-action{min-height:24px;padding:1px 3px}
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-heading{flex-wrap:wrap;gap:4px 8px;min-height:32px}
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-actions{margin-left:auto;gap:5px}
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-actions button{min-height:26px}
+@media(max-width:1100px){.s5-shell.workbench-shell .dashboard-workspace .scene-tools .workbench-context-action{gap:3px;padding:3px 5px}.s5-heading-actions{gap:5px}}
+@media print{.sidebar-assistant,.workbench-context-action{display:none!important}}
+
+/* No detached S5 illustration: keep the prediction itself as the card's content. */
+.s5-shell.workbench-shell .dashboard-workspace .dm-prediction.dm-prediction-scrollable{grid-template-columns:minmax(0,1fr);grid-template-rows:24px auto;row-gap:4px}
+.s5-shell.workbench-shell .dashboard-workspace .dm-prediction>.s5-main-heading,.s5-shell.workbench-shell .dashboard-workspace .dm-prediction>.s5-card-scroll-content{grid-column:1}
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-heading{min-height:24px;height:auto}

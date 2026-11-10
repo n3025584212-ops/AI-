@@ -1,3 +1,8 @@
+import { buildAssistantExperience } from './assistantTaskPolicy.js';
+import { useTaskRuntime, assertTaskApproval, assertTaskWriteBinding, sceneActionMatches, downloadTaskArtifact, TASK_TERMINAL } from './useTaskRuntime.js';
+import { projectAssistantTask, receiptFromAgentRun } from './assistantTaskRuntime.js';
+import { useAssistantActivity } from './useAssistantActivity.js';
+import { currentPredictionErrorAlarm } from './s5PredictionErrorAlarm.js';
 import UserVisibleText from './UserVisibleText.jsx';
 import {createAssistantTurn,assistantTurnRequest,startAssistantTurn,assistantResponseUpdate,startAssistantFallback} from './assistantTurn.js';
 import {isFactDiagnosticQuestion} from './assistantFacts.js';
@@ -29,7 +34,9 @@ import { exportJSON, exportCSV, exportWord, exportPowerPoint, downloadSingleCond
 import LiveWorkspace from './LiveWorkspace.jsx';
 import VoiceAssistant from './VoiceAssistant.jsx';
 import FloatingAssistant from './FloatingAssistant.jsx';
-import AssistantSources, { AssistantReferences } from './AssistantSources.jsx';
+import { ASSISTANT_MODE_LABELS, readAssistantMode, writeAssistantMode } from './assistantAccess.js';
+import { readAssistantMessages, writeAssistantMessages } from './assistantMessages.js';
+import AssistantSources, { AssistantReferences, uploadKnowledgeFile } from './AssistantSources.jsx';
 import { useProcessStream } from './useProcessStream.js';
 import { loadHistoricalReplay } from './historicalReplay.js';
 import { loadSeededDemoReplay } from './seededDemo.js';
@@ -37,7 +44,7 @@ import { DEFAULT_INPUT_RANGE_TABLE as rangeTable } from './inputRangeDefaults.js
 import { OptimizationWorkspace, DraftWorkspace } from './OperationsPages.jsx';
 import EvidenceReferences from './EvidenceReferences.jsx';
 import { evidenceForIdentity } from './evidence.js';
-import { createDraft, validateDraftCandidate, validateDraftBaseline, acceptDraftPrediction, promotionRetry, promotedDraft, discardedDraft } from './draftState.js';
+ import { createDraft, validateDraftCandidate, validateDraftBaseline, acceptDraftPrediction, promotionRetry, promotedDraft, discardedDraft } from './draftState.js';
 import { updateStandField, parseCaseFile } from './processState.js';
 import CsvImportUnitDialog from './CsvImportUnitDialog.jsx';
 import { assertCaseImportValid, validateCaseImport } from './caseImportBoundary.js';
@@ -83,8 +90,7 @@ const newDashboardInput = input => {
 const withoutObservation=input=>{const value=clone(input);delete value.importProvenance;const s5=value.stands?.find(stand=>stand.id==='S5');if(s5)delete s5.force;return value;};
 const fmt = (n, d=1) => Number.isFinite(Number(n)) && n !== null ? Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
 const pages = applicationPages;
-const initialMessages = [];
-const assistantUnavailable = '本地 AI 暂不可用。预测、诊断和决策支持功能仍可正常使用。';
+const assistantUnavailable = 'AI 生成暂不可用，预测与输入检查仍可用。';
 export function createAssistantStatusScheduler(refresh,{setTimer=setTimeout,clearTimer=clearTimeout}={}){
  let timer=null,stopped=false,polling=false,scheduledFailureCount=0;
  const interval=()=>scheduledFailureCount>=4?30000:15000;
@@ -146,6 +152,7 @@ export function containDialogFocus(dialog) {
  return ()=>{doc.removeEventListener('keydown',keydown,true);doc.removeEventListener('focusin',focusin,true);for(const {element,inert} of background)element.inert=inert;if(trigger?.isConnected)trigger.focus({preventScroll:true});};
 }
 function App({ user, onLogout }){
+ const [taskImportRequest,setTaskImportRequest]=useState(null),taskImportOwner=useRef(null),knowledgeFileRef=useRef(null);
  const [importUnitRequest,setImportUnitRequest]=useState(null),importUnitResolver=useRef(null);
  const chooseImportUnits=inspection=>new Promise(resolve=>{importUnitResolver.current?.(null);importUnitResolver.current=resolve;setImportUnitRequest(inspection);});
  const finishImportUnits=unit=>{const resolve=importUnitResolver.current;importUnitResolver.current=null;setImportUnitRequest(null);resolve?.(unit);};
@@ -162,7 +169,9 @@ function App({ user, onLogout }){
  useEffect(()=>{if(!actionPanel)return;const dialog=document.querySelector('.action-panel[role="dialog"]');if(dialog)return containDialogFocus(dialog);},[Boolean(actionPanel)]);
  const agentRequest=useRef(null),activeRun=useRef(null),previousAssistantInput=useRef(null),knowledgeUiRevision=useRef(0);
  const [selectedEvent,setSelectedEvent]=useState(null),[comparisonView,setComparisonView]=useState(null);
- const [page,setPageState]=useState('overview'), [caseData,setCase]=useState(()=>newDashboardInput(DEFAULT_CASE)), [completed,setCompleted]=useState(()=>({result:{value:null,target:null,deviation:null,drivers:[],curve:[],interval:[],mode:'pending',explanation:'正在连接预测服务'},caseData:newDashboardInput(DEFAULT_CASE),sample:resultSampleMetadata({mode:'demo',time:Date.now()}),activeSnapshot:null,observation:null})),[dirty,setDirty]=useState(true);
+ const [page,setPageState]=useState('data'), [pin,setPin]=useState(null), [caseData,setCase]=useState(()=>newDashboardInput(DEFAULT_CASE)), [completed,setCompleted]=useState(()=>({result:{value:null,target:null,deviation:null,drivers:[],curve:[],interval:[],mode:'pending',explanation:'正在连接预测服务'},caseData:newDashboardInput(DEFAULT_CASE),sample:resultSampleMetadata({mode:'demo',time:Date.now()}),activeSnapshot:null,observation:null})),[dirty,setDirty]=useState(true);
+ const predictionStateRef=useRef(predictionState);predictionStateRef.current=predictionState;
+ const dirtyRef=useRef(dirty);dirtyRef.current=dirty;
  const {result,caseData:resultCase,sample:resultSample,activeSnapshot,observation}=completed;
  const completedRef=useRef(completed);completedRef.current=completed;
  const [targetReference,setTargetReference]=useState(()=>readTargetReference(window.localStorage));
@@ -177,12 +186,18 @@ function App({ user, onLogout }){
  const setResult=fn=>setCompleted(previous=>({...previous,result:typeof fn==='function'?fn(previous.result):fn}));
  const [operationSessionId,setOperationSessionId]=useState(null);const operationSession=useRef(null),currentBinding=useRef({valid:false}),observationGate=useRef(createPredictionGate()),exportGate=useRef(createPredictionGate());
  const [dataTab,setDataTab]=useState('current');
- const setPage=next=>{knowledgeUiRevision.current+=1;if(next==='optimize')setOptimizationTask(task=>task||{targetValueT:currentCaseRef.current.importProvenance?.target_source==='USER_INPUT'&&Number.isFinite(currentCaseRef.current.target)&&currentCaseRef.current.target>0?currentCaseRef.current.target:null,searchMatchTolerance:SEARCH_MATCH_TOLERANCE_DEFAULT});if(next==='optimize'||next==='draft'||next==='reports'){setActionPanel(next==='reports'?'report':'trial');return;}if(next==='saved-data')setDataTab('saved');const target=next==='saved-data'?'data':['events','history','replay','input','prediction','three'].includes(next)?'overview':next;setPageState(target);};
+ const setPage=next=>{knowledgeUiRevision.current+=1;if(next==='optimize')streamRef.current?.pause({temporary:true});if(next==='optimize')setOptimizationTask(task=>task||{targetValueT:currentCaseRef.current.importProvenance?.target_source==='USER_INPUT'&&Number.isFinite(currentCaseRef.current.target)&&currentCaseRef.current.target>0?currentCaseRef.current.target:null,searchMatchTolerance:SEARCH_MATCH_TOLERANCE_DEFAULT});if(next==='optimize'||next==='draft'||next==='reports'){setActionPanel(next==='reports'?'report':'trial');return;}if(next==='saved-data')setDataTab('saved');const target=next==='saved-data'?'data':['events','history','replay','input','prediction','three'].includes(next)?'overview':next;/* 孪生舞台双侧环绕：左=数据/维护，右=连接/日志；再点当前面板=收起（另一侧面板顶替为主面板） */if(STAGE_SIDES[target]){if(page===target){if(pin){setPageState(pin);setPin(null);}else setPageState('overview');return;}if(pin===target){setPin(null);return;}if(page==='overview'){setPageState(target);setPin(null);return;}setPageState(target);setPin(null);return;}if(target==='overview'){setPageState('overview');setPin(null);return;}setPageState(target);};
+ // 值守技术员的可执行动作落到页面状态；L3 永远到不了这里（后端已拦截）。
+ useEffect(()=>{const handler=event=>{const action=event.detail||{},target=action.params?.page;
+   if(action.tool==='ui.switch_page'&&target)setPage(target);
+   else if(action.tool==='ui.focus'){setSelected(action.params?.stand||'S5');setPage('overview');}
+   else if(action.tool==='report.export')setActionPanel('report');
+ };window.addEventListener('qcdkr:technician-action',handler);return()=>window.removeEventListener('qcdkr:technician-action',handler);},[page,pin]);
  const [agentReference,setAgentReference]=useState('__baseline__');
  const [sessionKey,setSessionKey]=useState(0),[predictionEpoch,setPredictionEpoch]=useState(0);
  // Conversation-only eligibility; never part of a snapshot or model request.
  useEffect(()=>{knowledgeUiRevision.current+=1;},[actionPanel,sessionKey]);
- const autoDemoStarted=useRef(false),pendingRetry=useRef(null),lastRequestRevision=useRef(-1);
+ const autoDemoStarted=useRef(false),pendingRetry=useRef(null),lastRequestRevision=useRef(-1),copilotTaskActive=useRef(false),taskResumeAfter=useRef(false);
  const historicalReplayLoad=useRef(null);
  const [searchState,setSearchState]=useState({status:'IDLE'}),smartSearchClient=useRef(null);
  const [mostRecentCompletedSearch,setMostRecentCompletedSearch]=useState(null);
@@ -195,7 +210,10 @@ function App({ user, onLogout }){
  const modelKey=modelInputFingerprint(caseData);
  const [selected,setSelected]=useState('S5'),[view,setView]=useState('perspective'),[explode,setExplode]=useState(false),[showStrip,setShowStrip]=useState(true);
  const [appSessionId,setAppSessionId]=useState(null),[reportSnapshot,setReportSnapshot]=useState(null);
- const [assistantOpen,setAssistantOpen]=useState(false),[navCollapsed,setNavCollapsed]=useState(()=>window.innerWidth<1180),[assistantSourcesOpen,setAssistantSourcesOpen]=useState(false);
+ const [assistantOpen,setAssistantOpen]=useState(false),[assistantSourcesOpen,setAssistantSourcesOpen]=useState(false);
+ const [assistantMode,setAssistantMode]=useState(()=>readAssistantMode());
+ const [voiceState,setVoiceState]=useState({phase:'idle',wakeEnabled:false,following:false});
+ const [lastTaskChange,setLastTaskChange]=useState(null);
  const [pendingPlan,setPendingPlan]=useState(null),[appliedPlan,setAppliedPlan]=useState(null);
  const [workingDraft,setWorkingDraft]=useState(null),draftRef=useRef(null),draftPredictionGate=useRef(createPredictionGate()),draftPromotion=useRef(null);
  const [draftDisplaySelection,setDraftDisplaySelection]=useState(null);
@@ -249,8 +267,11 @@ function App({ user, onLogout }){
  const trialConfirmation=useRef(null),[trialConfirming,setTrialConfirming]=useState(false);
  const explicitTrialEntry=useRef(false);
  useEffect(()=>{if(!assistantOpen||page!=='overview')explicitTrialEntry.current=false;},[assistantOpen,page]);
- const [messages,setMessages]=useState(initialMessages),[question,setQuestion]=useState(''),[chatBusy,setChatBusy]=useState(false),[assistantStatus,setAssistantStatus]=useState({configured:false,mode:'local',model:''}),[serverOK,setServerOK]=useState(false);
+ const messageOwner=user?.id||user?.username||'local';
+ const [messages,setMessages]=useState(()=>readAssistantMessages(messageOwner)),[question,setQuestion]=useState(''),[chatBusy,setChatBusy]=useState(false),[assistantStatus,setAssistantStatus]=useState({configured:false,mode:'local',model:''}),[serverOK,setServerOK]=useState(false);
+ useEffect(()=>{writeAssistantMessages(messageOwner,messages);},[messageOwner,messages]);
  const assistantTurnActive=useRef(null);
+ const assistantActivity=useAssistantActivity(user?.id||user?.username||'local');
  const assistantStatusRef=useRef(assistantStatus),assistantStatusScheduler=useRef(null),assistantStatusRevision=useRef(0),assistantMounted=useRef(true),assistantCheckPending=useRef(null);assistantStatusRef.current=assistantStatus;
  const fetchAssistantStatus=({force=false}={})=>{
   if(assistantCheckPending.current)return assistantCheckPending.current;
@@ -258,7 +279,7 @@ function App({ user, onLogout }){
   const revision=++assistantStatusRevision.current;let status;
   if(force){const checking={...assistantStatusRef.current,available:false,providerStatus:'STARTING',latencyMs:null};assistantStatusRef.current=checking;setAssistantStatus(checking);}
   try{status=await api('/assistant/status'+(force?'?check=1':''),{transport:{kind:'LOCAL_AI_HEALTH',health:localAiHealth(assistantStatusRef.current)}});}
-  catch(error){status={...assistantStatusRef.current,available:false,providerStatus:'UNKNOWN',latencyMs:null,loadStatus:'UNKNOWN',healthTransportError:error.code,reason:'本地 AI连接状态尚未核实。'};}
+  catch(error){status={...assistantStatusRef.current,available:false,providerStatus:'UNKNOWN',latencyMs:null,loadStatus:'UNKNOWN',healthTransportError:error.code,reason:'AI 连接状态尚未核实。'};}
   if(!assistantMounted.current||revision!==assistantStatusRevision.current)return assistantStatusRef.current;
   assistantStatusRef.current=status;setAssistantStatus(status);return status;
   })();
@@ -313,6 +334,9 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
   pausedProjection.current=true;return null;
  };
  const stream=useProcessStream(newDashboardInput(DEFAULT_CASE),(frame,{resetProjection=false,datasetReplaced=false}={})=>{
+ // A task owns the current context until it reaches a terminal state. Even a
+ // late timer or replay toggle must not replace the row the user is approving.
+ if(copilotTaskActive.current)return;
  if(datasetReplaced){
   historicalReplayLoad.current?.controller.abort();historicalReplayLoad.current=null;
   policyOwner.current.clear();activeSearchRunId.current=null;smartReviewClient.current.cancel('STALE');
@@ -374,10 +398,15 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
  useRetentionLease(api,{type:'AI_ANSWER',analysisIds:analysisContext?[analysisContext.analysisId]:[],logIds:analysisContext?.sourceLogIds||[],enabled:Boolean(analysisContext)});
  const openAnalysisHistory=(id,filters={})=>setAnalysisPanel({id:typeof id==='string'?id:null,filters});
  const analysisSourceIdentity=analysisDatasetIdentity(caseData),analysisSourceKey=JSON.stringify(analysisSourceIdentity);
- useEffect(()=>{if(!operationSessionId)return;const scope=operationScope();let stopped=false;
-  void api('/context/current',{method:'POST',body:JSON.stringify({operation_scope:scope})}).then(()=>{
-   if(stopped)return;return api('/ai-analysis/source',{method:'POST',body:JSON.stringify({
-    identity:analysisSourceIdentity,predictionErrorAlarmRange,operation_scope:scope})});
+  useEffect(()=>{if(!operationSessionId)return;const scope=operationScope();let stopped=false;
+   void api('/context/current',{method:'POST',body:JSON.stringify({operation_scope:scope})}).then(()=>{
+    if(stopped)return;
+    // Streaming predictions can advance the request revision while the
+    // context invalidation is in flight; bind the source transition to the
+    // revision that is current when it is actually sent.
+    const latestScope=operationScope();
+    return api('/ai-analysis/source',{method:'POST',body:JSON.stringify({
+     identity:analysisSourceIdentity,predictionErrorAlarmRange,operation_scope:latestScope})});
   }).then(()=>{if(!stopped)void aiAnalysis.refresh();}).catch(()=>{});
   return()=>{stopped=true;};},[operationSessionId,analysisSourceKey]);
  const viewAnalysisLog=id=>{if(!id)return;setAnalysisPanel(null);setFocusLogId(id);setPage('logs');};
@@ -483,7 +512,7 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
    trace({stage:'AUTO_PREDICT_TRIGGERED',snapshot_id:snapshot.snapshot_id});
    job.requestStarted=performance.now();trace({stage:'PREDICT_REQUEST_SENT',snapshot_id:snapshot.snapshot_id,
     trigger_to_request_ms:job.requestStarted-job.enqueuedAt});
-   const r=await predictionClient.current.predict(input,{current:()=>jobCurrent(job,current),operation_scope:scope,
+    const r=await predictionClient.current.predict(input,{current:()=>jobCurrent(job,current),operation_scope:scope,predictionErrorAlarmRange,
     headers:{'X-DKQKAR-Request-Id':job.request_id},input_snapshot:retry?.input_snapshot,prediction:retry?.prediction,
     observation:retry?.observation,committed_snapshot:prepared});
    trace({stage:'PREDICT_RESPONSE_RECEIVED',request_duration_ms:performance.now()-job.requestStarted,snapshot_id:r.snapshot_id});
@@ -505,6 +534,7 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
    // prediction scheduler, Candidate pipeline or future replay frames.
    void api('/ai-analysis/record',{method:'POST',body:JSON.stringify({prediction:r,observation:acceptedObservation,operation_scope:job.scope,
     predictionErrorAlarmRange,customLimits:readCustomLimits(globalThis.localStorage)})}).then(()=>aiAnalysis.refresh()).catch(error=>notify('AI运行分析记录未完成：'+error.message));
+   void api('/maintenance/alarm-range',{method:'PUT',body:JSON.stringify({lowerBound:predictionErrorAlarmRange.lowerBound,upperBound:predictionErrorAlarmRange.upperBound})}).catch(()=>{});
    setDirty(false);setServerOK(true);setErrors([]);setLastUpdated(new Date(sample.sample_timestamp||Date.now()));
    if(promoted){writeDraft(promoted);finishBusy(draftPromotion.current.owner);draftPromotion.current=null;}
    trace({stage:'PREDICTION_COMMITTED',snapshot_id:r.snapshot_id});
@@ -545,6 +575,27 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
   return()=>{window.removeEventListener('dkqkar-assistant-open',open);window.removeEventListener('dkqkar-voice-turn',voiceTurn);};
  },[]);
  const notify=(text,type='SUCCESS')=>{setToastType(type);setToast(text);};
+ const changeAssistantMode=next=>{const mode=writeAssistantMode(next);setAssistantMode(mode);notify('副驾驶权限：'+ASSISTANT_MODE_LABELS[mode].label);};
+ // One global health projection: details stay in Maintenance, but every page
+ // shows the same state and raises a one-shot warning when it turns unhealthy.
+ const modelPhase=String(modelStatus?.status||'').toUpperCase();
+ const modelPending=!modelPhase||['CONNECTING','LOADING','CHECKING'].includes(modelPhase);
+ const plcSource=stream.mode==='plc'||caseData.importProvenance?.source_type==='PLC_REALTIME';
+ const plcQuality=plcSource?(industrialDisplayConnection.status?.dataQuality??industrialDisplayConnection.status?.quality):null;
+ const systemHealth=modelStatus?.available!==true
+  ?modelPending?{level:'pending',label:'预测服务加载中',reason:modelStatus?.reason||'正在连接 QCDKR 正式模型',page:'maintenance'}
+  :{level:'error',label:'预测服务未就绪',reason:modelStatus?.reason||'请打开系统状态与维护查看详情',page:'maintenance'}
+  :predictionState==='FAILED'?{level:'error',label:'预测计算异常',reason:'当前工况预测未完成，可重试或查看系统状态',page:'maintenance'}
+  :plcSource&&plcQuality&&['STALE','DISCONNECTED'].includes(plcQuality)?{level:'warning',label:'工业数据中断',reason:'PLC 数据已暂停，等待恢复',page:'communication'}
+  :{level:'ok',label:'系统正常',reason:modelStatus?.mode==='demo'?'当前为演示模型；点击查看系统状态':'模型、数据与预测服务可用；点击查看系统状态',page:'maintenance'};
+ const healthNotice=useRef('init');
+ useEffect(()=>{
+  if(systemHealth.level==='ok'||systemHealth.level==='pending'){healthNotice.current=systemHealth.level;return;}
+  const key=systemHealth.level+':'+systemHealth.label;
+  if(healthNotice.current===key)return;
+  healthNotice.current=key;
+  notify(`${systemHealth.label}：${systemHealth.reason}`,'WARNING');
+ },[systemHealth.level,systemHealth.label,systemHealth.reason]);
  const queueCurrentPrediction=(projection,{recovered=true}={})=>{
   const selected=selectRecoveryProjection(projection,readActiveProjection());
   if(!selected.eligible){setAutoStatus(RECOVERY_INPUT_CHANGED);setErrors([RECOVERY_INPUT_CHANGED]);return false;}
@@ -560,6 +611,21 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
    &&prepared.input_snapshot.model_hash===modelStatusRef.current.model_hash&&prepared.input_snapshot.model_version===modelStatusRef.current.model_version?prepared:null;
   recoveryPrediction.current=recovered;setPredictionEpoch(value=>value+1);return true;
  };
+ // Recover once from a transient model-service failure. Input/model changes
+ // reset the attempt; a second failure stays visible with the manual retry.
+ const autoPredictionRetry=useRef({key:null,count:0});
+ useEffect(()=>{
+  if(predictionState!=='FAILED'||dirty||!formalModelReady(modelStatus))return;
+  const key=`${modelKey}:${modelStatus.model_hash||''}`;
+  if(autoPredictionRetry.current.key!==key)autoPredictionRetry.current={key,count:0};
+  if(autoPredictionRetry.current.count>=1)return;
+  const timer=setTimeout(()=>{
+   if(predictionStateRef.current!=='FAILED'||dirtyRef.current)return;
+   autoPredictionRetry.current.count+=1;
+   queueCurrentPrediction(readActiveProjection(),{recovered:true});
+  },2500);
+  return()=>clearTimeout(timer);
+ },[predictionState,dirty,modelKey,modelStatus.available,modelStatus.model_hash,modelStatus.model_version]);
  const startHistoricalReplay=async(modelHash,{seededDemo=false,baseInput}={})=>{
   historicalReplayLoad.current?.controller.abort();
   const controller=new AbortController(),load={controller,revision:inputRevision.current,controlVersion:streamRef.current.controlVersion};
@@ -577,7 +643,7 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
    if(diagnosisRequest.current)abortAiController(diagnosisRequest.current.controller,'DATA_SOURCE_CHANGED');diagnosisRequest.current=null;
    trialConfirmation.current=null;abortAiController(agentRequest.current,'DATA_SOURCE_CHANGED');
    setMessages(items=>items.map(item=>({...item,historical:true})));setSessionKey(key=>key+1);
-   streamRef.current.loadFrames(replay.frames,replay.sourceName);streamRef.current.toggle();return true;
+   streamRef.current.loadFrames(replay.frames,replay.sourceName);if(!copilotTaskActive.current)streamRef.current.toggle();return true;
   }catch(error){
    if(!controller.signal.aborted&&historicalReplayLoad.current===load&&load.revision===inputRevision.current&&load.controlVersion===streamRef.current.controlVersion){
     setErrors([error.message]);setAutoStatus('工业数据未载入');
@@ -820,7 +886,10 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
   try{
    let status=assistantStatusRef.current;
    if(status.providerStatus!=='READY'){status=await refreshAssistantStatus();combined.throwIfAborted();}
-   if(['SERVICE_OFFLINE','MODEL_MISSING','MODEL_ERROR','REQUEST_ERROR','OFFLINE','ERROR'].includes(status.providerStatus))throw new AiTransportError('LOCAL_AI_UNAVAILABLE');
+   if(['SERVICE_OFFLINE','OFFLINE'].includes(status.providerStatus))throw new AiTransportError('LOCAL_AI_OFFLINE');
+   if(status.providerStatus==='MODEL_MISSING')throw new AiTransportError('LOCAL_AI_MODEL_MISSING');
+   if(status.providerStatus==='REQUEST_ERROR')throw new AiTransportError(status.lastError?.code==='LOCAL_LLM_AUTH'?'LOCAL_AI_AUTH':'LOCAL_AI_UNAVAILABLE');
+   if(['MODEL_ERROR','ERROR'].includes(status.providerStatus))throw new AiTransportError('LOCAL_AI_UNAVAILABLE');
    const loading=status.loadStatus==='UNLOADED',unknown=status.loadStatus==='UNKNOWN'||!status.loadStatus;
    const generationStartedAt=Date.now();
    setRunState(loading?'正在加载本地模型……':'正在思考…');
@@ -845,13 +914,14 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
    clearInterval(ticker);
    if(e.name==='UnsupportedError'){streamTransport?.finish();if(streamTransport)streamTransport.trace.final_request_status='TOOL_FLOW_FALLBACK';startAssistantFallback(turn);fallback=askRuns(q,{voice,signal,turn});return fallback;}
    const stopped=combined.aborted||e.name==='AbortError',failure=asAiTransportError(e,combined);streamTransport?.finish(failure);
-   publishTurn(turn,{text:inserted?reply:failure.message,error_code:failure.code,mode:inserted?'interrupted':failure.code==='LOCAL_AI_UNAVAILABLE'?'unavailable':'error',interruptionLabel:stopped?'本次任务已停止。':'回答已中断',retry:stopped?undefined:q},{attempt,final:true});
+   const unavailable=['LOCAL_AI_UNAVAILABLE','LOCAL_AI_OFFLINE','LOCAL_AI_MODEL_MISSING','LOCAL_AI_AUTH'].includes(failure.code);
+   publishTurn(turn,{text:inserted?reply:failure.message,error_code:failure.code,mode:inserted?'interrupted':unavailable?'unavailable':'error',interruptionLabel:stopped?'本次任务已停止。':failure.code==='AI_ANSWER_TIMEOUT'?'回答超时':'回答已中断',retry:stopped||failure.code==='LOCAL_AI_AUTH'?undefined:q},{attempt,final:true});
    if(!stopped)void refreshAssistantStatus();
    if(voice&&!stopped)throw e;
    return null;
   }finally{clearInterval(ticker);if(!hasFinal)try{await reader?.cancel();}catch{}if(!fallback&&agentRequest.current===controller){setChatBusy(false);setRunState('');agentRequest.current=null;}}
  };
-  const dispatchAsk=async(q=question,{voice=false,signal,tools,analysisMode,turn}={})=>{
+  const dispatchAsk=async(q=question,{voice=false,signal,tools,analysisMode,turn,returnRun=false}={})=>{
    if(!q.trim()||chatBusy){if(voice)throw new Error('助手正在回答，请稍后再说');return;}
    if(tools){setAnalysisContext(null);setAnalysisChoice(null);}
    if(!tools){
@@ -881,18 +951,18 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
      }catch(error){notify(error.message);return;}
     }
    }
-   if(!tools&&isFactDiagnosticQuestion(q))return askRuns(q,{voice,signal,turn,factDiagnostic:true});
+   if(!tools&&isFactDiagnosticQuestion(q))return askRuns(q,{returnRun,voice,signal,turn,factDiagnostic:true});
    const parameterQuestion=classifyQuestionType(q);
    explicitTrialEntry.current=false;
-   if(!tools&&parameterQuestion)return askRuns(q,{voice,signal,questionDriven:true,turn});
+   if(!tools&&parameterQuestion)return askRuns(q,{returnRun,voice,signal,questionDriven:true,turn});
   const intent=classifyAssistantIntent(q,currentDiagnostics);
   if(!tools&&!voice&&/^(?:请)?(?:比较|对比)调整前后S5预测[。！？!?]*$/.test(q.replace(/\s/g,''))){setPage('optimize');notify(workingDraft?.status==='PREDICTED'?'已打开现有 A/B 验证':'请先指定候选调整并确认试算，才能生成 A/B 结果');return;}
-  if(!tools&&isKnowledgeDetailFollowup(q))return askRuns(q,{voice,signal,turn});
-  if(tools||intent.requiresTool)return askRuns(q,{voice,signal,tools,turn});
+  if(!tools&&isKnowledgeDetailFollowup(q))return askRuns(q,{returnRun,voice,signal,turn});
+  if(tools||intent.requiresTool)return askRuns(q,{returnRun,voice,signal,tools,turn});
   if(!tools&&isConversational(q))return askDirect(q,{voice,signal,turn});
-  return askRuns(q,{voice,signal,tools,turn});
+  return askRuns(q,{returnRun,voice,signal,tools,turn});
  };
-  const askRuns=async(q,{voice=false,signal,tools,diagnosticRequest,candidateRequest,questionDriven=false,factDiagnostic=false,turn}={})=>{
+  const askRuns=async(q,{voice=false,signal,tools,diagnosticRequest,candidateRequest,questionDriven=false,factDiagnostic=false,turn,returnRun=false}={})=>{
   const ownsTurn=!turn;if(!turn){if(assistantTurnActive.current)return;turn=captureAssistantTurn(q);assistantTurnActive.current=turn;}
   const attempt=turn.attempt;
   try{
@@ -979,7 +1049,7 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
      if(comparison.status!=='VALID'||!reviewIsCurrent())throw new Error('当前搜索A/B已失效，请重新搜索。');
     }
     if(!questionDriven&&assistantStatusRef.current.providerStatus!=='READY'){await refreshAssistantStatus();signalCombined.throwIfAborted();}
-    let a=await api('/agent/runs',{method:'POST',signal:signalCombined,transport,body:JSON.stringify({message:q,tools,context,...assistantTurnRequest(turn),...(questionDriven?{question_driven:true}:{}),...(candidateReview?{candidate_review:candidateReview}:{}),...(candidateRequest?{candidate_explanation:candidateRequest}:{}),...(diagnosticRequest?{diagnostic_request:diagnosticRequest}:{}),...(knowledgeFollowup?{knowledge_followup:knowledgeFollowup}:{}),...(guidedTrial&&!questionDriven?{trial_request:{mode:'USER_SPECIFIED_TRIAL'}}:{})})});
+    let a=await api('/agent/runs',{method:'POST',signal:signalCombined,transport,body:JSON.stringify({message:q,tools,context,access_mode:assistantMode,...assistantTurnRequest(turn),...(questionDriven?{question_driven:true}:{}),...(candidateReview?{candidate_review:candidateReview}:{}),...(candidateRequest?{candidate_explanation:candidateRequest}:{}),...(diagnosticRequest?{diagnostic_request:diagnosticRequest}:{}),...(knowledgeFollowup?{knowledge_followup:knowledgeFollowup}:{}),...(guidedTrial&&!questionDriven?{trial_request:{mode:'USER_SPECIFIED_TRIAL'}}:{})})});
    activeRun.current=a.runId;const runId=a.runId;
    receiveDiagnostic(a);
    const finished=new Set(['completed','partial','needs_input','needs_approval','failed','cancelled','stale_context']);
@@ -1012,7 +1082,7 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
    const candidatePlans=a.results?.optimize?.plans || (Array.isArray(a.results?.optimize)?a.results.optimize:[]);
    if(candidatePlans.length&&runIsCurrent(a))setPlans(items=>mergeCandidateSources(items,candidatePlans.map(plan=>({...plan,baselineInput:clone(inputSnapshot)})),'BUILT_IN_CANDIDATE_SEARCH'));
    if(diagnosticKey)receiveDiagnostic(a);
-   else publishTurn(turn,{...a,knowledge_ui_revision:knowledgeRevision,historical:(a.answerScope||'SNAPSHOT')==='SNAPSHOT'&&!runIsCurrent(a),role:'assistant',text:(a.reply||a.message||'').replace(/已请求定位[^\n]+等待三维视图打开测点。/g,()=>{const step=traces.find(t=>t.tool==='3D');return step?.status==='success'?step.result.summary:step?.error?.message||step?.error||'三维定位尚未完成';}),mode:a.mode,contextFingerprint,sampleTime,trace:traces,diagnosis_actions:a.answer_variant==='AI_EXPLAIN'?a.actions:undefined,actions:candidatePlans.length?['optimize']:undefined,artifact:a.results?.report?.artifact||a.results?.report,references:Array.isArray(a.references)?a.references:[]},{attempt,final:true});return candidateRequest?a:knowledgeDisplayText(a.reply||a.message,a.references);
+   else publishTurn(turn,{...a,knowledge_ui_revision:knowledgeRevision,historical:(a.answerScope||'SNAPSHOT')==='SNAPSHOT'&&!runIsCurrent(a),role:'assistant',text:(a.reply||a.message||'').replace(/已请求定位[^\n]+等待三维视图打开测点。/g,()=>{const step=traces.find(t=>t.tool==='3D');return step?.status==='success'?step.result.summary:step?.error?.message||step?.error||'三维定位尚未完成';}),mode:a.mode,contextFingerprint,sampleTime,trace:traces,diagnosis_actions:a.answer_variant==='AI_EXPLAIN'?a.actions:undefined,actions:candidatePlans.length?['optimize']:undefined,artifact:a.results?.report?.artifact||a.results?.report,references:Array.isArray(a.references)?a.references:[]},{attempt,final:true});return candidateRequest||returnRun?a:knowledgeDisplayText(a.reply||a.message,a.references);
 
   }catch(e){
    if(!referenceIsCurrent())return;
@@ -1107,12 +1177,12 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
  };
  const latestTrial=messages.findLast(item=>item.trial_preview);
  const guidedTrialStatus=trialConfirming?'正在试算':latestTrial&&!currentRunMatches(latestTrial,currentBinding.current)?'等待试算指令':latestTrial?.trial_preview?.status==='COMPLETED'?'用户候选已生成':['PENDING_CONFIRMATION','CONFIRMED'].includes(latestTrial?.trial_preview?.status)?'候选待确认':'等待试算指令';
- const diagnoseFinding=async findingId=>{
+ const diagnoseFinding=async(findingId,{returnRun=false,signal}={})=>{
   if(chatBusy||agentRequest.current||diagnosisRequest.current)return;
   const diagnostics=diagnosticsRef.current,finding=diagnostics?.findings.find(item=>item.finding_id===findingId&&item.status==='VALID');
   if(!finding||diagnostics.status!=='VALID'||!currentRunMatches(diagnostics.identity,currentBinding.current)){notify('诊断上下文不可用');return;}
   const token={findingId};diagnosisRequest.current=token;setDiagnosingFindingId(findingId);
-  try{await askRuns(findingDisplayTitle(finding)+'依据是什么？',{diagnosticRequest:{mode:'EXACT',answer_variant:'AI_EXPLAIN',finding_id:findingId}});}
+  try{return await askRuns(findingDisplayTitle(finding)+'依据是什么？',{returnRun,signal,diagnosticRequest:{mode:'EXACT',answer_variant:'AI_EXPLAIN',finding_id:findingId}});}
   finally{if(diagnosisRequest.current===token){diagnosisRequest.current=null;setDiagnosingFindingId(null);}}
  };
  const diagnosticAction=async(action,message)=>{
@@ -1121,10 +1191,7 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
    check();await api('/agent/runs/'+message.runId+'/actions/'+action.id+'/authorize',{method:'POST',body:JSON.stringify({...message,contextRef:message.contextRef})});check();
    if(action.type==='open-decision-support'){setPage('optimize');return;}
    if(action.type==='open-input'){
-    setPage('overview');const deadline=Date.now()+7000;
-    while(!document.querySelector('.input-status-card')&&Date.now()<deadline){check();await new Promise(resolve=>setTimeout(resolve,50));}
-    check();const card=document.querySelector('.input-status-card');if(!card)throw new Error('输入状态尚未载入');
-    const detail=card.querySelector('.historical-range-details');if(detail)detail.open=true;card.scrollIntoView?.({block:'start'});return;
+     check();setPage('maintenance');notify('已打开系统状态与维护 · 当前工况检查');return;
    }
    if(action.type==='open-evidence'){
     const article=Array.from(document.querySelectorAll('[data-run-id]')).find(item=>item.dataset.runId===message.runId);
@@ -1196,7 +1263,7 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   return reply;
  };
- const assistantAction=(action,message)=>{if(!runIsCurrent(message)){notify('该结果属于先前工况或旧实际值，请重新分析');return;}if(['apply','applyPlan','undo','generate','loadDraft','predictDraft','promoteDraft','discardDraft','load-draft','predict-draft','promote-draft','discard-draft'].includes(action)){applyPlan();return;}if(action==='generate'){setPage('optimize');generate();}else setPage(action);};
+ const assistantAction=(action,message)=>{if(!runIsCurrent(message)){notify('该结果属于先前工况或旧实际值，请重新分析');return;}if(['apply','applyPlan','undo','generate','loadDraft','predictDraft','promoteDraft','discardDraft','load-draft','predict-draft','promote-draft','discard-draft'].includes(action)){applyPlan();return;}if(action==='three'){setPage('overview');globalThis.__qcdkrInspectRequest={stand:selected,at:Date.now()};window.setTimeout(()=>window.dispatchEvent(new CustomEvent('qcdkr:inspect',{detail:{stand:selected}})),500);return;}if(action==='generate'){setPage('optimize');generate();}else setPage(action);};
  const importFile=async(ev)=>{const f=ev.target.files?.[0];if(!f)return;try{const {input:incoming,audit}=await parseCaseFile(f,caseData,{chooseLegacyUnits:chooseImportUnits});const validation=assertCaseImportValid(incoming,rangeTable,readCustomLimits(globalThis.localStorage),audit);invalidatePrediction();pendingFrame.current=null;stream.manual();setPredictionEpoch(value=>value+1);setSessionKey(key=>key+1);unsavedEdits.current={parameterEdits:false,dataEdits:false};setOptimizationTask(null);currentCaseRef.current=newDashboardInput(incoming);setCase(currentCaseRef.current);setAppliedPlan(null);setDirty(true);setPlans([]);setErrors([]);notify('已导入 '+f.name+'，预测自动同步'+(validation.trueOutOfRange.length?' · '+validation.trueOutOfRange.length+'项超出当前参考范围':''));setPage('overview');}catch(e){notify('导入失败：'+(e.category==='PARSER_SCHEMA_ERROR'?'解析 / schema错误（PARSER_SCHEMA_ERROR）：':'')+e.message);}ev.target.value='';};
  const currentDiagnostics=currentDiagnosticsFor({result,observation,resultCase,currentBinding:currentBinding.current,auditBundle,dirty,operation_scope:operationScope()});
  if(activeSnapshot&&!dirty&&currentRunMatches({...predictionIdentity(result,observation),contextFingerprint:reportInputFingerprint(resultCase),operation_scope:operationScope()},currentBinding.current))coherentProjection.current={completed,binding:{...currentBinding.current},audit:sameIdentity(auditIdentity.current,predictionIdentity(result,observation))?auditBundle:{status:'PENDING',evidence:[],findings:[]},frame:completed.frame,updatedAt:lastUpdated};
@@ -1205,25 +1272,27 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
  const diagnosticShortcutTitle=currentDiagnostics.status==='VALID'&&currentDiagnostics.findings.length===1?findingDisplayTitle(soleDiagnostic):null;
  const reportAudit=evidenceForIdentity({status:auditBundle.status,evidence:[...(auditBundle.evidence || []),...(draftAudit.evidence || [])],findings:[...(auditBundle.findings || []),...(draftAudit.findings || [])]},result,observation);
  const currentReportPayload={evidence:reportAudit.evidence,findings:reportAudit.findings,evidence_status:reportAudit.status,input:resultCase,prediction:result,snapshot:activeSnapshot,observation,operation_scope:currentBinding.current.operation_scope,analysisParameters:{selectedStand:selected,reference:agentReference,dataMode:stream.mode,currentIndex:stream.cursor},frames:stream.frames,plans:plans.length?plans:appliedPlan?[appliedPlan.plan]:[],appliedPlan,aiMessages:messages,meta:{...resultSample,createdAt:lastUpdated.toISOString(),model:assistantStatus.model},sections:reportSections};
- const doExport=async(type)=>{
+ const doExport=async(type,{current=false}={})=>{
   if(dirty&&(!reportSnapshot||type==='regenerate')){notify('预测结果正在同步，请稍后生成报告');return;}
   const exportRequest=exportGate.current.begin(),busyRequest=beginBusy(type);
   try{
-   const frozenPayload=freezeReportPayload(type==='regenerate'?currentReportPayload:reportSnapshot||currentReportPayload);
+   const frozenPayload=freezeReportPayload(current||type==='regenerate'?currentReportPayload:reportSnapshot||currentReportPayload);
    const validated=freezeReportPayload(await api('/report/validate',{method:'POST',body:JSON.stringify(frozenPayload)}));
-   const payload=reportSnapshot&&type!=='regenerate'?frozenPayload:validated;
+   const payload=!current&&reportSnapshot&&type!=='regenerate'?frozenPayload:validated;
    if(!exportRequest.current())return;
    if(!reportSnapshot||type==='regenerate')setReportSnapshot(payload);
    if(type==='json')exportJSON(payload);
    if(type==='csv')exportCSV(payload.input,payload.meta);
    if(type==='word')await exportWord(payload);
    if(type==='ppt')await exportPowerPoint(payload);
+   let exportReceipt={format:type,downloadRequested:['json','csv','word','ppt'].includes(type),fileSaved:false};
    if(type==='pdf'){
     stream.pause();setActionPanel('report');
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    if(window.dkqkarDesktop?.saveReportPdf){const saved=await window.dkqkarDesktop.saveReportPdf();if(saved.error)throw new Error(saved.error);if(!saved.canceled)notify('PDF 已保存');}else window.print();
+    if(window.dkqkarDesktop?.saveReportPdf){const saved=await window.dkqkarDesktop.saveReportPdf();if(saved.error)throw new Error(saved.error);if(saved.canceled)return {format:type,cancelled:true,fileSaved:false};notify('PDF 已保存');exportReceipt={format:type,fileSaved:true,path:saved.path||saved.filePath||null};}else {window.print();exportReceipt={format:type,printDialogOpened:true,fileSaved:false};}
    }else notify(type==='regenerate'?'报告已重新生成':'报告文件已生成');
-  }catch(e){notify('导出失败：'+e.message);}finally{exportRequest.commit(()=>finishBusy(busyRequest));}
+   return exportReceipt;
+  }catch(e){notify('导出失败：'+e.message);return {error:e.message};}finally{exportRequest.commit(()=>finishBusy(busyRequest));}
  };
  const isWorkbench=page==='overview';
  const title=pages.find(p=>p[0]===page)?.[1]||'欢迎使用';
@@ -1263,7 +1332,285 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
  const regeneratePolicyTrend=()=>{if(dirty||predictionState!=='READY'||!currentBinding.current.valid){notify('等待当前工况预测完成后重新生成曲线');return;}stream.pause();if(policyOwner.current.regenerateRevealed())notify('正在重新生成三条对比曲线');};
  const policyDraft=candidatePolicy.selectedPolicy&&candidatePolicy.candidateIds?.includes(workingDraft?.source_plan_id)
   &&workingDraft?.source_plan_id!==candidatePolicy.selectedWinner?.id?null:workingDraft;
- function Overview(){return <LiveWorkspace controlRef={sceneControlsRef} modelProps={{...modelProps,onNotify:notify,onDiagnoseFinding:diagnoseFinding,diagnosingFindingId,diagnosisBusy:chatBusy}} currentDiagnostics={currentDiagnostics} stream={stream} guidedTrialStatus={guidedTrialStatus} modelCandidateStatus={modelCandidateStatus} modelCandidateSearching={candidatePolicy.status==='SEARCHING'} candidatePolicy={candidatePolicy} workbenchViewMode={workbenchViewMode} onViewModeChange={setWorkbenchViewMode} onRegenerateTrend={regeneratePolicyTrend} onSelectPolicy={policySelection} optimizationTask={optimizationTask} onReturnBaseline={()=>{setWorkbenchViewMode('CURRENT');setActionPanel(null);}} abStatus={abStatus} onOpenDiagnosisAssistant={findingId=>{setAssistantOpen(true);return diagnoseFinding(findingId);}} onOpenTrialAssistant={()=>{explicitTrialEntry.current=true;setAssistantOpen(true);setQuestion('把S4前张力降低3%试算一下');}} onOpenAB={()=>{setPage('optimize');if(!plans.length)notify('请先生成候选试算');}} onOpenDecisionSupport={()=>setPage('optimize')} onOptimize={()=>setPage('optimize')} onAsk={ask}/>}
+ const taskHost=useRef(null);
+ const appliedTaskActions=useRef(new Map());
+ const readTaskContext=goal=>freezeReportPayload({...captureAssistantTurn(goal||'读取任务执行后的工况').context,targetReference:{...targetReferenceRef.current}});
+ taskHost.current={page,actionPanel,predictionState,readContext:readTaskContext};
+ const executeTaskUI=async(action,{task,step,signal})=>{
+  signal?.throwIfAborted();
+  if(!action||typeof action.type!=='string')throw new Error('任务没有返回可执行的界面动作。');
+  const taskActionKey=`${task?.taskId||task?.id||''}:${step?.stepId||''}:${step?.argumentsDigest||''}`;
+  if(taskActionKey!=='::'&&appliedTaskActions.current.has(taskActionKey))return appliedTaskActions.current.get(taskActionKey);
+  const wait=async inspect=>{
+   for(;;){signal?.throwIfAborted();const value=inspect();if(value)return value;await new Promise(resolve=>setTimeout(resolve,60));}
+  };
+  const receipt=observed=>({verified:true,actionType:action.type,observed,context:taskHost.current.readContext()});
+  const requireWrite=()=>assertTaskWriteBinding(task,step,{contextFingerprint:reportInputFingerprint(currentCaseRef.current),operationScope:operationScope()});
+  const awaitCommitted=async(revision,fingerprint)=>{
+   await wait(()=>{
+    if(inputRevision.current!==revision||modelInputFingerprint(currentCaseRef.current)!==fingerprint)throw new Error('执行期间工况又发生变化，未把其他工况记为本次结果。');
+    if(taskHost.current.predictionState==='FAILED')throw new Error('工况已载入，但正式预测未完成；未声明整步成功。');
+    return currentBinding.current.valid&&currentBinding.current.operation_scope?.revision===revision;
+   });
+   return receipt({inputFingerprint:reportInputFingerprint(currentCaseRef.current),modelInputFingerprint:modelInputFingerprint(currentCaseRef.current),operationScope:operationScope(),snapshotId:completedRef.current.result.snapshot_id,predictionReady:true});
+  };
+  if(action.type==='task-load-case'){
+   requireWrite();if(!action.record?.input)throw new Error('任务未提供可核验的已保存工况。');
+   assertCaseImportValid(action.record.input,rangeTable,readCustomLimits(window.localStorage));
+   stream.pause({temporary:true});if(pauseRebind.current)await pauseRebind.current;requireWrite();
+   loadSavedCase(action.record);
+   return awaitCommitted(inputRevision.current,modelInputFingerprint(action.record.input));
+  }
+  if(action.type==='task-promote-trial'){
+   const taskIdentity=task.taskId||task.id;
+   const beforeInput=clone(currentCaseRef.current);
+   try{
+    requireWrite();if(draftPromotion.current||busyLabel.current)throw new Error('当前工况正在提交其他操作，本次采用尚未执行。');
+    const input=action.input,prediction=action.prediction,snapshot=action.input_snapshot||prediction?.input_snapshot;
+    if(!input||!prediction||input.importProvenance?.source_type!=='HYPOTHETICAL_DRAFT'||prediction.observation?.value!==null||input.stands?.find(item=>item.id==='S5')?.force!==null)throw new Error('采用的试算必须保留假设工况身份，且没有伪造实际值。');
+    assertPredictionBinding(prediction,input,{input_snapshot:snapshot,mode:'formal',model_hash:completedRef.current.result.model_hash,model_version:completedRef.current.result.model_version});
+    assertObservationBinding(prediction.observation,snapshot);await verifyPredictionHashes(prediction);
+    const baseline=completedRef.current.result;
+    const draft=freezeReportPayload({draft_id:action.draftId||crypto.randomUUID(),source_plan_id:action.candidateId||step.stepId,baseline_snapshot_id:baseline.snapshot_id,candidate_preview_snapshot_id:action.previewSnapshotId||null,created_at:new Date().toISOString(),input,status:'PREDICTED',prediction,snapshot,source_mode:'formal',changes:action.changes||[],baseline_identity:{snapshot_id:baseline.snapshot_id,input_hash:baseline.input_hash,model_hash:baseline.model_hash,model_version:baseline.model_version,prediction_mode:baseline.mode,contextFingerprint:reportInputFingerprint(baseline.inputContext)},baseline_prediction:baseline,error:null});
+    promotionRetry(draft,currentBinding.current);writeDraft(draft);await promoteDraft();
+    if(modelInputFingerprint(currentCaseRef.current)!==modelInputFingerprint(input))throw new Error('候选未载入当前工作台，未登记变更。');
+    // The workspace has been replaced. Cache the observed application before
+    // waiting for the prediction, so a duplicate dispatch reuses this receipt
+    // instead of executing the same write a second time.
+    const appliedReceipt=receipt({inputFingerprint:reportInputFingerprint(currentCaseRef.current),modelInputFingerprint:modelInputFingerprint(currentCaseRef.current),operationScope:operationScope(),snapshotId:prediction.snapshot_id,predictionReady:false,appliedBeforePredictionFailure:true});
+    appliedTaskActions.current.set(taskActionKey,appliedReceipt);
+    setLastTaskChange({taskId:taskIdentity,stepId:step.stepId,input:beforeInput,at:Date.now()});
+    try{
+     const committed=awaitCommitted(inputRevision.current,modelInputFingerprint(input));
+     appliedTaskActions.current.set(taskActionKey,committed);
+     return committed;
+    }catch{return appliedReceipt;}
+   }catch(error){
+    // A stale binding or a duplicate dispatch can arrive after the approved
+    // candidate is already on the workbench. Report the observed application
+    // instead of turning a real write into a task failure.
+    if(action.input&&modelInputFingerprint(currentCaseRef.current)===modelInputFingerprint(action.input)){
+     const appliedReceipt=receipt({inputFingerprint:reportInputFingerprint(currentCaseRef.current),modelInputFingerprint:modelInputFingerprint(currentCaseRef.current),operationScope:operationScope(),snapshotId:action.prediction?.snapshot_id||null,predictionReady:false,appliedAfterStaleBinding:true});
+     appliedTaskActions.current.set(taskActionKey,appliedReceipt);
+     setLastTaskChange(previous=>previous?.taskId===taskIdentity&&previous?.stepId===step.stepId?previous:{taskId:taskIdentity,stepId:step.stepId,input:beforeInput,at:Date.now()});
+     return appliedReceipt;
+    }
+    throw error;
+   }
+  }
+  if(['task-import-data','task-import-file'].includes(action.type)){
+   requireWrite();if(taskImportOwner.current)throw new Error('另一次文件选择仍在等待完成。');
+   let owner;
+   const imported=await new Promise((resolve,reject)=>{
+    owner={taskId:task.taskId||task.id,task,step,resolve,reject};taskImportOwner.current=owner;setTaskImportRequest({taskId:owner.taskId});
+    signal?.addEventListener('abort',()=>{if(taskImportOwner.current===owner){taskImportOwner.current=null;setTaskImportRequest(null);}reject(signal.reason||new Error('任务已取消。'));},{once:true});
+   }).finally(()=>{if(taskImportOwner.current===owner){taskImportOwner.current=null;setTaskImportRequest(null);}});
+   const result=await awaitCommitted(imported.revision,imported.fingerprint);return {...result,observed:{...result.observed,fileName:imported.fileName,imported:true}};
+  }
+  if(action.type==='task-upload-knowledge'){
+   assertTaskApproval(task,step);if(taskImportOwner.current)throw new Error('另一次文件选择仍在等待完成。');let owner;
+   const uploaded=await new Promise((resolve,reject)=>{owner={taskId:task.taskId||task.id,kind:'knowledge',task,step,signal,resolve,reject};taskImportOwner.current=owner;setTaskImportRequest({taskId:owner.taskId,kind:'knowledge'});signal?.addEventListener('abort',()=>{if(taskImportOwner.current===owner){taskImportOwner.current=null;setTaskImportRequest(null);}reject(signal.reason||new Error('资料上传任务已取消。'));},{once:true});}).finally(()=>{if(taskImportOwner.current===owner){taskImportOwner.current=null;setTaskImportRequest(null);}});
+   return receipt(uploaded);
+  }
+  if(action.type==='task-set-target-reference'){
+   assertTaskApproval(task,step);const previous=readTargetReference(window.localStorage);
+   if(previous.revision!==action.expected_revision)throw new Error('目标参考值已由其他操作更新，旧版本确认未执行。');
+   if(!onTargetReferenceChange(action.source,action.value))throw new Error('目标参考值没有通过现有校验或未写入。');
+   const next=readTargetReference(window.localStorage);
+   if(next.revision!==previous.revision+1||next.source!==action.source||next.source==='USER_CUSTOM_OVERRIDE'&&next.custom_t!==action.value)throw new Error('目标参考值没有返回匹配的持久化结果。');
+   return receipt({targetReference:next,before:previous,source:next.source,value:next.custom_t??null,revision:next.revision});
+  }
+  if(action.type==='task-open-comparison'){
+   if(!action.comparisonRef||!Number.isFinite(action.comparison?.currentT)||!Number.isFinite(action.comparison?.referenceT))throw new Error('任务没有提供真实完整的比较结果。');
+   setComparisonView({comparison:action.comparison,reference:action.comparisonRef});setActionPanel('comparison');
+   await wait(()=>document.querySelector('[data-comparison-ref="'+CSS.escape(action.comparisonRef)+'"]')?.getClientRects().length);
+   return receipt({comparisonRef:action.comparisonRef,open:true,currentT:action.comparison.currentT,referenceT:action.comparison.referenceT});
+  }
+  if(action.type==='task-open-replay'){
+   requireWrite();if(!Array.isArray(action.frames)||!action.frames.length||!Number.isInteger(action.currentIndex)||action.currentIndex<0||action.currentIndex>=action.frames.length)throw new Error('任务没有提供明确的回放样本位置。');
+   const input=action.frames[action.currentIndex]?.input;if(!input)throw new Error('回放记录没有可核验的工况输入。');
+   assertCaseImportValid(input,rangeTable,readCustomLimits(window.localStorage));stream.pause({temporary:true});if(pauseRebind.current)await pauseRebind.current;requireWrite();
+   stream.loadFrames(action.frames,'AI任务选择的真实样本片段',action.currentIndex);setActionPanel(null);setPage('overview');
+   const revision=inputRevision.current;
+   await wait(()=>{const host=document.querySelector('.dashboard-workspace');return host?.dataset.streamCursor===String(action.currentIndex)&&host.dataset.streamCount===String(action.frames.length);});
+   const result=await awaitCommitted(revision,modelInputFingerprint(input));
+   return {...result,observed:{...result.observed,streamCursor:action.currentIndex,streamCount:action.frames.length,replayLoaded:true}};
+  }
+  if(action.type==='task-export-report'){
+   if(!['json','csv','word','ppt','pdf'].includes(action.format))throw new Error('报告导出格式未注册。');
+   if(action.format==='json'&&typeof action.artifact?.content==='string')return receipt({format:action.format,...await downloadTaskArtifact(action.artifact)});
+   if(action.format!=='json'){
+    const source=action.reportContext;
+    if(!source?.caseData||!source.prediction||!source.input_snapshot||!source.observation)throw new Error('该格式没有提供可核验的冻结报告工况，未使用其他当前工况代替。');
+    assertPredictionBinding(source.prediction,source.caseData,{input_snapshot:source.input_snapshot,mode:'formal'});assertObservationBinding(source.observation,source.input_snapshot);await verifyPredictionHashes(source.prediction);
+    const sample=withAcceptedObservation(resultSampleMetadata({mode:'manual',input:source.caseData}),source.observation);
+    const frozen=freezeReportPayload({input:source.caseData,prediction:source.prediction,snapshot:source.input_snapshot,observation:source.observation,evidence:[],findings:[],evidence_status:'UNAVAILABLE',analysisParameters:{dataMode:'single'},frames:[],plans:[],appliedPlan:null,aiMessages:[],sections:reportSections,meta:{...sample,createdAt:new Date().toISOString(),model:source.prediction.model_version}});
+    const payload=freezeReportPayload(await api('/report/validate',{method:'POST',body:JSON.stringify(frozen)}));
+    if(payload.prediction?.snapshot_id!==source.prediction.snapshot_id)throw new Error('报告核验返回了不同快照，未导出。');
+    // Existing exporters build the document from this validated frozen payload,
+    // never from the current screen or a JSON artifact with a renamed suffix.
+    buildReport(payload);let observed={format:action.format,sourceSnapshotId:source.prediction.snapshot_id,fileSaved:false};
+    if(action.format==='csv'){exportCSV(payload.input,payload.meta);observed.downloadRequested=true;}
+    else if(action.format==='word'){await exportWord(payload);observed.downloadRequested=true;}
+    else if(action.format==='ppt'){await exportPowerPoint(payload);observed.downloadRequested=true;}
+    else if(action.format==='pdf'){
+     setReportSnapshot(payload);setActionPanel('report');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+     if(window.dkqkarDesktop?.saveReportPdf){const saved=await window.dkqkarDesktop.saveReportPdf();if(saved.error||saved.canceled)throw new Error(saved.error||'PDF保存已取消。');observed={...observed,fileSaved:true,path:saved.path||saved.filePath||null};}
+     else{window.print();observed.printDialogOpened=true;}
+    }
+    return receipt(observed);
+   }
+   const artifactUrl=action.artifact?.downloadUrl||action.artifact?.url||action.artifact?.href;
+   if(artifactUrl){const url=new URL(artifactUrl,window.location.origin);if(url.origin!==window.location.origin||!url.pathname.startsWith('/api/'))throw new Error('任务成果的下载地址不属于当前服务。');const link=document.createElement('a');link.href=url.href;link.download=action.artifact.name||action.artifact.filename||'';document.body.appendChild(link);link.click();link.remove();return receipt({format:action.format,downloadRequested:true,downloadInitiated:true,fileSaved:false,artifact:action.artifact});}
+   if(task.contextIdentity.contextFingerprint!==reportInputFingerprint(currentCaseRef.current))throw new Error('当前工况已变化，未导出其他工况的报告。');
+   const exported=await doExport(action.format,{current:true});if(!exported||exported.error||exported.cancelled)throw new Error(exported?.error||'报告保存已取消或没有完成。');
+   return receipt({...exported,downloadInitiated:exported.downloadRequested===true,printOpened:exported.printDialogOpened===true,saved:exported.fileSaved===true,contextFingerprint:task.contextIdentity.contextFingerprint});
+  }
+  if(action.type==='navigate'){
+   const targets={overview:'.dashboard-workspace',events:'.dashboard-workspace',history:'.dashboard-workspace',replay:'.dashboard-workspace',input:'.dashboard-workspace',prediction:'.dashboard-workspace',three:'.dashboard-workspace',data:'.data-access','saved-data':'.data-access',maintenance:'.maintenance-workspace',logs:'.logs-workspace',optimize:'.ops-optimization',draft:'.ops-optimization',reports:'.report-preview'};
+   if(!targets[action.page])throw new Error('任务请求了未注册的工作区。');setPage(action.page);
+   await wait(()=>document.querySelector(targets[action.page])?.getClientRects().length);
+   return receipt({page:action.page,rendered:true});
+  }
+  const sceneTypes=['select_stand','set_view','set_shell','set_lighting','set_scope','set_stream','set_fullscreen','set_explode','set_matrix','set_motion','reset_camera','zoom','set_walk','focus-measurement'];
+  if(!sceneTypes.includes(action.type))throw new Error('该界面动作尚未接通，未执行或声明成功。');
+  if(action.type==='set_motion'&&action.playing===false)throw new Error('设备动画目前保持自动播放；没有把暂停口令冒充已生效。');
+  if(taskHost.current.page!=='overview'){setActionPanel(null);setPage('overview');}
+  await wait(()=>{const phase=document.querySelector('.three-viewer')?.dataset.phase;if(phase==='error')throw new Error('三维设备未能载入。');return sceneControlsRef.current;});
+  const before=sceneControlsRef.current.getState();await sceneControlsRef.current.execute(action);
+  const observed=await wait(()=>{const current=sceneControlsRef.current?.getState();return sceneActionMatches(action,current,before)?current:null;});
+  return {...receipt(observed),before};
+ };
+ const executeTaskUISafe=async(action,args)=>{
+  const before=modelInputFingerprint(currentCaseRef.current);
+  try{return await executeTaskUI(action,args);}
+  catch(error){
+   // The only thing that makes a failed UI step "already applied" is an actual
+   // change of the workbench input. This catch-all sits outside every branch so
+   // a stale binding or duplicate dispatch cannot overwrite a real write.
+   if(modelInputFingerprint(currentCaseRef.current)!==before){
+    return {verified:true,actionType:action.type,observed:{appliedAfterError:true},context:readTaskContext()};
+   }
+   throw error;
+  }
+ };
+ const nativeTaskRuntime=useTaskRuntime({enabled:!!appSessionId,getContext:readTaskContext,executeUI:executeTaskUISafe,accessMode:assistantMode});
+ // A live demo stream advances every second. Freeze it for the lifetime of the
+ // task so the frozen context and the workspace revision stay identical; a
+ // write that becomes stale mid-planning is correctly rejected, but a copilot
+ // task must not be designed to lose that race. Resume only after a terminal
+ // state, never while waiting for approval or user input.
+ const startCopilotTask=async goal=>{
+  const resumeAfter=stream.running===true||stream.mode==='demo'||stream.mode==='import';
+  taskResumeAfter.current=resumeAfter;
+  stream.pause({temporary:true});
+  // Freeze first, then wait for the committed prediction of the paused row.
+  // Capturing while a sample is still settling produces revision N with a
+  // stale/invalid binding, and every write is then correctly rejected.
+  const deadline=Date.now()+10000;
+  while((dirtyRef.current||predictionStateRef.current!=='READY'||!currentBinding.current.valid)&&Date.now()<deadline){
+    if(predictionStateRef.current==='FAILED')break;
+    await new Promise(resolve=>setTimeout(resolve,120));
+  }
+  if(dirtyRef.current||predictionStateRef.current!=='READY'||!currentBinding.current.valid){
+    if(resumeAfter&&!stream.running)stream.toggle();
+    throw new Error(predictionStateRef.current==='FAILED'?'当前工况预测失败，暂不能发起任务。':'当前工况预测尚未完成，请稍后再试。');
+  }
+  copilotTaskActive.current=true;
+  try{return await nativeTaskRuntime.start(goal);}
+  catch(error){copilotTaskActive.current=false;if(resumeAfter&&!stream.running)stream.toggle();throw error;}
+ };
+ useEffect(()=>{
+  const status=nativeTaskRuntime.selected?.status;
+  if(!status||!copilotTaskActive.current)return;
+  if(!TASK_TERMINAL.has(status)&&status!=='context_stale')return;
+  copilotTaskActive.current=false;
+  if(taskResumeAfter.current&&!stream.running)stream.toggle();
+ },[nativeTaskRuntime.selected?.status]);
+ const uploadTaskKnowledge=async ev=>{
+  const owner=taskImportOwner.current,file=ev.target.files?.[0];ev.target.value='';if(!owner||owner.kind!=='knowledge')return;
+  if(!file){owner.reject(new Error('没有选择资料文件。'));return;}
+  try{
+   assertTaskApproval(owner.task,owner.step);await uploadKnowledgeFile(file,{signal:owner.signal});
+   const response=await api('/knowledge',{signal:owner.signal});const doc=response.docs?.find(item=>item.fileName===file.name||item.name===file.name);
+   if(!doc?.id)throw new Error('资料上传后没有返回匹配的服务端文档记录。');owner.resolve({uploaded:true,fileName:file.name,document:doc});
+  }catch(error){owner.reject(error);}
+ };
+ const taskRuntimeView={...nativeTaskRuntime,start:startCopilotTask,importRequest:taskImportRequest,chooseImport:()=>taskImportRequest?.kind==='knowledge'?knowledgeFileRef.current?.click():fileRef.current?.click()};
+ const assistantTask=projectAssistantTask({messages,busy:chatBusy||trialConfirming,runState,binding:currentBinding.current,uiActivity:assistantActivity.active});
+ const assistantExperience=buildAssistantExperience({input:caseData,result,diagnostics:currentDiagnostics,binding:currentBinding.current,modelStatus,predictionState,dirty,page,task:assistantTask,mode:assistantMode,alarm:currentPredictionErrorAlarm(modelProps,predictionErrorAlarmRange)});
+ const performAssistantTaskAction=async(action,{signal}={})=>{
+  signal?.throwIfAborted();
+  if(chatBusy)throw new Error('当前任务正在处理，请先等待或停止。');
+  setAssistantOpen(true);
+  if(action.contextKey!==assistantExperience.key)throw new Error('工况已更新，请使用最新处理建议。');
+  if(action.type==='goal'||action.type==='trial'){
+   if(action.type==='trial'){explicitTrialEntry.current=true;setQuestion('我想基于当前工况试算参数方案：');}
+   requestAnimationFrame(()=>document.querySelector('[aria-label="向 DK AI 提问"]')?.focus());
+   return {status:'AWAITING_INPUT',message:action.type==='trial'?'在下方说明调整目标；候选数值由正式预测工具计算。':'在下方说明目标，助手将组织当前工况的处理流程。'};
+  }
+  if(action.type==='open-input'){
+   setPage('maintenance');const until=Date.now()+8000;
+   while(Date.now()<until){signal?.throwIfAborted();if(document.querySelector('.maintenance-workspace')?.getClientRects().length)return {status:'VERIFIED',message:'当前工况检查与输入维护已显示。',view:'maintenance'};await new Promise(r=>setTimeout(r,50));}
+   throw new Error('输入维护视图未返回显示状态。');
+  }
+  if(action.type==='validate')return receiptFromAgentRun(await ask('检查当前输入是否完整，并核对当前实际值来源',{tools:['validate'],analysisMode:'CURRENT',returnRun:true,signal}));
+  if(action.type==='inspect')return receiptFromAgentRun(await ask('检查当前预测服务状态和本次预测失败原因',{analysisMode:'CURRENT',returnRun:true,signal}));
+  if(['review-task','retry-task','open-comparison'].includes(action.type)){
+   if(!assistantTask||assistantTask.id!==action.taskId||assistantTask.historical)throw new Error('任务或工况已变化，请查看最新任务记录。');
+   const message=assistantTask.message;
+   if(!message){
+    if(action.type!=='review-task')throw new Error('本次没有可以重试的工具任务。');
+    const entry=document.querySelector('[data-activity-task-id="'+CSS.escape(action.taskId)+'"]');if(!entry)throw new Error('本机任务记录尚未载入。');
+    for(let node=entry;node;node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;const ownDetails=entry.querySelector('details');if(ownDetails)ownDetails.open=true;entry.scrollIntoView({block:'nearest'});
+    return {status:'VERIFIED',message:'本机任务依据与实际回执已展开。',activity_task_id:action.taskId};
+   }
+   if(message.snapshot_id&&!currentRunMatches(message,currentBinding.current))throw new Error('任务依据已不属于当前工况。');
+   if(action.type==='retry-task')return receiptFromAgentRun(await ask(message.question||message.retry||assistantTask.title,{retryOf:message,analysisMode:'CURRENT',returnRun:true,signal}));
+   if(action.type==='open-comparison'){
+    if(!message.trial_execution?.ab_generated)throw new Error('本次没有已完成的A/B结果。');
+    setPage('optimize');const until=Date.now()+8000;
+    while(Date.now()<until){signal?.throwIfAborted();if(!currentRunMatches(message,currentBinding.current))throw new Error('候选依据已变化。');if(document.querySelector('.ops-optimization')?.getClientRects().length)return {status:'VERIFIED',message:'本次候选A/B工作区已显示，数值沿用正式试算结果。',run_id:message.runId,draft_id:message.trial_execution.draft_id};await new Promise(r=>setTimeout(r,50));}
+    throw new Error('A/B工作区未返回显示状态。');
+   }
+   const article=message.runId?document.querySelector('[data-run-id="'+CSS.escape(message.runId)+'"]'):document.querySelector('[data-request-id="'+CSS.escape(message.request_id||'')+'"]');
+   if(!article?.getClientRects().length)throw new Error('本次任务结果尚未载入。');article.scrollIntoView({block:'nearest'});
+   return {status:'VERIFIED',message:'已展开到本次任务结果，请核对其实际返回内容。',run_id:message.runId||null};
+  }
+  if(action.type==='similar'){
+   if(!assistantExperience.ready||!currentRunMatches(assistantExperience.identity,currentBinding.current))throw new Error('工况已变化，请等待当前预测。');
+   return receiptFromAgentRun(await ask('查找与当前工况同规格的相似历史工况，并给出可核对的比较依据',{analysisMode:'CURRENT',returnRun:true,signal}));
+  }
+  const check=()=>{
+   signal?.throwIfAborted();
+   if(!assistantExperience.ready||!currentRunMatches(assistantExperience.identity,currentBinding.current))throw new Error('工况身份已变化，旧建议未继续执行。');
+   const current=diagnosticsRef.current,finding=current?.status==='VALID'&&current.findings.find(f=>f.finding_id===action.findingId&&f.status==='VALID');
+   if(!finding||finding.snapshot_id!==currentBinding.current.snapshot_id||!currentRunMatches(current.identity,currentBinding.current))throw new Error('当前分析依据已失效，请重新同步。');
+   return finding;
+  };
+  const finding=check();
+  if(action.type==='diagnose')return receiptFromAgentRun(await diagnoseFinding(finding.finding_id,{returnRun:true,signal}));
+  if(action.type==='locate'){
+   if(!finding.targets.includes(action.target)||!/^S[1-5]$/.test(action.target))throw new Error('该依据没有可定位的关联设备。');
+   stream.pause({temporary:true});if(pauseRebind.current)await pauseRebind.current;
+   setPage('overview');const deadline=Date.now()+8000;
+   while(!sceneControlsRef.current&&Date.now()<deadline){check();await new Promise(r=>setTimeout(r,50));}
+   check();if(!sceneControlsRef.current?.locateFindingTarget)throw new Error('三维视图尚未就绪，定位未执行。');
+   sceneControlsRef.current.locateFindingTarget({finding_id:finding.finding_id,finding_receipt:finding.receipt,snapshot_id:finding.snapshot_id,target:action.target});
+   while(Date.now()<deadline){check();const host=document.querySelector('.three-host');if(host?.dataset.findingFocusedStand===action.target&&host.dataset.visibleStands==='S1,S2,S3,S4,S5')return {status:'VERIFIED',message:'已在完整产线中定位并高亮 '+action.target+'，三维状态已核验。',target:action.target,snapshot_id:finding.snapshot_id,finding_id:finding.finding_id,visible_stands:host.dataset.visibleStands};await new Promise(r=>setTimeout(r,50));}
+   throw new Error('三维未返回匹配定位状态，未将本次操作记为完成。');
+  }
+  throw new Error('当前建议没有对应的执行工具。');
+ };
+ const assistantTaskAction=async action=>{
+  if(assistantActivity.activeRef.current?.state==='EXECUTING')throw new Error('当前任务尚在处理，请先等待或停止。');
+  const taskId=assistantActivity.begin(assistantExperience,action,messages);
+  try{const signal=assistantActivity.signal(taskId),receipt=await performAssistantTaskAction(action,{signal});signal?.throwIfAborted();assistantActivity.finish(taskId,receipt);return receipt;}
+  catch(error){assistantActivity.finish(taskId,{status:error.name==='AbortError'?'CANCELLED':'FAILED',message:error.message||'本次动作未完成。'});throw error;}
+ };
+ globalThis.__qcdkrForces=Object.fromEntries((caseData?.stands||[]).map(stand=>[stand.id,Number(stand.force)]));
+ const latestEngineerReply=!chatBusy?([...messages].reverse().find(message=>message.role==='assistant'&&!['error','unavailable','interrupted'].includes(message.mode)&&typeof message.text==='string'&&message.text.trim())?.text||''):'';
+ function Overview(){return <LiveWorkspace controlRef={sceneControlsRef} modelProps={{...modelProps,onNotify:notify,onDiagnoseFinding:diagnoseFinding,diagnosingFindingId,diagnosisBusy:chatBusy}} currentDiagnostics={currentDiagnostics} stream={stream} guidedTrialStatus={guidedTrialStatus} modelCandidateStatus={modelCandidateStatus} modelCandidateSearching={candidatePolicy.status==='SEARCHING'} candidatePolicy={candidatePolicy} workbenchViewMode={workbenchViewMode} onViewModeChange={setWorkbenchViewMode} onRegenerateTrend={regeneratePolicyTrend} onSelectPolicy={policySelection} optimizationTask={optimizationTask} onReturnBaseline={()=>{setWorkbenchViewMode('CURRENT');setActionPanel(null);}} abStatus={abStatus} onOpenDiagnosisAssistant={findingId=>{setAssistantOpen(true);return diagnoseFinding(findingId);}} onOpenTrialAssistant={()=>{explicitTrialEntry.current=true;setAssistantOpen(true);setQuestion('把S4前张力降低3%试算一下');}} onOpenAB={()=>{setPage('optimize');if(!plans.length)notify('请先生成候选试算');}} onOpenDecisionSupport={()=>setPage('optimize')} onOptimize={()=>setPage('optimize')} onAsk={ask} engineerReply={latestEngineerReply}/>}
 function Optimization(){return <><OptimizationWorkspace resultSample={resultSample} predictionErrorAlarmRange={predictionErrorAlarmRange} predictionState={predictionState} observationMatches={resultSample?.observedAvailable===true} onReturnCurrent={()=>{setActionPanel(null);setPage('overview');setWorkbenchViewMode('CURRENT');}} caseData={caseData} result={result} plans={plans} busy={busy} appliedPlan={appliedPlan} optimizationTask={optimizationTask} onTargetChange={value=>{optimizationTaskRef.current={...optimizationTaskRef.current,searchMatchTolerance:SEARCH_MATCH_TOLERANCE_DEFAULT,targetValueT:value};policyOwner.current.invalidateSelection();setOptimizationTask(task=>({...task,searchMatchTolerance:SEARCH_MATCH_TOLERANCE_DEFAULT,targetValueT:value}));setPlans(items=>items.filter(plan=>plan.candidate_source!=='SMART_SEARCH'));}} prefetchCompleted={candidatePolicy.prefetchCompleted} prefetchTotal={candidatePolicy.prefetchTotal} reachableRange={candidatePolicy.reachableRange} maxReachabilityState={candidatePolicy.maxReachabilityState} predictionReady={!dirty&&currentBinding.current.valid&&predictionState==='READY'} onTargetEditDirty={value=>{parameterEditors.current.target=value;}} onGenerate={generate} onGeneratePresets={generatePresets} selectedPolicy={candidatePolicy.selectedPolicy} onSelectPolicy={policySelection} policySearching={candidatePolicy.backfillSearching} policySeriesLength={candidatePolicy.seriesLength} searchState={policySearchState} activeSearchRunId={policyRun?.search_run_id} targetReference={targetReference} onCloseSearch={()=>{setWorkbenchViewMode('CURRENT');policyOwner.current.clear();setSearchState({status:'IDLE'});}} onCancelReview={()=>smartReviewClient.current.cancel('CANCELLED')} onCloseReview={()=>smartReviewClient.current.cancel('PANEL_CLOSED')} onCancelSearch={cancelSearch} candidateIdentityKey={candidateExplanationKey} explanationByCandidateIdentity={explanationByCandidateIdentity} explanationBusy={candidateReviewBusy || !!candidateExplanationRequest.current || chatBusy} onExplainCandidate={explainPlan} selectedCandidateIdentity={selectedCandidateIdentity} onSelectCandidate={key=>{if(key!==selectedCandidateExplanation.current)smartReviewClient.current.cancel('SELECTION_CHANGED');selectedCandidateExplanation.current=key;setSelectedCandidateIdentity(key);}} onReview={applyPlan} onUndo={undoPlan} onLoadDraft={async(plan,policy)=>{const loaded=await loadDraft(plan);if(loaded)setDraftDisplaySelection({draftId:loaded.draft_id,policy});return loaded;}} draft={policyDraft} canLoadDraft={currentBinding.current.valid&&result.mode==='formal'&&!draftPromotion.current}/><div><DraftWorkspace draft={policyDraft} candidatePlans={plans} displaySelection={draftDisplaySelection} currentPrediction={result} currentObservation={observation} baselineValid={validateDraftBaseline(policyDraft,currentBinding.current)} promoting={!!draftPromotion.current} busy={busy} onPredict={predictDraft} onPromote={promoteDraft} onDiscard={discardDraft}/></div></>;}
  function Reports(printOnly=false){
  if(!Number.isFinite(reportSnapshot?.prediction?.value??result.value))return <Panel title="报告导出"><p>等待首个有效预测结果。</p></Panel>;
@@ -1271,7 +1618,7 @@ function Optimization(){return <><OptimizationWorkspace resultSample={resultSamp
  const head=(n,title)=><div className="rpt-head"><strong>{PRODUCT_NAME}<span>ENGINEERING ANALYSIS</span></strong><div>{title}<small>工况分析 / {n}</small></div></div>;
  const foot=(n)=><div className="rpt-foot"><span>{PRODUCT_NAME} · 工况分析报告</span><span>{r.meta.createdAtLabel} · {n}</span></div>;
  return <div className="report-layout professional-report"><Panel title="报告编制" subtitle="工况快照、复算结果与分析依据"><div className="report-snapshot"><small>{reportSnapshot?"冻结报告版本":"当前报告预览"}</small><b>{r.meta.revision}</b><span>{r.meta.createdAtLabel}</span><Badge tone="orange">{r.meta.mode==='demo'?'工况演示':'模型推理'}</Badge></div><div className="report-options">{['工况信息','预测结果','工艺解释','三维模型','优化方案'].map(name=><label key={name}><input type="checkbox" disabled={!!busy} checked={reportSections.includes(name)} onChange={e=>{setReportSections(v=>e.target.checked?[...v,name]:v.filter(x=>x!==name));}}/>{name}</label>)}</div><div className="export-actions"><button className="button secondary" disabled={!!busy||dirty} onClick={()=>doExport('regenerate')}>{reportSnapshot?'重新生成报告':'生成报告'}</button><button className="button primary" disabled={!!busy||(!reportSnapshot&&dirty)} onClick={()=>doExport('pdf')}><FileText size={16}/>{window.dkqkarDesktop?'保存 PDF 报告':'打印 / 保存 PDF'}</button><button className="button secondary" disabled={!!busy||(!reportSnapshot&&dirty)} onClick={()=>doExport('word')}><FileText size={16}/>导出工程 Word</button><button className="button secondary" disabled={!!busy||(!reportSnapshot&&dirty)} onClick={()=>doExport('ppt')}><Layers3 size={16}/>导出演示 PPT</button><button className="button secondary" disabled={!!busy||(!reportSnapshot&&dirty)} onClick={()=>doExport('json')}><Download size={16}/>完整分析 JSON</button><button className="button secondary" disabled={!!busy||(!reportSnapshot&&dirty)} onClick={()=>doExport('csv')}><Download size={16}/>工况明细 CSV</button></div><p className="micro-note">预览和导出使用同一冻结报告版本；当前状态或章节选择变化后，请明确重新生成。</p><div className="report-check"><CheckCircle2 size={14}/><span>输入与计算结果{r.summary.coherent?'一致':'待核对'}</span></div></Panel><div className="report-pages" id={printOnly?"report-paper":"report-preview-paper"}>
- <article className="report-sheet cover-sheet">{head('01','工况预测与优化')}<div className="rpt-eyebrow">五机架冷连轧 / 工艺分析</div><h1>工况预测与优化<br/>分析报告</h1><div className="rpt-title-sub">{readableConditionName(r.meta.id)} <span>·</span> {r.meta.steelGrade} <span>·</span> {r.meta.width} mm</div><div className="rpt-meta"><div><small>记录类型</small><span>工况分析报告</span></div><div><small>计算时间</small><span>{r.meta.createdAtLabel}</span></div><div><small>分析目标</small><span>第五机架 S5 轧制力</span></div><div><small>当前引擎</small><span>{userVisibleText(r.summary.status)}</span></div></div><h2>执行摘要</h2><p className="rpt-lead">{r.summary.conclusion}</p><div className="rpt-kpis"><div><small>S5 预测载荷</small><strong>{engineering('force',r.summary.value)}</strong><span>t</span></div><div><small>目标设定</small><strong>{engineering('force',r.summary.target)}</strong><span>t</span></div><div><small>目标偏差</small><strong>{r.summary.deviation>0?'+':''}{fmt(r.summary.deviation,2)}<em>%</em></strong><span>绝对偏差 {engineering('force',r.summary.absoluteError)}</span></div></div>{r.sections.includes('三维模型')&&<figure><img src="/assets/line-preview.png" alt="最终修订母版五机架三维设备"/><figcaption>图 1 · V2 Readability 最终母版的整线视图。App 内为可旋转的真实三维模型。</figcaption></figure>}<div className="rpt-scope"><b>结果适用范围</b><p>{r.method.scope}</p></div>{foot('01')}</article>
+ <article className="report-sheet cover-sheet">{head('01','工况预测与优化')}<div className="rpt-eyebrow">五机架冷连轧 / 工艺分析</div><h1>工况预测与优化<br/>分析报告</h1><div className="rpt-title-sub">{readableConditionName(r.meta.id)} <span>·</span> {r.meta.steelGrade} <span>·</span> {r.meta.width} mm</div><div className="rpt-meta"><div><small>记录类型</small><span>工况分析报告</span></div><div><small>计算时间</small><span>{r.meta.createdAtLabel}</span></div><div><small>分析目标</small><span>第五机架 S5 轧制力</span></div><div><small>当前引擎</small><span>{userVisibleText(r.summary.status)}</span></div></div><h2>执行摘要</h2><p className="rpt-lead">{r.summary.conclusion}</p><div className="rpt-kpis"><div><small>S5 预测载荷</small><strong>{engineering('force',r.summary.value)}</strong><span>t</span></div><div><small>目标设定</small><strong>{engineering('force',r.summary.target)}</strong><span>t</span></div><div><small>目标偏差</small><strong>{r.summary.deviation>0?'+':''}{fmt(r.summary.deviation,2)}<em>%</em></strong><span>绝对偏差 {engineering('force',r.summary.absoluteError)}</span></div></div>{r.sections.includes('三维模型')&&<figure><img src="/assets/factory-preview.png" alt="最终修订母版五机架三维设备"/><figcaption>图 1 · V2 Readability 最终母版的整线视图。App 内为可旋转的真实三维模型。</figcaption></figure>}<div className="rpt-scope"><b>结果适用范围</b><p>{r.method.scope}</p></div>{foot('01')}</article>
  {r.sections.includes('工况信息')&&<article className="report-sheet">{head('02','工况与输入完整性')}<h1 className="rpt-section-title">01 / 工况输入与数据说明</h1><p>五机架参数按 S1 → S5 的工艺顺序列示。宽度和厚度为 mm，轧制力为 t，总张力为 t，弯辊力为 kN，速度为 m/min。</p><table className="rpt-table"><thead><tr><th>工艺变量 / 单位</th>{r.stands.map(st=><th key={st.id}>{st.id}</th>)}</tr></thead><tbody>{r.parameterRows.map(row=><tr key={row.field}><td><b>{row.label}</b><small>{row.unit}</small></td>{row.values.map((v,i)=><td key={i}>{Number.isFinite(v)?engineering(row.field,v):'—'}</td>)}</tr>)}</tbody></table><h2>道次减薄与参数连续性</h2><table className="rpt-table"><thead><tr><th>机架</th><th>入口 / mm</th><th>出口 / mm</th><th>压下率</th><th>衔接检查</th></tr></thead><tbody>{r.stands.map((st,i)=><tr key={st.id}><td>{st.id}</td><td>{fmt(st.entryThickness,3)}</td><td>{fmt(st.exitThickness,3)}</td><td>{fmt((st.entryThickness-st.exitThickness)/st.entryThickness*100,2)}%</td><td>{i===0?'首机架入口':Math.abs(st.entryThickness-r.stands[i-1].exitThickness)<=.015?'连续':'待复核'}</td></tr>)}</tbody></table><h2>数据完整性结论</h2><ul className="rpt-list"><li>机架编号、数值有效性、正负号、厚度递减及跨机架衔接已通过当前软件校验。</li><li>当前工况版本为 {r.meta.revision}，用于关联本次计算结果与后续方案。</li><li>S5 前张力未包含在原始 25 维模型输入中，未以零值伪装缺失项。</li></ul><div className="rpt-note">钢种与设备几何用于工况组织及三维展示，不作为未声明的新预测特征。</div>{foot('02')}</article>}
  {r.sections.includes('预测结果')&&<article className="report-sheet">{head('03','预测与影响因素')}<h1 className="rpt-section-title">02 / 预测结果与影响因素</h1><table className="rpt-table result-table"><tbody><tr><th>S5 预测</th><td>{engineering('force',r.summary.value)}</td><th>目标值</th><td>{engineering('force',r.summary.target)}</td></tr><tr><th>有符号偏差</th><td>{engineering('force',r.summary.signedError)}</td><th>相对偏差</th><td>{fmt(r.summary.deviation,2)}%</td></tr><tr><th>{r.meta.mode==='formal'?'预测区间':'演示扰动带'}</th><td colSpan="3">{r.summary.interval.length?r.summary.interval.map(v=>engineering('force',v)).join(' — '):r.summary.intervalNature}</td></tr></tbody></table><h2>机架载荷分布</h2><Chart data={r.curve} mode={r.meta.mode}/><p className="rpt-caption">图 2 · S1–S5 工况载荷与 S5 {r.meta.mode==='formal'?'模型预测':'演示预测'}。系统没有为 S1–S4 虚构预测序列。</p><h2>{r.meta.mode==='formal'?'模型敏感度前五项':'演示敏感度前五项'}</h2><div className="rpt-bars">{r.sensitivities.map(d=><div key={d.name}><span>{d.name}</span><i><b style={{width:d.value+'%'}}/></i><strong>{fmt(d.value,2)}%</strong></div>)}</div><p>{r.method.sensitivity}</p><h2>结果解读</h2><p>{r.summary.conclusion}</p>{foot('03')}</article>}
  {(r.sections.includes('优化方案')||r.sections.includes('工艺解释'))&&<article className="report-sheet">{head('04','方案与分析记录')}<h1 className="rpt-section-title">03 / 方案比较与分析记录</h1>{r.sections.includes('优化方案')&&<><h2>候选方案与复算</h2>{r.plans.length?r.plans.map((p,i)=><section className="rpt-plan" key={p.id}><h3>{i+1}. {p.title}</h3><p>{p.description}</p><div className="rpt-plan-summary">预测值 {engineering('force',p.predictedValue)} · 复算值 {engineering('force',p.replayValue)} · {userVisibleText(p.status)}</div><table className="rpt-table"><thead><tr><th>调整项</th><th>调整前</th><th>调整后</th><th>变化量</th></tr></thead><tbody>{p.changes.map((c,j)=><tr key={j}><td>{c.stand} {c.label}</td><td>{engineering(c.field,c.before)}</td><td>{engineering(c.field,c.after)}</td><td>{engineering(c.field,c.delta)}</td></tr>)}</tbody></table></section>):<div className="rpt-note">本次未执行方案生成。本报告仅分析当前工况，不虚构优化候选或改善结果。</div>}</>}{r.sections.includes('工艺解释')&&<><h2>工况解读与 AI 记录</h2><p>{r.summary.headline}。前三项敏感变量为 {r.sensitivities.slice(0,3).map(d=>d.name).join('、')}。可通过单变量调整观察当前引擎下的响应方向，再比较多参数候选。</p>{r.onlineNotes.length?r.onlineNotes.map((note,i)=><div className="rpt-ai" key={i}><small>{note.source}</small><UserVisibleText value={knowledgeDisplayText(note.text)}/></div>):<div className="rpt-note">本次会话没有在线大模型分析记录。上述解读依据本地规则与计算结果生成，不作为大模型推理或独立工程判断。</div>}</>}<h2>下一步操作</h2><ol className="rpt-list">{r.nextSteps.map(t=><li key={t}>{t}</li>)}</ol>{foot('04')}</article>}
@@ -1279,15 +1626,41 @@ function Optimization(){return <><OptimizationWorkspace resultSample={resultSamp
  </div></div>;
  }
  const loadSavedCase=c=>{unsavedEdits.current={parameterEdits:false,dataEdits:false};if(!c.input){notify('此记录缺少工况输入');return;}const trusted=c.identity_status==='VERIFIED'&&c.prediction?.receipt&&c.prediction.mode===predictionClient.current.mode;const draftHistory=trusted&&c.prediction.mode==='formal'&&c.input.importProvenance?.source_type==='HYPOTHETICAL_DRAFT';const invalid=validateCaseImport(c.input,rangeTable,readCustomLimits(window.localStorage)).parserSchemaErrors.map(issue=>issue.message);if(invalid.length){notify(invalid[0]);return;}stream.manual();setSessionKey(k=>k+1);setAppliedPlan(null);const restored=trusted?clone(c.input):{...clone(c.input),importProvenance:c.input.importProvenance||{source_type:'UNKNOWN',sample_timestamp:null,observed:null,observedAvailable:false,observedSource:'历史记录未保存独立观测来源'}};if(trusted&&restored.importProvenance?.source_type!=='DEMO'){const savedObservation=c.observation||c.prediction.observation;if(savedObservation){assertObservationBinding(savedObservation,c.prediction.input_snapshot);restored.stands.find(stand=>stand.id==='S5').force=savedObservation.value;restored.importProvenance={...restored.importProvenance,observed:savedObservation.value,observedAvailable:savedObservation.value!==null,observedSource:savedObservation.source};}}restored.target=null;setOptimizationTask(null);invalidatePrediction();if(trusted&&reportInputFingerprint(restored)===reportInputFingerprint(c.input))pendingRetry.current={input_snapshot:c.prediction.input_snapshot,prediction:c.prediction,observation:c.observation||c.prediction.observation};pendingFrame.current=null;setPredictionEpoch(value=>value+1);currentCaseRef.current=restored;setCase(restored);setDirty(true);setPlans([]);setPage('overview');notify((trusted?'已恢复可信历史快照 · ':'已载入历史输入，原身份待验证；创建本次计算快照 · ')+(c.name||c.input.id));};
+ const undoTaskChange=()=>{
+  const change=lastTaskChange;if(!change)return;
+  setLastTaskChange(null);
+  loadSavedCase({input:change.input,name:'撤销任务变更'});
+  notify('已撤销本次任务变更，正在重新预测');
+ };
+ const loadTaskCandidate=candidate=>{
+  if(!candidate?.input)throw new Error('候选缺少工况输入。');
+  loadSavedCase({input:candidate.input,name:'AI 候选'});
+  notify('已载入 AI 候选，正在重新预测');
+ };
+ const importTaskFile=async ev=>{const owner=taskImportOwner.current;if(!owner)return importFile(ev);const file=ev.target.files?.[0];if(!file){owner.reject(new Error('没有选择导入文件。'));return;}try{assertTaskWriteBinding(owner.task,owner.step,{contextFingerprint:reportInputFingerprint(currentCaseRef.current),operationScope:operationScope()});const revision=inputRevision.current;await importFile(ev);if(inputRevision.current===revision)throw new Error('文件没有通过解析与单位核验，未导入。');owner.resolve({fileName:file.name,revision:inputRevision.current,fingerprint:modelInputFingerprint(currentCaseRef.current)});}catch(error){owner.reject(error);}};
  const deleteSavedCase=async c=>{try{await api('/cases/'+encodeURIComponent(c.id),{method:'DELETE'});setCases(await api('/cases'));notify('案例已删除');}catch(e){notify(e.message);}};
- const cancelAgent=()=>{abortAiController(agentRequest.current,'USER_CANCEL');setChatBusy(false);setRunState('');if(activeRun.current)api('/agent/runs/'+activeRun.current+'/cancel',{method:'POST',body:'{}'}).catch(()=>{});};
- const content=page==='overview'?Overview():page==='communication'?<IndustrialConnectionWorkspace api={api} connection={industrialDisplayConnection} predictionState={predictionState} currentInput={caseData} onNotify={notify} onNavigate={setPage}/>:page==='data'?<DataWorkspace {...{stream,caseData,modelProps,cases,result}} onResolveImportUnits={chooseImportUnits} tab={dataTab} onTabChange={setDataTab} onImport={()=>fileRef.current.click()} onTemplate={downloadSingleConditionTemplate} onSave={save} onLoad={loadSavedCase} onDelete={deleteSavedCase} onNotify={notify} onNavigate={setPage} onReplayHistorical={()=>startHistoricalReplay(modelStatus.model_hash,{seededDemo:true,baseInput:currentCaseRef.current})}/>:page==='maintenance'?<MaintenanceWorkspace currentPrediction={result} predictionBound={modelProps.currentPredictionBound} dirty={dirty} industrialStatus={industrialDisplayConnection.status} predictionUpdatedAt={modelProps.currentPredictionBound?lastUpdated:null} api={api} onNotify={notify} onNavigate={setPage} onOpenSolutions={()=>setPage('optimize')} user={user} {...{caseData,stream,modelStatus,assistantStatus,searchState:policySearchState,mostRecentCompletedSearch,predictionState}} onRefreshAssistant={refreshAssistantStatus} onRefreshModel={async()=>{const status=await api('/model/status');predictionClient.current.acceptStatus(status);setModelStatus(status);return status;}}/>:<LogsWorkspace api={api} onNotify={notify} onNavigate={setPage} user={user} analysisStatus={aiAnalysis.status} analysisError={aiAnalysis.error} onAnalysisHistory={openAnalysisHistory} onAnalyzeCurrent={()=>void analyzeRecords().catch(error=>notify(error.message))} focusLogId={focusLogId} predictionRecordContext={analysisContext} onLogFocused={()=>setFocusLogId(null)}/>;
- return <><CsvImportUnitDialog inspection={importUnitRequest} onChoose={finishImportUnits}/><input ref={fileRef} type="file" accept=".json,.csv" hidden onChange={importFile}/><AppShell {...{page,user,onLogout,caseData,modelStatus,dirty,refreshing}} onRefresh={requestWorkspaceRefresh} onNavigate={setPage} collapsed={navCollapsed} onToggleNav={()=>setNavCollapsed(v=>!v)} onSave={save} assistantOpen={assistantOpen} onAssistantToggle={()=>setAssistantOpen(v=>!v)} onVoiceCommand={executeVoiceCommand} onVoiceQuestion={(text,{signal}={})=>ask(text,{voice:true,signal})} assistant={<AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} sessionId={appSessionId} binding={currentBinding.current} status={assistantStatus} messages={messages.map(message=>targetReferenceMessage(message,currentTargetReference))} question={question} setQuestion={setQuestion} busy={chatBusy} onCancel={cancelAgent} ask={ask} caseData={resultCase} selected={selected} source={stream.sourceName} notify={notify} onAction={assistantAction} onDiagnosticAction={diagnosticAction} onTrialPreviewAction={trialPreviewAction} trialConfirming={trialConfirming} currentDiagnostics={currentDiagnostics} reference={agentReference} setReference={setAgentReference} cases={cases} baseline={defaultInput.current} runState={runState} selectedEvent={selectedEvent} onClearEvent={()=>setSelectedEvent(null)} diagnosticShortcutTitle={diagnosticShortcutTitle} onAnalysisHistory={openAnalysisHistory} analysisContext={analysisContext} onClearAnalysis={()=>{setAnalysisContext(null);setAnalysisChoice(null);}} analysisChoice={analysisChoice} onAnalysisChoice={mode=>{const pending=analysisChoice;setAnalysisChoice(null);if(pending)void ask(pending.question,{analysisMode:mode});}}/>}>{['CHECKING','FAST_RETRY','SLOW_POLL','EXHAUSTED'].includes(recoveryPhase)&&<div className="micro-note workspace-recovery" role="status" data-recovery-phase={recoveryPhase}><span>{recoveryPhase==='EXHAUSTED'?RECOVERY_UNAVAILABLE:RECOVERY_CONNECTING}</span>{recoveryPhase==='EXHAUSTED'&&<button type="button" onClick={requestWorkspaceRefresh} disabled={refreshing}>刷新</button>}</div>}{content}</AppShell>
+ const cancelAgent=()=>{assistantActivity.cancel();abortAiController(agentRequest.current,'USER_CANCEL');setChatBusy(false);setRunState('');if(activeRun.current)api('/agent/runs/'+activeRun.current+'/cancel',{method:'POST',body:'{}'}).catch(()=>{});};
+ const STAGE_PANEL_TITLES={data:'数据接入',maintenance:'系统状态与维护',communication:'工业设备连接',logs:'运行日志'};
+ const STAGE_SIDES={data:'left',maintenance:'left',communication:'right',logs:'right'};
+ const businessFor=id=>id==='communication'?<IndustrialConnectionWorkspace api={api} connection={industrialDisplayConnection} predictionState={predictionState} currentInput={caseData} onNotify={notify} onNavigate={setPage}/>:id==='data'?<DataWorkspace {...{stream,caseData,modelProps,cases,result}} onResolveImportUnits={chooseImportUnits} tab={dataTab} onTabChange={setDataTab} onImport={()=>fileRef.current.click()} onTemplate={downloadSingleConditionTemplate} onSave={save} onLoad={loadSavedCase} onDelete={deleteSavedCase} onNotify={notify} onNavigate={setPage} onReplayHistorical={()=>startHistoricalReplay(modelStatus.model_hash,{seededDemo:true,baseInput:currentCaseRef.current})}/>:id==='maintenance'?<MaintenanceWorkspace currentPrediction={result} predictionBound={modelProps.currentPredictionBound} dirty={dirty} industrialStatus={industrialDisplayConnection.status} predictionUpdatedAt={modelProps.currentPredictionBound?lastUpdated:null} api={api} onNotify={notify} onNavigate={setPage} onOpenSolutions={()=>setPage('optimize')} user={user} {...{caseData,stream,modelStatus,assistantStatus,searchState:policySearchState,mostRecentCompletedSearch,predictionState}} onRefreshAssistant={refreshAssistantStatus} onRefreshModel={async()=>{const status=await api('/model/status');predictionClient.current.acceptStatus(status);setModelStatus(status);return status;}}/>:<LogsWorkspace api={api} onNotify={notify} onNavigate={setPage} user={user} analysisStatus={aiAnalysis.status} analysisError={aiAnalysis.error} onAnalysisHistory={openAnalysisHistory} onAnalyzeCurrent={()=>void analyzeRecords().catch(error=>notify(error.message))} focusLogId={focusLogId} predictionRecordContext={analysisContext} onLogFocused={()=>setFocusLogId(null)}/>;
+ return <><CsvImportUnitDialog inspection={importUnitRequest} onChoose={finishImportUnits}/><input ref={knowledgeFileRef} type="file" accept=".txt,.md,.docx" hidden onChange={uploadTaskKnowledge}/><input ref={fileRef} type="file" accept=".json,.csv" hidden onChange={importTaskFile} onCancel={()=>taskImportOwner.current?.reject(new Error('文件选择已取消。'))}/><AppShell {...{page,navActive:[page,pin].filter(Boolean),user,onLogout,caseData,modelStatus,dirty,refreshing,systemHealth}} twin={{selected,setSelected,view,setView,caseData,processSpeed:caseData.stands?.find(stand=>stand.id==='S5')?.speed||0,onOpenWorkbench:()=>setPage('overview'),playback:{running:stream.running,available:stream.frames.length>1&&!['manual','plc'].includes(stream.mode),onToggle:stream.toggle}}} onRefresh={requestWorkspaceRefresh} onNavigate={setPage} onSave={save} onOpenReport={()=>setActionPanel('report')} assistantExperience={assistantExperience} assistantTask={assistantTask} assistantBusy={chatBusy||trialConfirming||assistantActivity.active?.state==='EXECUTING'} assistantRunState={runState||assistantTask?.label} assistantOpen={assistantOpen} onAssistantToggle={()=>setAssistantOpen(v=>!v)} assistantMode={assistantMode} onAssistantModeChange={changeAssistantMode} assistantVoiceEnabled={voiceState.wakeEnabled} onVoiceCommand={executeVoiceCommand} onVoiceQuestion={(text,{signal}={})=>ask(text,{voice:true,signal})} assistant={<AssistantPanel taskRuntime={taskRuntimeView} task={assistantTask} taskHistory={assistantActivity.history} accessMode={assistantMode} onAccessModeChange={changeAssistantMode} lastTaskChange={lastTaskChange} onUndoTaskChange={undoTaskChange} onLoadCandidate={loadTaskCandidate} taskStorageError={assistantActivity.storageError} experience={assistantExperience} onTaskAction={assistantTaskAction} open={assistantOpen} onOpenChange={setAssistantOpen} sessionId={appSessionId} binding={currentBinding.current} status={assistantStatus} messages={messages.map(message=>targetReferenceMessage(message,currentTargetReference))} question={question} setQuestion={setQuestion} busy={chatBusy} onCancel={cancelAgent} ask={ask} caseData={resultCase} selected={selected} source={stream.sourceName} notify={notify} onAction={assistantAction} onDiagnosticAction={diagnosticAction} onTrialPreviewAction={trialPreviewAction} trialConfirming={trialConfirming} currentDiagnostics={currentDiagnostics} reference={agentReference} setReference={setAgentReference} cases={cases} baseline={defaultInput.current} runState={runState} selectedEvent={selectedEvent} onClearEvent={()=>setSelectedEvent(null)} diagnosticShortcutTitle={diagnosticShortcutTitle} onAnalysisHistory={openAnalysisHistory} analysisContext={analysisContext} onClearAnalysis={()=>{setAnalysisContext(null);setAnalysisChoice(null);}} analysisChoice={analysisChoice} onAnalysisChoice={mode=>{const pending=analysisChoice;setAnalysisChoice(null);if(pending)void ask(pending.question,{analysisMode:mode});}}/>}>{['CHECKING','FAST_RETRY','SLOW_POLL','EXHAUSTED'].includes(recoveryPhase)&&<div className="micro-note workspace-recovery" role="status" data-recovery-phase={recoveryPhase}><span>{recoveryPhase==='EXHAUSTED'?RECOVERY_UNAVAILABLE:RECOVERY_CONNECTING}</span>{recoveryPhase==='EXHAUSTED'&&<button type="button" onClick={requestWorkspaceRefresh} disabled={refreshing}>刷新</button>}</div>}{<div className={'twin-stage'+(page!=='overview'||pin?' stage-docked':'')+(page!=='overview'&&pin?' both-docks':'')+(page!=='overview'?' has-'+STAGE_SIDES[page]:'')+(pin?' has-'+STAGE_SIDES[pin]:'')+(pin?' has-pin-'+STAGE_SIDES[pin]:'')} data-stage-page={page}>
+<div className="twin-stage-3d">{Overview()}</div>
+{page!=='overview'&&<section className={'twin-stage-panel dock-'+STAGE_SIDES[page]} data-page={page} aria-label={STAGE_PANEL_TITLES[page]+' · 3D 工作台侧挂面板'}>
+<header className="twin-stage-panel-head"><span className="twin-stage-live-dot" aria-hidden="true"/><small>3D 工作台持续运行 · {STAGE_PANEL_TITLES[page]}</small><button type="button" className="twin-stage-close" aria-label="收起此面板" title="收起此面板" onClick={()=>setPage(page)}><X size={15}/></button></header>
+<div className="twin-stage-panel-body" key={page}>{businessFor(page)}</div>
+</section>}
+{pin&&page!==pin&&<section className={'twin-stage-panel dock-'+STAGE_SIDES[pin]} data-page={pin} aria-label={STAGE_PANEL_TITLES[pin]+' · 3D 工作台侧挂面板'}>
+<header className="twin-stage-panel-head"><span className="twin-stage-live-dot" aria-hidden="true"/><small>3D 工作台持续运行 · {STAGE_PANEL_TITLES[pin]}</small><button type="button" className="twin-stage-close" aria-label="收起此面板" title="收起此面板" onClick={()=>setPin(null)}><X size={15}/></button></header>
+<div className="twin-stage-panel-body" key={pin}>{businessFor(pin)}</div>
+</section>}
+</div>}</AppShell>
  {analysisPanel&&<AiAnalysisWorkspace api={api} initialId={analysisPanel.id} initialFilters={analysisPanel.filters} onClose={()=>setAnalysisPanel(null)} onOpen={setAnalysisContext} onViewLog={viewAnalysisLog} onAnalyze={analyzeRecords}/>}
  {refreshConfirmation&&<div className="modal-backdrop action-panel-backdrop" data-escape-layer="modal"><section className="action-panel" role="dialog" aria-modal="true" aria-label="刷新当前工作台确认" tabIndex={-1}><header><h2>刷新当前工作台</h2><button type="button" aria-label="取消刷新" onClick={()=>setRefreshConfirmation(false)}><X size={20}/></button></header><div className="action-panel-body"><p>{REFRESH_CONFIRMATION}</p><div className="message-actions"><button type="button" onClick={()=>setRefreshConfirmation(false)}>取消</button><button type="button" onClick={()=>{setRefreshConfirmation(false);void performWorkspaceRefresh();}}>继续刷新</button></div></div></section></div>}
  {actionPanel&&<div className="modal-backdrop action-panel-backdrop" data-escape-layer="modal" role="presentation" onClick={e=>{if(e.target===e.currentTarget)setActionPanel(null);}}><section className="action-panel" role="dialog" tabIndex={-1} aria-modal="true" aria-label={actionPanel==='trial'?'优化候选方案':actionPanel==='comparison'?'工况对比':'结果导出'}>{actionPanel!=='trial'&&<header><h2>{actionPanel==='comparison'?'工况对比':'结果导出'}</h2><button aria-label="关闭操作面板" onClick={()=>setActionPanel(null)}><X size={20}/></button></header>}<div className="action-panel-body">{actionPanel==='trial'?Optimization():actionPanel==='comparison'?<AgentComparison {...comparisonView}/>:Reports()}</div></section></div>}
  {reportSnapshot&&<div className="r2-frozen-report" data-snapshot-id={reportSnapshot.prediction.snapshot_id} data-observation-id={reportSnapshot.observation.observation_id}><style>{`.r2-frozen-report{display:none}@media print{.app-shell,.modal-backdrop,.toast{display:none!important}.r2-frozen-report{display:block!important}.r2-frozen-report .panel{display:none!important}}`}</style>{Reports(true)}</div>}
- {toast&&<div className="toast" role="status" data-notification-type={toastType}>{toastType==='WARNING'?<AlertTriangle size={18} style={{color:'var(--amber)'}}/>:<CheckCircle2 size={18}/>}<UserVisibleText value={actualDisplayText(toast)}/><button className="icon-btn" onClick={()=>setToast('')} aria-label="关闭提示"><X size={15}/></button></div>}</>;
+ {toast&&<div className="toast" role="status" data-notification-type={toastType}>{toastType==='WARNING'?<AlertTriangle size={18} style={{color:'var(--amber)'}}/>:<CheckCircle2 size={18}/>}<UserVisibleText value={actualDisplayText(toast)}/><button className="icon-btn" onClick={()=>setToast('')} aria-label="关闭提示"><X size={15}/></button></div>}
+ <div className="assistant-voice-mount" aria-hidden="true"><VoiceAssistant autoStart={false} onCommand={executeVoiceCommand} onQuestion={(text,{signal}={})=>ask(text,{voice:true,signal})} onStateChange={setVoiceState}/></div>
+ </>;
 }
 export default App;
 

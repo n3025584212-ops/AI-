@@ -1,0 +1,25 @@
+/* Copilot presence and permission-mode controls. */
+.assistant-voice-mount { position: fixed; left: -10000px; top: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+.topbar-voice.is-on { color: #8fe3c8 !important; border-color: #3f7f6b !important; background: #0d2a24 !important; }
+.topbar-copilot { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.topbar-copilot em { font-style: normal; font-size: 9px; line-height: 16px; padding: 0 5px; border-radius: 999px; border: 1px solid #3a5668; color: #9fc2d4; background: #0b1c27; }
+.topbar-copilot-dot { width: 6px; height: 6px; border-radius: 50%; background: #5c7a8c; flex: none; }
+.topbar-copilot.is-busy .topbar-copilot-dot { background: #67c9f3; box-shadow: 0 0 7px #67c9f3; animation: copilot-pulse 1s ease-in-out infinite alternate; }
+.topbar-copilot.is-attention .topbar-copilot-dot { background: #e5bc74; box-shadow: 0 0 7px #e5bc74; }
+.topbar-copilot.is-open { border-color: #3f7f9c; background: #0e2b3a !important; }
+.topbar-copilot[data-access-mode="READ_ONLY"] em { color: #e8c98d; border-color: #6b5331; }
+.topbar-copilot[data-access-mode="FULL_ACCESS"] em { color: #f0b0a5; border-color: #6d3f39; }
+@keyframes copilot-pulse { from { opacity: .45; } to { opacity: 1; } }
+
+.assistant-mode-control { display: flex; flex-direction: column; gap: 5px; margin: 8px 0 6px; padding: 8px 9px; border: 1px solid #2c4656; border-radius: 8px; background: #0a1c27cc; }
+.assistant-mode-control[data-mode="READ_ONLY"] { border-color: #6b5331; }
+.assistant-mode-control[data-mode="FULL_ACCESS"] { border-color: #6d3f39; }
+.assistant-mode-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.assistant-mode-tabs button { min-height: 28px; padding: 3px 6px; border: 1px solid #2f4b5c; border-radius: 5px; background: #081821; color: #9db6c6; font: inherit; font-size: 11px; cursor: pointer; }
+.assistant-mode-tabs button:hover { border-color: #4a8aa8; color: #d8eef8; }
+.assistant-mode-tabs button[aria-pressed="true"] { border-color: #4a9ec2; background: #12384b; color: #e6f7ff; }
+.assistant-mode-note { display: block; font-size: 10px; line-height: 1.5; color: #8fa9b8; }
+.assistant-mode-control[data-mode="READ_ONLY"] .assistant-mode-note { color: #d3b27c; }
+.assistant-mode-control[data-mode="FULL_ACCESS"] .assistant-mode-note { color: #d8a49c; }
+@media (max-width: 760px) { .topbar-copilot em { display: none; } }
+@media print { .topbar-copilot { display: none !important; } }

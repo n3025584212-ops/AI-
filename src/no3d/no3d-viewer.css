@@ -1,0 +1,21 @@
+/* 2D-only replacements for the three.js views (no WebGL, no GLB). */
+.no3d-mill{position:relative;width:100%;height:100%;min-height:280px;overflow:hidden;background:
+ radial-gradient(ellipse at 18% 0%,#14324a 0%,transparent 55%),
+ radial-gradient(ellipse at 82% 100%,#0d2c3f 0%,transparent 58%),
+ linear-gradient(160deg,#081a28,#06121d 62%,#050f19);}
+.no3d-mill:before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(#8fc4e10a 1px,transparent 1px),linear-gradient(90deg,#8fc4e10a 1px,transparent 1px);background-size:46px 46px;mask-image:radial-gradient(ellipse at 50% 45%,#000 45%,transparent 82%)}
+.no3d-mill-svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.no3d-stand{cursor:pointer;outline:none}
+.no3d-stand rect,.no3d-stand circle,.no3d-stand line{transition:fill .16s ease,stroke .16s ease,opacity .16s ease}
+.no3d-stand:focus-visible .no3d-hit{stroke:#7fe6ff;stroke-width:2;stroke-dasharray:6 4}
+.no3d-stand.is-muted{opacity:.26}
+.no3d-badge{position:absolute;right:14px;bottom:12px;display:flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid #2f5a72;border-radius:4px;background:#081724eb;color:#8fb6cb;font-size:10px;letter-spacing:.4px;pointer-events:none;font-variant-numeric:tabular-nums}
+.no3d-badge i{width:6px;height:6px;border-radius:50%;background:#5fd0e8;box-shadow:0 0 7px #5fd0e8cc}
+.no3d-badge i.is-idle{background:#8a9eae;box-shadow:none}
+.no3d-flow{stroke-dasharray:22 26;animation:no3d-flow 1.1s linear infinite}
+@keyframes no3d-flow{to{stroke-dashoffset:-48}}
+@media (prefers-reduced-motion:reduce){.no3d-flow{animation:none}}
+.no3d-pet-svg{display:block;width:100%;height:100%;filter:drop-shadow(0 6px 12px #03101acc)}
+.no3d-pet-bob{animation:no3d-pet-bob 3.6s ease-in-out infinite}
+@keyframes no3d-pet-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.no3d-pet-bob{animation:none}}

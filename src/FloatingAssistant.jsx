@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Maximize2, Minimize2, Minus, X } from 'lucide-react';
+import { Maximize2, Minimize2, Minus, X, HardHat } from 'lucide-react';
 import {
   ASSISTANT_WINDOW_STORAGE, clampWindowRect, defaultWindowState, keyboardWindowDelta,
   maximizedWindowRect, minimizedWindowRect, moveWindowRect, resizeWindowRect, restoreWindowState,
@@ -229,7 +229,7 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
         aria-label="移动 AI 聊天窗" title={minimized ? '拖动移动 · Enter 还原' : '拖动移动 · 方向键微调 · 双击或 Enter 最大化'}
         onPointerDown={event => startGesture(event, 'move')} onKeyDown={keyMove}
         onDoubleClick={() => minimized ? restore() : toggleMaximize()}>
-        <img className="ai-window-mascot" src="/assets/dk-assistant.gif" alt="" draggable="false"/><span className="ai-window-title"><b>DK AI</b></span>
+        <HardHat className="ai-window-persona" size={20} aria-hidden="true"/><span className="ai-window-title"><b>DK AI</b></span>
       </div>
       <div className="ai-window-controls">
         {!minimized && <button type="button" title="最小化" aria-label="最小化 AI 聊天窗" onClick={minimize}><Minus size={15}/></button>}

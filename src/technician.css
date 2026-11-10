@@ -1,0 +1,91 @@
+/* 值守技术员面板：沿用副驾驶的石墨玻璃底，不与 3D 舞台抢视觉。 */
+.technician-panel{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;background:transparent;color:#d3dcdf}
+.tech-tabs{display:flex;align-items:center;gap:3px;flex:none;padding:6px 12px 0;border-bottom:1px solid #ffffff0f}
+.tech-tabs>button{border:1px solid transparent;border-radius:4px;background:transparent;color:#9cadb3;font:inherit;font-size:12px;padding:4px 9px;cursor:pointer}
+.tech-tabs>button[aria-selected=true]{background:#b8d4c913;border-color:#b8d4c934;color:#daece4}
+.tech-tabs>.tech-refresh{margin-left:auto;padding:4px 6px;color:#93a3ac}
+.tech-body{flex:1 1 45%;min-height:36px;overflow:auto;padding:10px 12px;scrollbar-width:thin;scrollbar-color:#6b8796 transparent}
+.tech-kpis{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.tech-kpis>span{flex:1;min-width:64px;border:1px solid #b3c2c522;border-radius:6px;background:#edf5f304;padding:6px 7px;font-size:10px;color:#93a3ac;text-align:center}
+.tech-kpis b{display:block;font-size:14px;color:#d8e5e1;font-weight:600;margin-bottom:1px}
+.tech-cards{display:flex;flex-direction:column;gap:7px}
+.tech-card{border:1px solid #b3c2c522;border-left-width:2px;border-radius:6px;background:#edf5f304;padding:8px 9px}
+.tech-card[data-severity=HIGH]{border-left-color:#d98b6a}.tech-card[data-severity=MEDIUM]{border-left-color:#d8b56a}.tech-card[data-severity=LOW]{border-left-color:#8fb6a4}
+.tech-card header{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.tech-card header strong{font-size:12px;color:#dbe6e6;font-weight:500;min-width:0}
+.tech-card p{margin:0;font-size:11px;line-height:1.65;color:#a9b8bd}
+.tech-card details{margin-top:5px;font-size:10px;color:#8fa3aa}
+.tech-card ul{margin:4px 0 0;padding-left:15px;line-height:1.6}
+.tech-severity{flex:none;font-size:9px;letter-spacing:.04em;padding:1px 5px;border-radius:3px;background:#ffffff0d;color:#b9c8cc}
+.tech-empty{margin:6px 0;font-size:11px;line-height:1.7;color:#8798a0}
+.tech-error{display:flex;align-items:center;gap:5px;margin:6px 12px;padding:6px 8px;border:1px solid #c9806a3d;border-radius:5px;background:#c9806a12;color:#e0b09c;font-size:11px}
+.tech-error>button{margin-left:auto;border:0;background:transparent;color:inherit;display:grid;place-items:center}
+.tech-primary{display:inline-flex;align-items:center;gap:5px;border:1px solid #b7cec42b;border-radius:6px;background:#c4e0d20a;color:#b4d1c3;font-size:11px;padding:6px 9px;margin-bottom:8px;cursor:pointer}
+.tech-primary:hover{background:#c4e0d216;color:#d6e9df}
+.tech-handover{white-space:pre-wrap;margin:0 0 8px;padding:9px;border:1px solid #b3c2c522;border-radius:6px;background:#0b14180f;color:#c9d6d8;font:inherit;font-size:11px;line-height:1.75;overflow-wrap:anywhere}
+.tech-history{margin-top:8px;font-size:10px;color:#8fa3aa}
+.tech-history>div{border-top:1px solid #ffffff0c;padding:5px 0}
+.tech-history p{margin:2px 0 0;color:#a9b8bd}
+.tech-memory-head{display:flex;flex-direction:column;gap:2px;margin-bottom:7px}
+.tech-memory-head strong{font-size:12px;color:#dbe6e6}
+.tech-memory-head span{font-size:10px;color:#8798a0}
+.tech-memory-list,.tech-issues{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.tech-memory-row,.tech-issues>div{display:flex;align-items:flex-start;gap:5px;font-size:11px;line-height:1.6;color:#b9c7cb;border:1px solid #b3c2c51c;border-radius:5px;padding:5px 7px;background:#edf5f302}
+.tech-memory-row>span:nth-child(2),.tech-issues>div>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.tech-memory-row>button,.tech-issues>div>button{flex:none;border:1px solid #b7cec42b;border-radius:4px;background:#c4e0d20a;color:#b4d1c3;font-size:9px;padding:2px 5px;display:inline-flex;align-items:center;gap:2px;cursor:pointer}
+.tech-fact-state{flex:none;font-size:9px;padding:1px 4px;border-radius:3px;background:#ffffff0d;color:#a9b8bd}
+.tech-fact-state.is-confirmed{background:#8fb6a41f;color:#a9cdb9}
+.tech-fact-state.is-pending{background:#d8b56a1a;color:#d6bd8a}
+.tech-issues>strong,.tech-history>summary{display:block;font-size:11px;color:#c6d3d6;margin-bottom:4px}
+.tech-duty-list{display:flex;flex-direction:column;gap:6px;margin-bottom:9px}
+.tech-duty{border:1px solid #b3c2c522;border-radius:6px;background:#edf5f304;padding:7px 8px}
+.tech-duty header{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.tech-duty header strong{font-size:12px;color:#dbe6e6;font-weight:500}
+.tech-duty p{margin:3px 0;font-size:11px;color:#a9b8bd}
+.tech-duty small{font-size:9px;color:#7f9199}
+.tech-permissions,.tech-boundaries{margin-bottom:9px;font-size:11px;color:#a9b8bd}
+.tech-permissions>strong,.tech-boundaries>strong{display:block;font-size:11px;color:#c6d3d6;margin-bottom:4px}
+.tech-permissions>div{display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid #ffffff08}
+.tech-permissions>div>span{flex:1;min-width:0;font-size:10px}
+.tech-permissions>div>em{flex:none;font-style:normal;font-size:9px;color:#8fa3aa}
+.tech-boundaries ul{margin:0;padding-left:15px;font-size:10px;line-height:1.65;color:#93a3ac}
+.tech-risk{flex:none;font-size:9px;font-weight:600;letter-spacing:.03em;padding:1px 4px;border-radius:3px;border:1px solid #ffffff14;color:#b9c8cc;background:#ffffff08}
+.tech-risk-l0{color:#9fc3b2;border-color:#9fc3b23d;background:#9fc3b20f}
+.tech-risk-l1{color:#a8c6d6;border-color:#a8c6d63d;background:#a8c6d60f}
+.tech-risk-l2{color:#d6bd8a;border-color:#d6bd8a3d;background:#d6bd8a0f}
+.tech-risk-l3{color:#e0a18b;border-color:#e0a18b3d;background:#e0a18b0f}
+.tech-chat{flex:1 1 55%;min-height:92px;display:flex;flex-direction:column;border-top:1px solid #ffffff0f;padding:6px 12px 9px;background:#0b141805}
+.tech-chat-list{flex:1 1 auto;min-height:56px;max-height:none;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:6px;scrollbar-width:thin;scrollbar-color:#6b8796 transparent}
+.tech-user{align-self:flex-end;max-width:92%;background:#bfd8cc;color:#203a32;border-radius:10px 10px 3px 10px;padding:6px 9px;font-size:11px;line-height:1.6}
+.tech-reply{border:1px solid #b3c2c522;border-radius:7px;background:#0b14180f;padding:8px 9px}
+.tech-reply-head{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:5px}
+.tech-type{font-size:10px;font-weight:600;color:#cfe0dc;padding:1px 5px;border-radius:3px;background:#b8d4c914}
+.tech-duty{font-size:9px;color:#8798a0}
+.tech-confidence{margin-left:auto;font-size:9px;padding:1px 5px;border-radius:3px;background:#ffffff0d;color:#b9c8cc}
+.tech-confidence.is-high{background:#8fb6a41f;color:#a9cdb9}
+.tech-confidence.is-low{background:#d98b6a1a;color:#dfae99}
+.tech-summary{white-space:pre-wrap;font-size:11px;line-height:1.75;color:#c9d6d8;overflow-wrap:anywhere}
+.tech-note{display:flex;align-items:flex-start;gap:4px;margin:6px 0 0;font-size:10px;line-height:1.55;color:#d6bd8a}
+.tech-evidence,.tech-memory-used{margin-top:6px;font-size:10px;color:#93a3ac}
+.tech-evidence summary,.tech-memory-used summary{cursor:pointer;display:flex;align-items:center;gap:4px;color:#a9b8bd}
+.tech-evidence-item{margin:5px 0 0;padding:5px 7px;border-left:2px solid #b8d4c933;background:#ffffff04}
+.tech-evidence-item strong{display:block;font-size:10px;color:#c2d1d3;font-weight:500}
+.tech-evidence-item small{display:block;font-size:9px;color:#7f9199;margin:1px 0 3px}
+.tech-evidence-item blockquote{margin:0;font-size:10px;line-height:1.6;color:#a9b8bd}
+.tech-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.tech-actions>button{display:inline-flex;align-items:center;gap:4px;border:1px solid #b7cec42b;border-radius:5px;background:#c4e0d20a;color:#b4d1c3;font-size:10px;padding:4px 7px;cursor:pointer}
+.tech-actions>button:hover{background:#c4e0d216;color:#d6e9df}
+.tech-actions em{font-style:normal;font-size:8px;color:#d6bd8a;border:1px solid #d6bd8a3d;border-radius:3px;padding:0 3px}
+.tech-blocked{margin-top:7px;padding:6px 7px;border:1px solid #e0a18b2e;border-radius:5px;background:#e0a18b0a;font-size:10px;line-height:1.6;color:#dfae99}
+.tech-blocked>strong{display:flex;align-items:center;gap:4px;font-size:10px;margin-bottom:3px}
+.tech-blocked>div{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tech-next{margin-top:7px;font-size:10px;color:#a9b8bd}
+.tech-next>strong{display:block;color:#c6d3d6;margin-bottom:2px}
+.tech-next ul{margin:0;padding-left:15px;line-height:1.6}
+.tech-thinking{display:flex;align-items:center;gap:5px;font-size:10px;color:#8fa3aa;padding:2px 0}
+.tech-composer{display:flex;align-items:flex-end;gap:5px;border:1px solid #b3c2c532;border-radius:9px;background:#e3ecea08;padding:6px 7px}
+.tech-composer textarea{flex:1;min-height:32px;max-height:86px;resize:none;border:0;background:transparent;color:#e0e7e8;font:inherit;font-size:11px;line-height:1.6;outline:none}
+.tech-composer textarea::placeholder{color:#82929b}
+.tech-composer>button{flex:none;width:26px;height:26px;display:grid;place-items:center;border:0;border-radius:7px;background:#b9d5c8;color:#254135;cursor:pointer}
+.tech-composer>button:disabled{opacity:.35;cursor:default}
+@media(max-height:560px){.tech-chat-list{max-height:min(26vh,150px)}.tech-body{padding:8px 10px}}

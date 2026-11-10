@@ -30,7 +30,15 @@ export function abortAiController(controller, source) {
 }
 const messages = {
   NETWORK_FETCH_FAILED: 'DK AI服务连接失败，请重试。', BACKEND_UNAVAILABLE: 'DK AI服务连接失败，请重试。',
-  LOCAL_AI_UNAVAILABLE: '本地 AI 暂不可用。预测、诊断和决策支持功能仍可正常使用。',
+  LOCAL_AI_UNAVAILABLE: 'AI 生成暂不可用，预测与输入检查仍可用。',
+  LOCAL_AI_OFFLINE: 'AI 服务连接失败，请检查网络与 AI 服务配置。',
+  LOCAL_AI_MODEL_MISSING: 'AI 模型未找到，请检查模型配置。',
+  LOCAL_AI_AUTH: '云端 AI 访问令牌无效或未授权，请检查配置。',
+  AI_ANSWER_INTERRUPTED: '回答生成中断，请重试。',
+  AI_ANSWER_TIMEOUT: 'AI 回答超时，请重试或缩短问题。',
+  AI_CONTEXT_EXCEEDED: '问题超出模型上下文长度，请缩短后重试。',
+  KNOWLEDGE_EMPTY: '没有检索到能支持该问题的资料。',
+  AI_OUTPUT_REJECTED: '回答未通过核验，请重试。',
   HTTP_NON_2XX: 'DK AI服务返回异常，请重试。', EMPTY_RESPONSE_BODY: 'DK AI服务返回异常，请重试。',
   TRUNCATED_RESPONSE_BODY: 'DK AI服务返回异常，请重试。', INVALID_CONTENT_TYPE: 'DK AI服务返回异常，请重试。',
   JSON_PARSE_FAILED: 'DK AI服务返回异常，请重试。', QWEN_FAILED: 'DK AI回答当前不可用，请重试。',
@@ -43,12 +51,20 @@ export class AiTransportError extends Error {
 }
 export function aiFailureCode(code) {
   if (Object.hasOwn(messages, code)) return code;
-  if (/LOCAL_LLM_(?:OFFLINE|CONFIG|MODEL)/.test(code || '')) return 'LOCAL_AI_UNAVAILABLE';
-  if (/LOCAL_LLM_|QWEN_/.test(code || '')) return 'QWEN_FAILED';
-  if (/GROUNDING/.test(code || '')) return 'GROUNDING_FAILED';
-  if (/DIAGNOSTIC.*IDENTITY|STALE|IDENTITY|CONTEXT_EXPIRED/.test(code || '')) return 'STALE_IDENTITY';
-  if (/NUMERIC/.test(code || '')) return 'NUMERIC_POLICY_REJECTED';
-  if (/OUTPUT.*REJECT/.test(code || '')) return 'OUTPUT_VALIDATION_REJECTED';
+  const value = String(code || '');
+  if (/LOCAL_LLM_INTERRUPTED|QWEN_INTERRUPTED/.test(value)) return 'AI_ANSWER_INTERRUPTED';
+  if (/LOCAL_LLM_TIMEOUT|QWEN_TIMEOUT/.test(value)) return 'AI_ANSWER_TIMEOUT';
+  if (/LOCAL_LLM_CONTEXT|QWEN_CONTEXT|CONTEXT.{0,12}(EXCEED|OVERFLOW|TOO_LONG)/.test(value)) return 'AI_CONTEXT_EXCEEDED';
+  if (/LOCAL_LLM_MODEL_MISSING|MODEL_NOT_FOUND|MODEL_MISSING/.test(value)) return 'LOCAL_AI_MODEL_MISSING';
+  if (/LOCAL_LLM_OFFLINE|LOCAL_LLM_CONFIG/.test(value)) return 'LOCAL_AI_OFFLINE';
+  if (/LOCAL_LLM_AUTH/.test(value)) return 'LOCAL_AI_AUTH';
+  if (/GROUNDING_EMPTY|NO_KNOWLEDGE/.test(value)) return 'KNOWLEDGE_EMPTY';
+  if (/KNOWLEDGE_ANSWER_SCOPE|OUTPUT.*REJECT/.test(value)) return 'AI_OUTPUT_REJECTED';
+  if (/NUMERIC/.test(value)) return 'NUMERIC_POLICY_REJECTED';
+  if (/QWEN_UNAVAILABLE|LOCAL_LLM_UNAVAILABLE/.test(value)) return 'LOCAL_AI_UNAVAILABLE';
+  if (/GROUNDING/.test(value)) return 'GROUNDING_FAILED';
+  if (/DIAGNOSTIC.*IDENTITY|STALE|IDENTITY|CONTEXT_EXPIRED/.test(value)) return 'STALE_IDENTITY';
+  if (/LOCAL_LLM_|QWEN_/.test(value)) return 'QWEN_FAILED';
   return null;
 }
 export function asAiTransportError(error, signal, fetchFailure = false) {

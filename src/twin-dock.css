@@ -1,0 +1,114 @@
+/* Cross-page 3D twin dock */
+.twin-dock{
+  position:fixed;
+  left:100px;
+  right:auto;
+  bottom:20px;
+  width:min(500px,calc(100vw - 220px));
+  z-index:65;
+  border:1px solid #2e5a7280;
+  border-radius:12px;
+  background:linear-gradient(150deg,#071b2af2,#04121be8);
+  box-shadow:0 18px 50px #000a,inset 0 1px 0 #9fd8ff12;
+  backdrop-filter:blur(14px);
+  color:#cfe5f3;
+  overflow:hidden;
+}
+.twin-dock-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  height:42px;
+  padding:0 10px;
+  border-bottom:1px solid #2e5a7266;
+  background:linear-gradient(180deg,#0a2434d9,#071a27cc);
+}
+.twin-dock-title{display:flex;align-items:center;gap:8px;min-width:0}
+.twin-dock-icon{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:#9fe6ff;background:linear-gradient(145deg,#0f4a63,#09293b);border:1px solid #4aa9c980;box-shadow:0 0 12px #2ab7e92e}
+.twin-dock-title b{display:block;font-size:12px;font-weight:600;color:#e6f4fd;letter-spacing:.3px}
+.twin-dock-title small{display:block;font-size:9px;color:#85a7ba;margin-top:1px}
+.twin-dock-status{width:7px;height:7px;border-radius:50%;margin-left:4px;background:#e4a24f;box-shadow:0 0 8px #e4a24f80;transition:background .2s,box-shadow .2s}
+.twin-dock-status.is-ready{background:#3fe0a5;box-shadow:0 0 9px #3fe0a5}
+.twin-dock-actions{display:flex;align-items:center;gap:2px}
+.twin-dock-actions button{width:26px;height:26px;display:grid;place-items:center;border:1px solid transparent;border-radius:6px;background:transparent;color:#8fb1c3;cursor:pointer}
+.twin-dock-actions button:hover{border-color:#3c718a;background:#0d2c3e;color:#e5f7ff}
+.twin-dock-body{display:block}
+.twin-dock-canvas{position:relative;height:260px;background:#071521;overflow:hidden}
+.twin-dock-canvas .three-viewer{height:100%!important;min-height:0!important}
+.twin-dock-canvas .three-host{height:100%!important}
+.twin-dock-loading{height:100%;display:grid;place-items:center;color:#8fb1c3;font-size:11px;background:radial-gradient(ellipse at 50% 30%,#0d2c3e,#06131e 70%)}
+.twin-dock-hint{position:absolute;left:9px;bottom:7px;z-index:2;font-size:9px;color:#9dbdcd;background:#04131ec9;border:1px solid #2a536980;border-radius:4px;padding:2px 6px;pointer-events:none}
+.twin-dock-stands{display:flex;align-items:center;gap:8px;padding:7px 8px;border-top:1px solid #2e5a7266;background:#061824d9}
+.twin-dock-stand-buttons{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;flex:0 0 auto}
+.twin-dock-stand-buttons button{width:28px;height:24px;padding:0;border:1px solid #2f566b99;border-radius:4px;background:#0a2433cc;color:#a9c9d9;font-size:10px;font-weight:600;cursor:pointer}
+.twin-dock-stand-buttons button.active,.twin-dock-stand-buttons button:hover{border-color:#46bfe6;background:#12415acc;color:#e7faff}
+.twin-dock-force{display:flex;align-items:baseline;gap:5px;margin-left:auto;white-space:nowrap}
+.twin-dock-force small{font-size:9px;color:#7fa0b2}
+.twin-dock-force b{font-size:14px;color:#e5f6ff;font-variant-numeric:tabular-nums;font-weight:600}
+.twin-dock-force b i{font-size:8px;font-style:normal;color:#7fa0b2;margin-left:2px}
+.twin-dock-open{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px;border:1px solid #2b7c9a;border-radius:5px;background:linear-gradient(180deg,#12516b,#0a3448);color:#d8f5ff;font-size:10px;cursor:pointer;white-space:nowrap}
+.twin-dock-open:hover{border-color:#46bfe6;background:linear-gradient(180deg,#17637f,#0c4057)}
+.twin-dock.is-collapsed{width:360px}
+.twin-dock.is-collapsed .twin-dock-head{border-bottom:0}
+.app-shell .topbar-action.twin-action.active{border-color:#2b7c9a;background:#0d2c3e;color:#d8f5ff}
+@media(max-width:1100px){
+  .twin-dock{width:min(430px,calc(100vw - 200px))}
+  .twin-dock-canvas{height:230px}
+}
+@media(max-width:900px){
+  .twin-dock{left:12px;right:12px;width:auto;bottom:12px}
+  .twin-dock-canvas{height:220px}
+}
+
+/* communication page header context */
+.comm-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.twin-dock-canvas-host{position:absolute;inset:0}
+.twin-dock-canvas-host canvas{display:block;width:100%;height:100%}
+.twin-dock-canvas>.twin-dock-loading{position:absolute;inset:0;z-index:2;height:auto}
+.twin-dock.is-hidden{display:none}
+.twin-dock-loading.is-hidden{display:none}
+.twin-dock-stands.twin-dock-native-bar{position:fixed;left:100px;bottom:20px;width:500px;z-index:66;border:1px solid #2e5a7280;border-top:0;border-radius:0 0 10px 10px;background:#061824f5;box-shadow:0 10px 30px #0007;backdrop-filter:blur(10px)}
+@media(max-width:900px){.twin-dock-stands.twin-dock-native-bar{left:12px;right:12px;width:auto;bottom:12px}}
+/* 贴在 3D 设备上的时序回放按钮：位置由 twinDockScene 每帧投影写入 */
+.twin-dock-play{position:absolute;left:0;top:0;z-index:5;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid #46bfe6aa;background:#06293ceb;color:#c8f4ff;font-size:11px;line-height:1;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 12px #0009;backdrop-filter:blur(4px);transition:background .15s,border-color .15s}
+.twin-dock-play:hover{background:#0d4a66f2;border-color:#7fe3ff}
+.twin-dock-play[data-running="true"]{background:#0b4438eb;border-color:#5ce0b0aa;color:#c8ffe8}
+.twin-dock-play.is-hidden{display:none}
+
+/* 收起态：左下角一枚入口胶囊，鼠标移入浮出面板，移开自动收回 */
+.twin-dock.is-peek{
+  width:auto;
+  max-width:none;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  backdrop-filter:none;
+  overflow:visible;
+}
+.twin-dock-peek{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  height:36px;
+  padding:0 13px 0 9px;
+  border:1px solid #2e5a7299;
+  border-radius:10px;
+  background:linear-gradient(150deg,#0a2334f2,#04121be8);
+  color:#bcdcec;
+  font-size:11px;
+  letter-spacing:.3px;
+  cursor:pointer;
+  box-shadow:0 10px 26px #0009,inset 0 1px 0 #9fd8ff12;
+  backdrop-filter:blur(10px);
+  transition:border-color .18s,color .18s,transform .18s;
+}
+.twin-dock-peek:hover{border-color:#46bfe6;color:#eafaff;transform:translateY(-1px)}
+.twin-dock-peek-icon{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:#9fe6ff;background:linear-gradient(145deg,#0f4a63,#09293b);border:1px solid #4aa9c980}
+.twin-dock-peek-page{font-size:9px;color:#7fa0b2;border-left:1px solid #2e5a7280;padding-left:7px}
+/* 面板常驻、只切显隐：收起时隐藏面板，展开时隐藏入口胶囊 */
+.twin-dock.is-peek .twin-dock-panel{display:none}
+.twin-dock.is-open .twin-dock-peek{display:none}
+.twin-dock-panel{width:100%}

@@ -75,7 +75,7 @@ const roundedForce=value=>String(Math.sign(value)*Math.round(Math.abs(value))||0
 const roundedSignedForce=value=>{const rounded=Math.sign(value)*Math.round(Math.abs(value))||0;return `${rounded>0?'+':''}${rounded}`;};
 function S5ReachableRange({range,state,actualAvailable,target,predictionReady}){
  const completed=range?.scope==='MAX_REACHABILITY'&&range.completed_level===3&&range.max_adjustment_percent===15;
- const pendingText=state?.status==='FAILED'?'智能试算未完成，请重新进入方案页重试。':state?.status==='SEARCHING'||predictionReady?'智能试算中…':'等待当前正式预测就绪';
+ const pendingText=state?.status==='FAILED'?'智能试算未完成，请重新进入方案页重试。':state?.status==='TIMEOUT'?'方案搜索超时，请重试或减小目标偏差。':state?.status==='SEARCHING'||predictionReady?'智能试算中…':'等待当前正式预测就绪';
  const targetWithin=completed?targetWithinMaxReachability(target,range):null;
  return <section className="s5-trial-reachable-range" aria-label="AI试算范围"><h3>{reachableRangeTitle()} <span className="s5-envelope-info" tabIndex="0" aria-label="范围说明" title="基于当前工况下19维参数联合智能试算及QCDKR验证结果生成。这是固定规则下已探索的预测区间，不代表数学全局极值；范围内目标也不保证存在足够接近目标的方案，请以方案预计目标偏差为准。">ⓘ</span></h3><dl>
    <div><dt>智能试算</dt><dd>{!completed?<span role="status">{pendingText}</span>:range.candidate_count===0?'暂无合法候选结果':`约 ${roundedForce(range.estimated_min)} ～ ${roundedForce(range.estimated_max)} t`}</dd></div>
@@ -158,7 +158,7 @@ export function OptimizationWorkspace({ caseData, result, resultSample, observat
   const legacyPlans=plans.some(plan=>plan.candidate_source!=='SMART_SEARCH');
   const showSmart=smartPlans.length>0||searchState.status!=='IDLE'||(!!optimizationTask&&!legacyPlans);
   const emptySearch=searchState.status==='COMPLETED'&&searchState.result==='NO_VALID_CANDIDATE';
-  const searchMessage = ({FAILED:'候选方案生成失败，请重试。',TIMED_OUT:'方案生成超时，请重试。',CANCELLED:'已取消本次试算。',STALE:'当前工况已变化，请重新生成方案。'})[searchState.status] || (searchState.status==='COMPLETED'&&smartPlans.length ? searchState.result==='CLOSEST_LEGAL_CANDIDATES'||searchState.target_reached===false ? '当前试算空间内未找到足够接近目标的方案，已显示最接近目标的结果。' : '候选方案已生成。' : null);
+  const searchMessage = ({FAILED:'候选方案生成失败，请重试。',TIMEOUT:'方案生成超时，请重试或减小目标偏差。',TIMED_OUT:'方案生成超时，请重试。',CANCELLED:'已取消本次试算。',STALE:'当前工况已变化，请重新生成方案。'})[searchState.status] || (searchState.status==='COMPLETED'&&smartPlans.length ? searchState.result==='CLOSEST_LEGAL_CANDIDATES'||searchState.target_reached===false ? '当前试算空间内未找到足够接近目标的方案，已显示最接近目标的结果。' : '候选方案已生成。' : null);
   const abReady = candidateABReady(selected,draft,canLoadDraft);
   const target = Number.isFinite(currentTarget) ? currentTarget : null;
   const modelMonitor = currentPredictionErrorAlarm({caseData,result,resultSample,observationMatches,predictionState,dirty:!predictionReady},predictionErrorAlarmRange);

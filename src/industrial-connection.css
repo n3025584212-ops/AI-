@@ -61,3 +61,37 @@
 @media(max-width:900px){.comm-main{grid-template-columns:1fr}.comm-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.comm-guide-panel{padding:16px 20px}.comm-equipment-diagram{max-width:580px;margin-left:auto;margin-right:auto}.comm-equipment-captions{max-width:580px;margin-left:auto;margin-right:auto}}
 @media(max-width:720px){.industrial-connection{padding:24px 14px 20px}.industrial-connection>header{flex-wrap:wrap;gap:12px}.industrial-connection h1{font-size:23px}.comm-main{padding:10px}.comm-settings-form{grid-template-columns:1fr}.comm-facts{grid-template-columns:120px 1fr;gap:12px}.comm-status-heading .maint-badge{font-size:17px}.comm-status-header{margin-bottom:16px}.comm-feature-grid{gap:10px}.comm-feature-card{flex-direction:column;gap:8px}}
 @media(max-width:460px){.comm-readouts{grid-template-columns:1fr}.comm-feature-grid{grid-template-columns:1fr}.comm-feature-card{flex-direction:row}.comm-equipment-captions strong{font-size:11px}.comm-equipment-captions span{font-size:10px}}
+/* 状态三态：灰=未配置，琥珀=连接中/数据不完整，红=链路或配置失败 */
+.comm-status-heading .maint-badge.is-warn{color:#e7be78}
+.comm-status-heading .maint-badge.is-warn i{background:#e7be78}
+.comm-status-heading .maint-badge.is-bad{color:#ec9d91}
+.comm-status-heading .maint-badge.is-bad i{background:#ec9d91}
+.comm-status-header.is-warn .comm-plug-icon{color:#e0b76e;background:linear-gradient(145deg,#45371f,#282216);border-color:#7a5a2a55}
+.comm-status-header.is-bad .comm-plug-icon{color:#e59a8e;background:linear-gradient(145deg,#452925,#281816);border-color:#7a3a3355}
+/* 矮屏压缩：让主区与四张能力卡在 900px 高度内尽量同屏 */
+@media(max-height:980px){
+  .industrial-connection{padding-top:18px;padding-bottom:14px}
+  .industrial-connection>header{margin-bottom:12px}
+  .industrial-connection h1{font-size:23px;margin-bottom:5px}
+  .industrial-connection>header p{font-size:12px}
+  .comm-main{padding:9px}
+  .comm-status-panel{padding:7px 11px}
+  .comm-status-header{min-height:64px;margin-bottom:11px;gap:16px}
+  .comm-plug-icon{width:62px;height:62px}
+  .comm-status-heading h2{font-size:18px;margin-bottom:4px}
+  .comm-connection-copy p{margin:3px 0;font-size:12px}
+  .comm-main .comm-main-actions{margin:11px 0 12px}
+  .comm-readouts{padding-top:11px}
+  .comm-readouts .comm-facts{gap:7px 12px}
+  .comm-guide-panel{padding:9px 13px}
+  .comm-equipment-diagram{margin-top:0}
+  .comm-equipment-captions{margin-bottom:10px}
+  .comm-quick-guide{padding:9px 11px}
+  .comm-quick-guide ol{gap:4px;margin-bottom:8px}
+  .comm-quick-guide li{font-size:10.5px;line-height:1.45}
+  .comm-feature-grid{gap:9px;margin-top:9px}
+  .comm-feature-card{padding:11px;gap:9px}
+  .comm-feature-card h3{margin:2px 0 5px}
+  .comm-feature-card p{font-size:10px;line-height:1.5}
+  .comm-feature-icon{width:36px;height:37px;border-radius:9px}
+}

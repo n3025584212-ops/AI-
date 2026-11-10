@@ -1,10 +1,10 @@
-import { lazy, memo, Suspense, useEffect, useRef, useState } from 'react';
+import { memo, Suspense, useEffect, useRef, useState } from 'react';
 import { Activity, ArrowRight, Check, ChevronDown, ChevronUp, Expand, Layers3, Loader2, Maximize2, Minimize2, Minus, Plus, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
 
 import ProcessMatrix from './ProcessMatrix.jsx';
 import { PredictionSummary, PredictionTrace, PredictionInfluence, usePredictionHistory } from './PredictionPanels.jsx';
+import ThreeViewer from './threeViewerLazy.js';
 
-const ThreeViewer = lazy(() => import('./ThreeViewer.jsx'));
 const views = [['perspective', '透视'], ['front', '操作侧'], ['drive', '传动侧'], ['top', '俯视']];
 const controls = [
   { key: 'speed', label: '轧制速度', step: 5, min: 0, max: 3000, decimals: 1 },
@@ -30,7 +30,7 @@ function NumericControl({ label, value, step = 1, min = 0, max = 10000, onChange
 
 function ModelPanel({ full = false, workspace = false, caseData, predictionValue, result, dirty = false, autoStatus, errors = [], selected = 'S5', setSelected, view = 'perspective', setView, explode = false, setExplode, showStrip = true, setShowStrip, onFieldChange, onCaseFieldChange, onTargetChange, onNavigate, resultCase, resultSample, lastUpdated, sessionKey, onReset }) {
   const [expanded, setExpanded] = useState(false);
-  const [focusMode, setFocusMode] = useState('line');
+  const focusMode = 'line';
   const [shellMode, setShellMode] = useState('transparent');
   const [showData, setShowData] = useState(true);
   const [focusRequest, setFocusRequest] = useState(null);
@@ -79,9 +79,8 @@ function ModelPanel({ full = false, workspace = false, caseData, predictionValue
     <PredictionSummary result={liveResult} resultCase={resultCase || caseData} resultSample={resultSample} caseData={caseData} dirty={dirty} errors={errors} autoStatus={autoStatus} onTargetChange={onTargetChange} lastUpdated={lastUpdated} />
     <div className="cockpit-toolbar">
       <div className="scene-identity"><span className="scene-line-mark"><Layers3 size={25} /></span><div><b>五机架冷轧机组</b></div></div>
-      <div className="cockpit-segment" role="group" aria-label="设备范围">{[['line', '整机组'], ['s5', '5号局部']].map(([key, label]) => <button key={key} className={focusMode === key ? 'active' : ''} aria-pressed={focusMode === key} onClick={() => { setFocusMode(key); if (key === 's5') setSelected?.('S5'); }}>{label}</button>)}</div>
       <div className="cockpit-segment shell-segment" role="group" aria-label="外壳显示">{[['solid', '实体'], ['transparent', '透壳'], ['hidden', '仅辊系']].map(([key, label]) => <button key={key} className={shellMode === key ? 'active' : ''} aria-pressed={shellMode === key} onClick={() => setShellMode(key)}>{label}</button>)}</div>
-      <div className="scene-toolbar-actions"><button className={`scene-data-button ${showData ? 'active' : ''}`} aria-pressed={showData} onClick={() => setShowData(value => !value)}><SlidersHorizontal size={13} /><span>数据</span></button><button className="scene-fullscreen-button" aria-label={expanded ? '还原三维视窗' : '全屏三维视窗'} title={expanded ? '还原视窗 · Esc' : '全屏三维视窗'} aria-pressed={expanded} onClick={toggleExpanded}>{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button></div>
+      <div className="scene-toolbar-actions"><button className={`scene-data-button ${showData ? 'active' : ''}`} aria-pressed={showData} onClick={() => setShowData(value => !value)}><SlidersHorizontal size={13} /><span>数据</span></button></div>
     </div>
     <div className="cockpit-stage">
       <div className="model-canvas"><Suspense fallback={<div className="model-loading"><Loader2 className="spin" size={18} />正在载入设备</div>}><ThreeViewer selectedStand={selected} onSelectStand={setSelected} view={view} explode={explode} showStrip={showStrip} compact={!full} expanded={expanded} focusMode={focusMode} shellMode={shellMode} motionPlaying={true} processSpeed={s5.speed} processData={caseData} hasDataOverlay={showData} /></Suspense></div>
@@ -93,7 +92,7 @@ function ModelPanel({ full = false, workspace = false, caseData, predictionValue
         <PredictionInfluence result={liveResult} dirty={dirty} onSelectParameter={selectParameter} />
         <div className="prediction-quick-controls"><div className="quick-controls-heading">S5 调整</div>{controls.map(field => <NumericControl key={field.key} {...field} compact prefix="S5 快调" value={s5[field.key]} onChange={onFieldChange ? value => onFieldChange('S5', field.key, value) : undefined} />)}</div>
       </aside>
-      <div className="scene-transport-status"><i className={Number(s5.speed) > 0 ? 'running' : ''} /><span>{!showStrip ? '带钢已隐藏' : Number(s5.speed) > 0 ? '带钢运行' : '带钢暂停'}</span><ArrowRight size={12} /><b>{focusMode === 's5' ? 'S5' : 'S1 → S5'}</b></div>
+      <div className="scene-transport-status"><i className={Number(s5.speed) > 0 ? 'running' : ''} /><span>{!showStrip ? '带钢已隐藏' : Number(s5.speed) > 0 ? '带钢运行' : '带钢暂停'}</span><ArrowRight size={12} /><b>{'S1 → S5'}</b></div>
     </div>
     <div className="prediction-matrix-container" hidden={!showData}><ProcessMatrix caseData={caseData} selected={selected} onSelectStand={setSelected} onFieldChange={onFieldChange} onCaseFieldChange={onCaseFieldChange} dirty={dirty} errors={errors} focusRequest={focusRequest} /><button className="prediction-reset-case" title="恢复初始工况" aria-label="恢复初始工况" onClick={onReset}><RotateCcw size={12} /></button></div>
   </section>;

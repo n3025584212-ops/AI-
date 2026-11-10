@@ -1,0 +1,309 @@
+/* P1 usability pass: readable text, 24px+ pointer targets, and a single
+   optimization entry. Loaded last so it also applies inside the short-screen
+   compact layout. */
+
+.s5-shell.workbench-shell .dashboard-workspace {
+  font-size: 13px;
+}
+
+/* S5 target reference: the target value itself is the entry. */
+.s5-main-comparison > .s5-target-reference-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 26px;
+  margin: 0 -5px;
+  padding: 3px 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #8baabc;
+  font: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.s5-main-comparison > .s5-target-reference-button:hover,
+.s5-main-comparison > .s5-target-reference-button:focus-visible {
+  border-color: #2d6c8d;
+  background: #0f3044;
+  color: #c8e5f5;
+  outline: none;
+}
+.s5-main-comparison > .s5-target-reference-button:disabled {
+  cursor: default;
+  opacity: .55;
+}
+.s5-main-comparison > .s5-target-reference-button b {
+  color: #e5b77d;
+  font-size: 12px;
+}
+.s5-main-comparison > .s5-target-reference-button em {
+  color: #66c9e8;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.target-reference-dialog .target-reference-settings,
+.target-reference-dialog .target-reference-settings summary,
+.target-reference-dialog .target-reference-settings p,
+.target-reference-dialog .target-reference-settings label,
+.target-reference-dialog .target-reference-settings input,
+.target-reference-dialog .target-reference-settings button {
+  font-size: 12px;
+  line-height: 18px;
+}
+.target-reference-dialog .target-reference-settings summary {
+  min-height: 32px;
+}
+.target-reference-dialog .target-reference-settings button {
+  min-height: 30px;
+  padding: 4px 10px;
+}
+.target-reference-dialog .target-reference-settings input[type="text"] {
+  min-height: 30px;
+}
+
+/* Key labels and actions: 12px minimum in the working area. */
+.s5-shell.workbench-shell .dashboard-workspace .dm-metric-foot,
+.s5-shell.workbench-shell .dashboard-workspace .dm-trend-empty small,
+.s5-shell.workbench-shell .dashboard-workspace .dm-input-badge,
+.s5-shell.workbench-shell .dashboard-workspace .dm-engineering-unit,
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-mode,
+.s5-shell.workbench-shell .dashboard-workspace .s5-model-readout > span,
+.s5-shell.workbench-shell .dashboard-workspace .s5-model-readout > span small,
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-comparison > span,
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-comparison > span b,
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-detail,
+.s5-shell.workbench-shell .dashboard-workspace .trend-heading > select,
+.s5-shell.workbench-shell .dashboard-workspace .trend-legend,
+.s5-shell.workbench-shell .dashboard-workspace .plot-readout,
+.s5-shell.workbench-shell .dashboard-workspace .plot-readout small,
+.s5-shell.workbench-shell .dashboard-workspace .plot-readout time,
+.s5-shell.workbench-shell .dashboard-workspace .time-scrubber,
+.s5-shell.workbench-shell .dashboard-workspace .twin-bottom > span,
+.s5-shell.workbench-shell .dashboard-workspace .dc-heading h3,
+.s5-shell.workbench-shell .dashboard-workspace .dc-legend,
+.s5-shell.workbench-shell .dashboard-workspace .dc-foot,
+.s5-shell.workbench-shell .dashboard-workspace .smart-function-text > strong,
+.s5-shell.workbench-shell .dashboard-workspace .smart-function-text > [role=status],
+.s5-shell.workbench-shell .dashboard-workspace .current-findings,
+.s5-shell.workbench-shell .dashboard-workspace .stream-bar {
+  font-size: 12px !important;
+  line-height: 16px;
+}
+
+.s5-shell.workbench-shell .dashboard-workspace .station-strip button,
+.s5-shell.workbench-shell .dashboard-workspace .station-strip button > span,
+.s5-shell.workbench-shell .dashboard-workspace .station-strip button b {
+  font-size: 12px !important;
+  line-height: 16px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .station-strip button {
+  min-height: 30px;
+}
+
+.s5-shell.workbench-shell .dashboard-workspace .current-findings :is(dt,dd,summary,time,small,p,pre),
+.s5-shell.workbench-shell .dashboard-workspace .current-findings button,
+.s5-shell.workbench-shell .dashboard-workspace .current-finding-evidence,
+.s5-shell.workbench-shell .dashboard-workspace .assistant-references {
+  font-size: 12px !important;
+  line-height: 1.65;
+}
+
+.s5-shell.workbench-shell .dashboard-workspace .s5-error-alarm {
+  font-size: 12px !important;
+}
+
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-label,
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-item strong,
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-status,
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-empty,
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-panel .key-parameter-edit {
+  font-size: 12px !important;
+  line-height: 16px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-item {
+  min-height: 16px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .key-parameter-panel .key-parameter-edit {
+  min-height: 28px;
+  padding: 4px 2px;
+}
+
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-mode,
+.s5-shell.workbench-shell .dashboard-workspace .s5-model-readout > span,
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-comparison > span,
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-detail {
+  line-height: 17px;
+}
+
+.s5-shell.workbench-shell .topbar-product span,
+.s5-shell.workbench-shell .topbar-action,
+.s5-shell.workbench-shell .console-clock {
+  font-size: 12px !important;
+}
+.s5-shell.workbench-shell .topbar-action {
+  min-height: 30px;
+}
+.app-shell.s5-shell.reference-shell.nav-collapsed .sidebar nav button.active > span {
+  display: none;
+}
+
+/* 24x24 is the WCAG 2.2 AA minimum; primary demo controls use 30-32px. */
+.s5-shell.workbench-shell .dashboard-workspace .s5-main-actions button {
+  min-height: 32px;
+  padding: 4px 6px;
+  font-size: 12px !important;
+  line-height: 18px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools > button,
+.s5-shell.workbench-shell .dashboard-workspace .scene-view-control > button,
+.s5-shell.workbench-shell .dashboard-workspace .scene-view-menu button {
+  min-height: 28px;
+  height: auto;
+  font-size: 12px !important;
+  line-height: 16px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .scene-tools > button {
+  min-width: 30px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .twin-bottom > button,
+.s5-shell.workbench-shell .dashboard-workspace .twin-bottom > select,
+.s5-shell.workbench-shell .dashboard-workspace .trend-playback,
+.s5-shell.workbench-shell .dashboard-workspace .trend-regenerate {
+  min-height: 30px;
+  height: auto;
+  padding: 4px 9px;
+  font-size: 12px !important;
+  line-height: 18px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .trend-heading {
+  height: auto;
+  min-height: 32px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .trend-heading > select {
+  min-height: 28px;
+  height: auto;
+}
+.s5-shell.workbench-shell .dashboard-workspace .spatial-anchor {
+  width: 32px !important;
+  height: 26px !important;
+  min-width: 32px;
+  min-height: 26px;
+  font-size: 12px !important;
+}
+.s5-shell.workbench-shell .dashboard-workspace .scene-reset {
+  min-width: 30px;
+  min-height: 30px !important;
+  height: 30px !important;
+  font-size: 12px !important;
+}
+.s5-shell.workbench-shell .dashboard-workspace .time-scrubber {
+  height: auto !important;
+  min-height: 26px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .time-scrubber input[type="range"] {
+  height: 24px !important;
+  background: linear-gradient(90deg, #3f8fb66e var(--scrub, 0%), #1d3850 var(--scrub, 0%)) center / 100% 3px no-repeat;
+}
+.s5-shell.workbench-shell .dashboard-workspace .time-scrubber input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -6.5px;
+}
+
+/* Give the larger labels room without shrinking the chart. */
+.s5-shell.workbench-shell .dashboard-workspace .dm-card {
+  height: 126px;
+}
+.s5-shell.workbench-shell .dashboard-workspace .dm-prediction {
+  min-height: 160px;
+}
+
+/* Four remaining quick actions: optimization now has one primary entry in S5. */
+.workspace-toolstrip .smart-function-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-height: 980px) and (min-width: 980px) {
+  .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dm-card {
+    height: 112px;
+  }
+  .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dm-prediction {
+    min-height: 160px;
+  }
+  .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dm-metric-heading {
+    height: 20px;
+    flex-basis: 20px;
+    font-size: 13px !important;
+    line-height: 20px;
+  }
+  .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dm-value-row {
+    height: 32px;
+    flex-basis: 32px;
+  }
+  .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dm-metric-value {
+    font-size: 27px;
+    line-height: 31px;
+  }
+  .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dm-trend,
+  .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dm-trend-empty {
+    height: 26px;
+    flex-basis: 26px;
+  }
+  .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dm-metric-foot {
+    margin-top: 3px;
+    line-height: 16px;
+    font-size: 12px !important;
+  }
+}
+
+/* Timeseries -> manual confirmation. */
+.parameter-apply-confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #020912c9;
+  backdrop-filter: blur(5px);
+}
+.parameter-apply-confirm {
+  width: min(520px, calc(100vw - 48px));
+  padding: 22px 24px 20px;
+  border: 1px solid #3d657e;
+  border-radius: 10px;
+  background: linear-gradient(140deg, #122b3c, #0a1722);
+  box-shadow: 0 24px 80px #000a;
+  color: #d9e9f5;
+}
+.parameter-apply-confirm h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  line-height: 26px;
+}
+.parameter-apply-confirm p {
+  margin: 0;
+  color: #b6ccdc;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.parameter-apply-confirm p b {
+  color: #70d8f4;
+}
+.parameter-apply-confirm > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+.parameter-apply-confirm button {
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 13px;
+}

@@ -81,7 +81,7 @@ function MiniTrend({ frames, metric, currentValue }) {
   </svg>;
 }
 
-function MainPrediction({ predictionState, caseData, result, resultSample, modelStatus, dirty, pendingStreamProjection, inputDisplay, targetValue=null, optimizing=false, observationMatches = true, onOpenPredictionErrorAlarmRange, predictionErrorAlarmRange=DEFAULT_PREDICTION_ERROR_ALARM_RANGE, onOptimize }) {
+function MainPrediction({ predictionState, caseData, result, resultSample, modelStatus, dirty, pendingStreamProjection, inputDisplay, targetValue=null, optimizing=false, observationMatches = true, onOpenPredictionErrorAlarmRange, onOpenTargetReference, predictionErrorAlarmRange=DEFAULT_PREDICTION_ERROR_ALARM_RANGE, onOptimize, assistantAction }) {
   const cardRef = useRef(null), scrollContentRef = useRef(null);
   useEffect(() => {
     const card = cardRef.current;
@@ -107,15 +107,21 @@ function MainPrediction({ predictionState, caseData, result, resultSample, model
   const values = modelInputs(caseData);
   const present = values.filter(Number.isFinite).length;
   const completed = completedPredictionValues(result, caseData, resultSample);
-  const value = !blocked && (holding || !displayDirty && predictionState === 'READY') ? completed.value : null;
+  // Keep the last completed prediction visible through the next input frame;
+  // the sync dot marks the pending row. Toggling to null here broke the
+  // value tween and made the S5 card read as a sequence of stills.
+  const value = !blocked ? completed.value : null;
   const target = requestedTarget;
   const isReady = modelStatus === true || modelStatus?.available === true
     || (modelStatus == null && result?.mode === 'formal');
   const isLoading = !isReady && (modelStatus?.status === 'CONNECTING'
     || modelStatus?.status === 'LOADING' || (modelStatus == null && result?.mode === 'pending'));
   const formal = result?.mode === 'formal' && value !== null;
-  const modeLabel = blocked ? '预测暂停' : holding ? '正在更新' : formal ? 'QCDKR' : result?.mode === 'demo' ? '演示计算' : isLoading ? '模型加载中' : isReady ? '待预测' : '模型未就绪';
-  const alarm=currentPredictionErrorAlarm({caseData,result,resultSample,dirty:displayDirty||blocked,observationMatches,holding,predictionState},predictionErrorAlarmRange);
+  // While the next stream row is pending, keep the last completed value and
+  // its alarm visible. Only the small sync dot changes; the readout text does
+  // not blink between a number and a placeholder.
+  const modeLabel = blocked ? '预测暂停' : formal ? 'QCDKR' : result?.mode === 'demo' ? '演示计算' : isLoading ? '模型加载中' : isReady ? '待预测' : '模型未就绪';
+  const alarm=currentPredictionErrorAlarm({caseData,result,resultSample,dirty:holding?false:(displayDirty||blocked),observationMatches,holding:false,predictionState:holding?'READY':predictionState},predictionErrorAlarmRange);
   const matchingObserved=alarm.actualValue;
   const predictionError = alarm.predictionError;
   const observationText = observationDisplay(resultSample);
@@ -124,21 +130,20 @@ function MainPrediction({ predictionState, caseData, result, resultSample, model
   return <section ref={cardRef} className={'dm-card dm-prediction dm-prediction-scrollable' + (formal ? ' dm-prediction-formal' : '')} aria-label="S5 轧制力主预测结果"
     data-display-snapshot-id={result?.snapshot_id} data-stream-update-pending={holding} data-target-value-source={target===null?'NONE':'USER_INPUT'}
     title={holding?'正在更新下一工况；显示最近已完成的完整预测快照':undefined}>
-    <img className="s5-roll-illustration" src="/assets/s5-roll-illustration.png" alt="" aria-hidden="true"/>
-    <div className="s5-main-heading"><h3><b>S5</b> 轧制力预测</h3><span className={'s5-main-mode' + (formal && !dirty ? ' is-ready' : '')} title={modelStatus?.reason}><i/>{modeLabel}</span></div>
+    <div className="s5-main-heading"><h3><b>S5</b> 轧制力预测</h3><div className="s5-heading-actions">{assistantAction}<span className={'s5-main-mode' + (formal ? ' is-ready' : '')} title={modelStatus?.reason}><i/>{modeLabel}</span></div></div>
     <div ref={scrollContentRef} className="s5-card-scroll-content">
     <div className="s5-main-readout">
-      <div className="s5-model-readout"><span>{holding ? '上次预测 · 正在更新' : '预测值'}</span><strong className={'s5-main-value' + (valueText.length > 7 ? ' is-wide' : '')}>{valueText} <small className="dm-engineering-unit">t</small></strong></div>
-      <div className="s5-main-comparison"><span title={observationText.tooltip + '；单位 t'}>实际值<b>{matchingObserved===null?'—':number(toDisplay('force',matchingObserved),3)+' t'}</b></span><span>目标值<b>{target===null?'—':number(toDisplay('force',target),3)+' t'}</b></span></div>
+      <div className="s5-model-readout"><span>预测值</span><strong className={'s5-main-value' + (valueText.length > 7 ? ' is-wide' : '')}>{valueText} <small className="dm-engineering-unit">t</small></strong></div>
+      <div className="s5-main-comparison"><span title={observationText.tooltip + '；单位 t'}>实际值<b>{matchingObserved===null?'—':number(toDisplay('force',matchingObserved),3)+' t'}</b></span><button type="button" className="s5-target-reference-button" onClick={onOpenTargetReference} disabled={!onOpenTargetReference} title="设置目标参考值，并查看目标偏差判定来源"><span>目标值</span><b>{target===null?'—':number(toDisplay('force',target),3)+' t'}</b><em>设置</em></button></div>
     </div>
-    <div className="s5-main-detail"><span title="预测误差 = QCDKR 原始预测 − 当前实际值；单位 t">模型预测误差（预测 − 实际） <b>{predictionError===null?'—':showSigned(predictionError)+' t'}</b></span>{!displayDirty&&!blocked&&<span className={'s5-error-alarm is-'+alarm.status.toLowerCase()} role="status" data-alarm-state={alarm.status} title={'允许区间：'+formatPredictionErrorAlarmRange(predictionErrorAlarmRange)}>{alarm.label}</span>}{(displayDirty||blocked)&&<span className="s5-prediction-progress" role="status">{blocked?inputDisplay.pausedText:predictionState==='FAILED'?'当前工况预测暂未完成':'正在更新'}</span>}</div>
+    <div className="s5-main-detail"><span title="预测误差 = QCDKR 原始预测 − 当前实际值；单位 t">模型预测误差（预测 − 实际） <b>{predictionError===null?'—':showSigned(predictionError)+' t'}</b></span><span className={'s5-error-alarm is-'+alarm.status.toLowerCase()} role="status" data-alarm-state={alarm.status} title={'允许区间：'+formatPredictionErrorAlarmRange(predictionErrorAlarmRange)}>{alarm.label||'预测误差报警：—'}</span><span className={'s5-sync-indicator'+(holding||displayDirty||blocked?' is-active':'')} role="status" aria-label={blocked?inputDisplay.pausedText:predictionState==='FAILED'?'当前工况预测暂未完成':'下一工况预测更新中'} title={blocked?inputDisplay.pausedText:predictionState==='FAILED'?'当前工况预测暂未完成':'下一工况预测更新中'}><i/></span></div>
     {!displayDirty&&!blocked&&Number.isFinite(matchingObserved)&&Number.isFinite(target)&&<div className="s5-main-detail"><span title="正值表示实际轧制力高于目标，负值表示低于目标。">工况目标偏差（实际 − 目标） <b>{showSigned(matchingObserved-target)} t</b></span></div>}
     <div className="s5-main-actions"><button type="button" onClick={onOpenPredictionErrorAlarmRange}>预测误差报警区间</button><button type="button" className="s5-primary-action" onClick={onOptimize}>优化候选方案</button></div>
     </div>
   </section>;
 }
 
-export default function DashboardMetrics({ predictionState, caseData, result, resultSample, pendingStreamProjection, inputDisplay, targetValue=null, frames = [], selected, dirty = false, optimizing=false, observationMatches = true, onSelect, modelStatus, onOpenPredictionErrorAlarmRange, predictionErrorAlarmRange=DEFAULT_PREDICTION_ERROR_ALARM_RANGE, onOptimize, previewContent }) {
+export default function DashboardMetrics({ predictionState, caseData, result, resultSample, pendingStreamProjection, inputDisplay, targetValue=null, frames = [], selected, dirty = false, optimizing=false, observationMatches = true, onSelect, modelStatus, onOpenPredictionErrorAlarmRange, onOpenTargetReference, predictionErrorAlarmRange=DEFAULT_PREDICTION_ERROR_ALARM_RANGE, onOptimize, previewContent, assistantAction }) {
   return <div className="dm-metrics" aria-label="上游输入与 S5 主预测结果">
     {metrics.map(metric => {
       const value = standOf(caseData, metric.id)?.[metric.field];
@@ -155,10 +160,10 @@ export default function DashboardMetrics({ predictionState, caseData, result, re
         <span className="dm-metric-heading"><span><b>{metric.id}</b> {metric.label}</span></span>
         <span className="dm-value-row"><strong className="dm-metric-value">{number(toDisplay(metric.field, value), metric.field === 'force' ? 3 : 1)}</strong><small className="dm-engineering-unit">{unitFor(metric.field)}</small></span>
         <MiniTrend frames={frames} metric={metric} currentValue={value}/>
-        <span className="dm-metric-foot"><span className={'dm-input-badge' + (!available ? ' dm-input-missing' : '')}><i/>{available ? demo ? '输入值' : '已录入' : '待录入'}</span></span>
+        <span className="dm-metric-foot"><span className={'dm-input-badge' + (!available ? ' dm-input-missing' : '')}><i/>{available ? '输入值' : '待录入'}</span></span>
       </button>;
     })}
-    {previewContent||<MainPrediction predictionState={predictionState} caseData={caseData} result={result} resultSample={resultSample} pendingStreamProjection={pendingStreamProjection} inputDisplay={inputDisplay} targetValue={targetValue} modelStatus={modelStatus} dirty={dirty} optimizing={optimizing} observationMatches={observationMatches} onOpenPredictionErrorAlarmRange={onOpenPredictionErrorAlarmRange} predictionErrorAlarmRange={predictionErrorAlarmRange} onOptimize={onOptimize}/>}
+    {previewContent||<MainPrediction predictionState={predictionState} caseData={caseData} result={result} resultSample={resultSample} pendingStreamProjection={pendingStreamProjection} inputDisplay={inputDisplay} targetValue={targetValue} modelStatus={modelStatus} dirty={dirty} optimizing={optimizing} observationMatches={observationMatches} onOpenPredictionErrorAlarmRange={onOpenPredictionErrorAlarmRange} onOpenTargetReference={onOpenTargetReference} predictionErrorAlarmRange={predictionErrorAlarmRange} onOptimize={onOptimize} assistantAction={assistantAction}/>}
   </div>;
 }
 export function ProcessSnapshot({ caseData, result, onEdit }) {

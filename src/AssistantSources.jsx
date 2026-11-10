@@ -21,6 +21,15 @@ function readBase64(file) {
     reader.readAsDataURL(file);
   });
 }
+export async function uploadKnowledgeFile(file,{signal}={}) {
+  const extension=file?.name?.split('.').at(-1).toLowerCase();
+  if(!['txt','md','docx'].includes(extension))throw new Error('请选择 TXT、MD 或 DOCX 文件。');
+  if(!file.size)throw new Error('文件为空，请选择有内容的资料。');
+  if(file.size>MAX_FILE_BYTES)throw new Error('单个文件请控制在 8 MB 以内。');
+  const payload=extension==='docx'?{name:file.name,base64:await readBase64(file)}:{name:file.name,text:await file.text()};
+  signal?.throwIfAborted();
+  return requestKnowledge({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal});
+}
 
 export default function AssistantSources({ open, onToggle, onUploaded, compact = false }) {
   const [docs, setDocs] = useState([]);
@@ -66,11 +75,7 @@ export default function AssistantSources({ open, onToggle, onUploaded, compact =
     activeUpload.current = controller;
     setUploading(true); setError('');
     try {
-      const payload = extension === 'docx'
-        ? { name: file.name, base64: await readBase64(file) }
-        : { name: file.name, text: await file.text() };
-      if (controller.signal.aborted) return;
-      const body = await requestKnowledge({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal });
+      const body = await uploadKnowledgeFile(file,{signal:controller.signal});
       if (controller.signal.aborted) return;
       if (Array.isArray(body.docs)) setDocs(body.docs);
       setRevision(value => value + 1);

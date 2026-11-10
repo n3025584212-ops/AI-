@@ -4,7 +4,7 @@ import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 function contactSize(width, height) {
   const safeWidth = Math.max(1, Number(width) || 1);
   const safeHeight = Math.max(1, Number(height) || 1);
-  const ratio = Math.min(0.5, 1280 / safeWidth);
+  const ratio = Math.min(1, 1920 / safeWidth);
   return [Math.max(1, Math.round(safeWidth * ratio)), Math.max(1, Math.round(safeHeight * ratio))];
 }
 
@@ -15,9 +15,9 @@ function contactSize(width, height) {
 export class IndustrialContactPass extends SSAOPass {
   constructor(scene, camera, width = 1, height = 1) {
     const [aoWidth, aoHeight] = contactSize(width, height);
-    super(scene, camera, aoWidth, aoHeight, 24);
-    this.kernelRadius = 0.65;
-    this.minDistance = 0.00015;
+    super(scene, camera, aoWidth, aoHeight, 32);
+    this.kernelRadius = 0.45;
+    this.minDistance = 0.0005;
     this.maxDistance = 0.02;
     this.output = SSAOPass.OUTPUT.Default;
     this.needsSwap = false;
@@ -39,6 +39,13 @@ export class IndustrialContactPass extends SSAOPass {
     // MeshNormalMaterial does not inherit the S5 strip clipping planes.
     // The thin strip adds negligible contact shadow; omit it from AO depth.
     this.scene.traverse(object => {
+      // Thin wall ribs, floor markings and architectural overlays must not
+      // generate screen-space self-occlusion stipple. Their real cast shadows
+      // remain in the main render; AO is reserved for the original equipment.
+      if (object.userData.presentationOnly && object.visible) {
+        object.visible = false;
+        this._visibilityCache.push(object);
+      }
       if (object.isMesh && object.userData.part === 'strip' && object.visible) {
         object.visible = false;
         this._visibilityCache.push(object);

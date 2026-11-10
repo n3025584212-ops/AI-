@@ -25,6 +25,12 @@ const invalid = () => { throw new StateError('证据引用不存在、已篡改�
 export function createEvidenceStore({ state, verifyContext, onCaptureLifecycle }) {
   const sources = new Set(), plans = new Map();
   const currentCaptures = new Map();
+  // 证据库是只追加的：已通过签名+结构校验的条目没必要每次 resolve 重算 HMAC。
+  // 2 万条证据 / 2.3MB 时全量重验约 1.3s，而 resolve 每个预测周期都会调用，
+  // 等于把事件循环持续占满。按 receipt 缓存校验结果；新写入的记录仍逐条验签，
+  // 进程重启后再全量验一次（篡改旧记录由重启/导出审计发现）。
+  const verifiedReceipts = new Set();
+  const verifiedFindingRefs = new Set();
   let closed=false,closing;
   const emit = (event, operation, extra = {}) => {
     if(!onCaptureLifecycle)return;
@@ -53,21 +59,26 @@ export function createEvidenceStore({ state, verifyContext, onCaptureLifecycle }
     let verifiedCount = 0;
     for (const item of [...data.evidence, ...data.findings]) {
       checkCapture(options);
+      if (!item.receipt) throw new Error('Evidence record modified');
+      if (verifiedReceipts.has(item.receipt)) continue;
       // Yield during large archives so request cancellation reaches the queue owner.
-      if(++verifiedCount % 32 === 0)await yieldTurn(undefined,{signal:options.signal});
-      if (!item.receipt || (await sign(unsigned(item),options)).receipt !== item.receipt) throw new Error('Evidence record modified');
+      if(++verifiedCount % 256 === 0)await yieldTurn(undefined,{signal:options.signal});
+      if ((await sign(unsigned(item),options)).receipt !== item.receipt) throw new Error('Evidence record modified');
       if (item.evidence_id && (!/^EV-/.test(item.evidence_id) || !['PREDICTION','OBSERVATION','DRAFT_COMPARISON'].includes(item.type))) throw new Error('Evidence schema');
       if (item.finding_id) validateFinding(item,{persisted:true});
+      verifiedReceipts.add(item.receipt);
     }
-    // Per-read index only: every record above is freshly signature/schema checked.
-    // Keep the first match, exactly as the contract's Array.find did, and still
-    // run the original reference/identity validator on each selected reference.
+    // Per-read index only. Signature/schema (and finding references) are cached
+    // by receipt: a receipt is content-bound, so an unchanged receipt means an
+    // unchanged record; new records are still verified on first sight.
     const evidenceById = new Map();
     for (const item of data.evidence) if (!evidenceById.has(item.evidence_id)) evidenceById.set(item.evidence_id,item);
     for (const finding of data.findings) {
       checkCapture(options);
-      if(++verifiedCount % 32 === 0)await yieldTurn(undefined,{signal:options.signal});
+      if (verifiedFindingRefs.has(finding.receipt)) continue;
+      if(++verifiedCount % 256 === 0)await yieldTurn(undefined,{signal:options.signal});
       if (!findingEvidenceMatches(finding,finding.evidence_ids.map(id=>evidenceById.get(id)).filter(Boolean))) throw new Error('Finding reference');
+      verifiedFindingRefs.add(finding.receipt);
     }
     return data;
   }

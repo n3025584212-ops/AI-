@@ -1,9 +1,12 @@
 .dc-comparisons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;height:210px;min-width:0;color:#c4d9ed;font-size:12px}
 .dc-comparisons *{box-sizing:border-box}
-.dc-panel{display:flex;flex-direction:column;min-width:0;min-height:0;padding:11px 14px 8px;overflow:hidden;border:1px solid #254458;border-radius:9px;background:linear-gradient(125deg,#0b2030,#081824 85%);box-shadow:inset 0 1px 0 #6fa6c008,0 3px 12px #020a1226}
+.dc-panel{display:flex;flex-direction:column;min-width:0;min-height:0;padding:11px 14px 8px;overflow:hidden;border:0;border-radius:9px;background:transparent;box-shadow:none}
 .dc-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;min-height:22px;margin-bottom:5px}
 .dc-heading h3{margin:0;flex-shrink:0;font-size:13px;line-height:1.3;font-weight:600;letter-spacing:.3px;color:#dcebf7}
 .dc-updating{font-size:10px;color:#8faec7;white-space:nowrap}
+.dc-updating-dot{display:inline-block;flex:none;width:5px;height:5px;border-radius:50%;background:#d9a75e;box-shadow:0 0 0 2px #d9a75e1f}
+/* 空闲时保留占位，避免表头宽度随刷新变化 */
+.dc-updating-dot.is-idle{visibility:hidden}
 .dc-legend{display:flex;align-items:center;gap:12px;min-width:0;font-size:11px;color:#8faec7;line-height:1.2}
 .dc-legend>span{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .dc-legend i{display:inline-block;flex:none;width:7px;height:7px;border-radius:1px;background:linear-gradient(#428fba,#245673);box-shadow:inset 0 1px 0 #b0d6eb28}
@@ -15,11 +18,19 @@
 .dc-axis{font-family:inherit;fill:#7894a5;font-size:11px;font-variant-numeric:tabular-nums}
 .dc-category{font-family:inherit;fill:#adbeca;font-size:11px}
 .dc-bar{stroke:none;stroke-width:.65;vector-effect:non-scaling-stroke;transition:filter .15s}
+/* 数据流约每 2 秒刷新一批：柱高/数值标签/全息扫描线直接跳变会“一跳一跳”。
+   统一给几何属性加 0.5s 过渡，数值变化时是滑动而不是瞬移。 */
+.dc-bar{transition:filter .15s,y .5s cubic-bezier(.4,0,.2,1),height .5s cubic-bezier(.4,0,.2,1)}
+.dc-bar-value{transition:y .5s cubic-bezier(.4,0,.2,1)}
+.dc-bar-cap,.dc-bar-edge,.dc-holo-scan{transition:y1 .5s cubic-bezier(.4,0,.2,1),y2 .5s cubic-bezier(.4,0,.2,1)}
+.dc-holo-top,.dc-holo-floor{transition:cy .5s cubic-bezier(.4,0,.2,1)}
 .dc-bar-cap{stroke-width:.8;opacity:.48;vector-effect:non-scaling-stroke;pointer-events:none}
 .dc-cap-blue{stroke:#b0d6eb}.dc-cap-orange{stroke:#ead3b7}
 .dc-bar-edge{stroke-width:.8;opacity:.13;vector-effect:non-scaling-stroke;pointer-events:none}
 .dc-edge-blue{stroke:#b0d6eb}.dc-edge-orange{stroke:#ead3b7}
 .dc-bar-value{font-family:inherit;font-size:11px;font-weight:500;font-variant-numeric:tabular-nums;pointer-events:none}
+/* 数值固定在柱子下方一行，不随柱高上下移动 */
+.dc-chart-value{font-family:inherit;font-size:9px;font-weight:500;font-variant-numeric:tabular-nums;pointer-events:none}
 .dc-value-blue{fill:#b5cbd9}.dc-value-orange{fill:#d3bda1}
 .dc-bar-group{cursor:crosshair;outline:none}
 .dc-bar-group:focus-visible .dc-bar{stroke:#effaff;stroke-width:2}
@@ -43,5 +54,7 @@
 .s5-shell.workbench-shell .dashboard-workspace .dc-comparisons .dc-history-link{height:22px;padding:2px 3px}
 .s5-shell.workbench-shell .dashboard-workspace .dc-comparisons .dc-history-link:hover,.s5-shell.workbench-shell .dashboard-workspace .dc-comparisons .dc-text-link:hover{color:#bce5ff;background:#16374c}
 .s5-shell.workbench-shell .dashboard-workspace .dc-comparisons button:disabled{opacity:.4;cursor:default}
+.dc-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:0;padding:4px 18px 10px;text-align:center}
+.dc-empty p{margin:0;max-width:36em;color:#6f91aa;font-size:11px;line-height:1.55}
 @media(max-width:1200px){.dc-panel{padding:10px 11px 7px}.dc-heading{gap:6px}.dc-heading h3{font-size:12px}.dc-heading>.dc-legend{gap:7px}.dc-history-tools{max-width:48%}.dc-legend{gap:8px}}
 @media(max-width:660px){.dc-comparisons{height:auto;grid-template-columns:1fr}.dc-panel{height:210px}.dc-heading h3{font-size:13px}}

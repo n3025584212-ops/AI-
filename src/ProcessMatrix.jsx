@@ -25,7 +25,7 @@ const optionalProcessLabel = (stand, field) => stand === 'S5' ? field === 'force
 function OptionalProcessToggle({ stand, field, onFieldChange }) {
   const label = optionalProcessLabel(stand.id, field);
   if (!label) return null;
-  return <label className="pm-process-option"><input type="checkbox" aria-label={`${stand.id} ${field === 'force' ? '轧制力' : '前张力'}${label}`} checked={stand[field] != null} disabled={!onFieldChange} onChange={event => onFieldChange?.(stand.id, field, event.target.checked ? '' : null)}/>{label}</label>;
+  return <label className="pm-process-option"><input type="checkbox" aria-label={`${stand.id} ${field === 'force' ? '轧制力' : '前张力'}${label}`} checked={stand[field] != null} disabled={!onFieldChange} onChange={event => onFieldChange?.(stand.id, field, event.target.checked ? '' : null)}/><span>{label}</span></label>;
 }
 
 // Format only the idle display. Focusing restores every stored decimal; neither
@@ -41,7 +41,7 @@ function EngineeringNumberInput({ field, value, onFocus, onBlur, ...props }) {
 }
 
 
-export default function ProcessMatrix({ caseData, selected = 'S5', onSelectStand, onFieldChange, onCaseFieldChange, dirty = false, errors = [], focusRequest, layout='matrix', visibleFields=[], onVisibleFieldChange, historicalChecked }) {
+export default function ProcessMatrix({ caseData, selected = 'S5', onSelectStand, onFieldChange, onCaseFieldChange, dirty = false, errors = [], focusRequest, layout='matrix', visibleFields=[], onVisibleFieldChange, historicalChecked, groupedHeader = false }) {
   const [expanded, setExpanded] = useState(true);
   const [preferenceError,setPreferenceError]=useState('');
   const contentId = useId();
@@ -89,13 +89,14 @@ export default function ProcessMatrix({ caseData, selected = 'S5', onSelectStand
   }, [expanded, focusRequest?.stand, focusRequest?.field, focusRequest?.revision, layout]);
 
   const caseFields=<div className="pm-case-fields" aria-label="当前工况设置">
-    <div className="pm-case-id"><span>工况</span><span>{readableConditionName(caseData?.id)}</span><details className="user-technical-text"><summary>查看技术信息</summary><label>工况编号<input data-case-field="id" aria-label="工况编号" value={caseData?.id ?? ''} onChange={event => onCaseFieldChange?.('id', event.target.value)} readOnly={!onCaseFieldChange} /><Info /></label></details></div>
+    <div className="pm-case-id"><span>工况</span><span>{readableConditionName(caseData?.id)}</span></div>
     <label className="pm-case-grade"><span>钢种</span><input data-case-field="steelGrade" list={`${contentId}-grades`} aria-label="钢种" value={caseData?.steelGrade ?? ''} onChange={event => onCaseFieldChange?.('steelGrade', event.target.value)} readOnly={!onCaseFieldChange}/><datalist id={`${contentId}-grades`}>{steelGrades.map(grade => <option key={grade} value={grade}/>)}</datalist><Info /></label>
     {layout!=='vertical'&&<>
       <label className="pm-case-width"><span>带钢宽度</span><EngineeringNumberInput field="width" data-case-field="width" aria-label="带钢宽度" step={CASE_NUMBER_OPTIONS.width.step} value={caseData?.width ?? ''} onChange={event => changeCaseNumber('width', event)} readOnly={!onCaseFieldChange} /><small>{unitFor('width')}</small></label>
       <label className="pm-case-entry"><span>入口设定</span><EngineeringNumberInput field="entrySetThickness" data-case-field="entrySetThickness" aria-label="入口设定厚度" step={CASE_NUMBER_OPTIONS.entrySetThickness.step} value={caseData?.entrySetThickness ?? caseData?.stands?.[0]?.entryThickness ?? ''} onChange={event => changeCaseNumber('entrySetThickness', event)} readOnly={!onCaseFieldChange} /><small>{unitFor('entrySetThickness')}</small></label>
     </>}
     <label className="pm-case-target"><span>S5 目标</span><EngineeringNumberInput field="target" data-case-field="target" aria-label="S5 目标轧制力" min={toDisplay('target', 1)} max={toDisplay('target', 10000)} step="0.01" value={caseData?.target} onChange={event => changeCaseNumber('target', event)} readOnly={!onCaseFieldChange}/><small>{unitFor('target')}</small><Info /></label>
+    <details className="user-technical-text pm-case-tech"><summary>查看技术信息</summary><label>工况编号<input data-case-field="id" aria-label="工况编号" value={caseData?.id ?? ''} onChange={event => onCaseFieldChange?.('id', event.target.value)} readOnly={!onCaseFieldChange} /><Info /></label></details>
   </div>;
 
   if(layout==='vertical'){
@@ -131,13 +132,26 @@ export default function ProcessMatrix({ caseData, selected = 'S5', onSelectStand
       <button type="button" className="pm-collapse" aria-expanded={expanded} aria-controls={contentId} aria-label={expanded ? '收起工况参数' : '展开工况参数'} onClick={() => setExpanded(value => !value)}><SlidersHorizontal size={14} aria-hidden="true" /><strong>工况参数</strong>{expanded ? <ChevronDown size={13} aria-hidden="true" /> : <ChevronUp size={13} aria-hidden="true" />}</button>
       <span className="pm-scope">S1—S5</span>
       {caseFields}
-      <span className={`pm-sync ${issue ? 'pm-invalid' : dirty ? 'pm-pending' : ''}`} role="status">{issue ? <CircleAlert size={12} aria-hidden="true" /> : dirty ? <Loader2 size={12} className="spin" aria-hidden="true" /> : <Check size={12} aria-hidden="true" />}<span>{issue ? String(issue).startsWith('自动预测暂未完成') ? '连接中断' : `${errors.length} 项待修正` : dirty ? '计算中' : '已同步'}</span></span>
+      <span className={`pm-sync ${issue ? 'pm-invalid' : dirty ? 'pm-pending' : ''}`} role="status">{issue ? <CircleAlert size={12} aria-hidden="true" /> : dirty ? <Loader2 size={12} className="spin" aria-hidden="true" /> : <Check size={12} aria-hidden="true" />}<span>{issue ? String(issue).startsWith('自动预测暂未完成') ? '连接中断' : `${errors.length} 项待修正` : dirty ? '更新中' : '已同步'}</span></span>
     </header>
     <div className="pm-content" id={contentId} hidden={!expanded}>
 
-      <div className="pm-table-scroll" tabIndex={0} aria-label="工况参数表，可横向滚动">
+      <div className="pm-table-scroll" aria-label="工况参数表">
         <table className="pm-table" aria-label="S1 至 S5 可编辑工况矩阵">
-          <thead><tr><th scope="col">机架</th>{FIELDS.map(field => <th scope="col" key={field.key}>{field.label}<small>{unitFor(field.key)}</small></th>)}</tr></thead>
+          <colgroup><col className="pm-col-stand"/>{FIELDS.map(field => <col key={field.key} className="pm-col-field"/>)}</colgroup>
+          <thead>{groupedHeader && <tr className="pm-group-row">
+            <th scope="col" rowSpan={2}>机架</th>
+            <th scope="colgroup" colSpan={2}>厚度</th>
+            <th scope="colgroup" colSpan={4}>载荷与张力</th>
+            <th scope="colgroup" colSpan={2}>运行</th>
+          </tr>}<tr className="pm-field-row">{!groupedHeader && <th scope="col">机架</th>}{FIELDS.map(field => <th scope="col" key={field.key} className={groupedHeader ? 'has-dist' : undefined}>
+            <span className="pm-head">{field.label}<small>{unitFor(field.key)}</small></span>
+            {groupedHeader && <span className="pm-dist" aria-hidden="true" title={`${field.label}：S1—S5 分布`}>{stands.map(stand => {
+              const value = typeof stand[field.key] === 'number' && Number.isFinite(stand[field.key]) ? Math.max(0, stand[field.key]) : null;
+              const height = value === null || columnMaxima[field.key] <= 0 ? 2 : Math.max(2, value / columnMaxima[field.key] * 13);
+              return <i key={stand.id} className={stand.id === 'S5' ? 'is-target' : ''} style={{ height }}/>;
+            })}</span>}
+          </th>)}</tr></thead>
           <tbody>{stands.map(stand => <tr key={stand.id} className={`${stand.id === 'S5' ? 'pm-target-row' : ''} ${selected === stand.id ? 'pm-selected-row' : ''}`}>
             <th scope="row"><button type="button" onClick={() => onSelectStand?.(stand.id)} aria-label={`选择 ${stand.id} 工况`} aria-pressed={selected === stand.id}><b>{stand.id}</b>{stand.id === 'S5' && <span>预测目标</span>}</button></th>
             {FIELDS.map(field => {

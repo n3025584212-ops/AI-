@@ -2,18 +2,24 @@ import { createAccessControl, AccessControlError } from './access-control.mjs';
 import { createPredictionService, ModelError, caseToModelValues } from './model-service.mjs';
 import { createSmartCandidateSearch, SearchError } from './smart-candidate-search.mjs';
 import { DEFAULT_INPUT_RANGE_TABLE } from '../src/inputRangeDefaults.js';
+import { validatePredictionErrorAlarmRange } from '../src/predictionErrorAlarm.js';
 import { matchedCandidateActual, maxReachabilityIdentity, maxReachabilityBaselineIsCurrent } from '../src/candidatePrediction.js';
 import { deepFreeze, predictionIdentity, reportInputFingerprint, currentRunMatches, assertPredictionBinding } from '../src/predictionSnapshot.js';
 import { createProcessAgent, AgentError, AGENT_TOOLS } from './process-agent.mjs';
 import { createLocalState, StateError } from './local-state.mjs';
 import { createUserAuth } from './user-auth.mjs';
 import { createLocalLlm } from './local-llm.mjs';
+import { createCloudLlm } from './cloud-llm.mjs';
 import { createMaintenance } from './maintenance.mjs';
 import { createIndustrialCommunication } from './communication/routes.mjs';
 import { CommunicationError } from './communication/mapping.mjs';
 import { createAiAnalysis } from './ai-analysis.mjs';
 import { createLogRetention } from './log-retention.mjs';
 import { createBlueprintAgent } from './blueprint-agent.mjs';
+import { createTechnician } from './technician.mjs';
+import { createCaseLibrary } from './case-library.mjs';
+import { createTaskCapabilityRegistry } from './capability-registry.mjs';
+import { createTaskOrchestrator } from './task-orchestrator.mjs';
 import { createEvidenceStore, evidenceOrUnavailable } from './evidence-store.mjs';
 import http from 'node:http';
 import { createVoiceService, VoiceError } from './voice.mjs';
@@ -68,7 +74,7 @@ async function body(req, maximum = MAX_BODY) {
   catch { throw new ApiError(400, '请求内容须为有效的 JSON 对象。'); }
 }
 async function readJson(filename, fallback) {
-  try { return JSON.parse(await readFile(filename, 'utf8')); }
+  try { return JSON.parse((await readFile(filename, 'utf8')).replace(/^\uFEFF/, '')); }
   catch (error) { if (error.code === 'ENOENT') return fallback; throw new ApiError(500, '本地数据文件读取失败，请检查 data 文件夹中的 JSON 文件。'); }
 }
 async function atomicJson(filename, value) {
@@ -169,13 +175,23 @@ async function onlineReply(settings, message, context, timeoutMs, references = [
 }
 
 /** Start the loopback-only app server. Returns a listening Node http.Server. */
-export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data'), distDir = path.join(ROOT, 'dist'), aiTimeoutMs = 120000, predict, optimize, modelBaseDir = path.join(ROOT, 'models'), modelConfig, knowledgeSeed, evidenceState, evidenceLifecycleTrace, voiceService, requireLogin = true, localLlm, accessMode = 'development', authToken, allowedOrigins = accessMode === 'development' ? ['http://127.0.0.1:5173', 'http://localhost:5173'] : [] } = {}) {
-  const accessControl = createAccessControl({ mode: accessMode, authToken, allowedOrigins });
+export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data'), distDir = path.join(ROOT, 'dist'), aiTimeoutMs = 180000, predict, optimize, modelBaseDir = path.join(ROOT, 'models'), modelConfig, knowledgeSeed, evidenceState, evidenceLifecycleTrace, voiceService, requireLogin = true, localLlm, accessMode = 'development', authToken, allowedOrigins = accessMode === 'development' ? ['http://127.0.0.1:5173', 'http://localhost:5173'] : [] } = {}) {
+  const shareHosts = String(process.env.QCDKR_SHARE_HOSTS || '').split(',').map(value => value.trim()).filter(Boolean);
+  const shareOrigins = String(process.env.QCDKR_SHARE_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean);
+  const accessControl = createAccessControl({ mode: accessMode, authToken, allowedOrigins, shareHosts, shareOrigins });
   await mkdir(dataDir, { recursive: true });
   const state = createLocalState(dataDir), userAuth = createUserAuth(state, { enabled: requireLogin });
   await userAuth.initialize();
   const casesFile = path.join(dataDir, 'cases.json');
   const settingsFile = path.join(dataDir, 'settings.json');
+  // A runtime data directory (tests, temporary servers) may have no settings.json.
+  // Fall back to the project's canonical operator config so such instances never
+  // silently default to the bundled local model.
+  const canonicalSettingsFile = path.join(ROOT, 'data', 'settings.json');
+  async function readSettingsJson(fallback) {
+    const own = settingsFile === canonicalSettingsFile ? undefined : await readJson(settingsFile, undefined);
+    return own !== undefined ? own : readJson(canonicalSettingsFile, fallback);
+  }
   const knowledgeFile = path.join(dataDir, 'knowledge.json');
   const voice = voiceService || createVoiceService({ dataDir, pythonCandidates: [path.join(modelBaseDir, '..', 'model-runtime', 'python.exe'), path.join(ROOT, '.venv-model', 'Scripts', 'python.exe')] });
   const predictionService = createPredictionService({ dataDir, modelBaseDir, config: modelConfig });
@@ -219,7 +235,7 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
     if(plan.candidate_source==='SMART_SEARCH')smartSearch.assertCandidateCurrent(plan,actor,true);
   }
   async function voiceEnabled() {
-    const config = await readJson(settingsFile, DEFAULT_SETTINGS);
+    const config = await readSettingsJson(DEFAULT_SETTINGS);
     const maintenanceConfig = await state.read('maintenance-config.json', { config: { voiceEnabled: true } });
     return config?.voice?.enabled !== false && maintenanceConfig.config.voiceEnabled !== false;
   }
@@ -230,9 +246,10 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
     catch { return {...item,identity_status:'PENDING'}; }
   }
   async function cases() { const value = await readJson(casesFile, []); if (!Array.isArray(value)) throw new ApiError(500, '本地工况数据格式错误。'); return Promise.all(value.map(verifiedCase)); }
+  const caseLibrary = createCaseLibrary({ cases, mutate, write: rows => atomicJson(casesFile, rows), freezeContext });
   // Operator-managed configuration: never accepted from renderer requests.
   async function settings() {
-    const value = await readJson(settingsFile, DEFAULT_SETTINGS);
+    const value = await readSettingsJson(DEFAULT_SETTINGS);
     if (!isRecord(value)) throw new ApiError(503, '后台模型配置无效，请联系管理员。');
     try { return validateSettings(value, DEFAULT_SETTINGS); }
     catch { throw new ApiError(503, '后台模型配置无效，请联系管理员。'); }
@@ -281,14 +298,50 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
     optimize: (input, options) => domain('optimize', input, options, 'formal'),
     modelStatus: () => predictionService.status(), knowledge, freezeContext, evidenceStore, settings: async () => ({}), aiTimeoutMs,
   });
-  const llm = localLlm || createLocalLlm({ settings: () => readJson(settingsFile, {}), timeoutMs: aiTimeoutMs });
+  const readLlmSettings = () => readSettingsJson({});
+  const startupSettings = await readLlmSettings().catch(() => ({}));
+  const llmProvider = String(process.env.DKQKAR_LLM_PROVIDER || startupSettings?.localLlm?.provider || 'ollama').toLowerCase();
+  const llm = localLlm || (llmProvider === 'ollama'
+    ? createLocalLlm({ settings: readLlmSettings, timeoutMs: aiTimeoutMs })
+    : createCloudLlm({ settings: readLlmSettings, timeoutMs: aiTimeoutMs }));
   let blueprintAgent;
   const maintenance = createMaintenance({ state, dataDir, cases, modelStatus: () => predictionService.status(), llm, getQueue: () => blueprintAgent?.queue() || {}, getLatency: () => lastPredictionLatency });
   industrialCommunication=await createIndustrialCommunication({dataDir,rangeTable:searchRangeTable,log:maintenance.log,templateSource:path.join(ROOT,'server','communication','DKQKAR_PLC_POINT_MAP_TEMPLATE.xlsx')});
   blueprintAgent = await createBlueprintAgent({ state, processAgent, maintenance, llm, cases, knowledge, freezeContext, scopeIsCurrent, evidenceStore });
+  const technician = createTechnician({ state, llm, knowledge, maintenance, cases,
+    modelStatus: () => predictionService.status(), agentRuns: actor => blueprintAgent.list(actor) });
   let aiAnalysis;
   const logRetention=createLogRetention({state,dataDir,maintenance,protectedReferences:()=>aiAnalysis?.protectedReferences()||{}});
   aiAnalysis=await createAiAnalysis({state,llm,maintenance,freezeContext:context=>predictionService.freezeContext(context),lease:logRetention.internalLease});
+  const taskContextIsCurrent = (context,actor) => {
+    if (context.prediction?.snapshot_id) return scopeIsCurrent({...predictionIdentity(context.prediction,context.observation),contextFingerprint:context.contextFingerprint,operation_scope:context.operation_scope},actor);
+    // An empty/invalid workbench must still permit a user-selected import. It
+    // may only replace the same pending revision, never a newer bound result.
+    try { const current=operation(context.operation_scope,actor); return !current.valid && current.revision===context.operation_scope.revision; } catch { return false; }
+  };
+  async function startCandidateSearch(input,actor) {
+    if (!input.operation_scope) throw new ApiError(409,'智能搜索须绑定当前工作台。');
+    const suppliedActual=Object.hasOwn(input,'observation'),actualMatches=matchedCandidateActual(input.prediction,input.observation);
+    const bound=await predictionService.freezeContext({caseData:input.input,prediction:input.prediction,input_snapshot:input.input_snapshot,...(actualMatches?{observation:input.observation}:{})});
+    const searchObservation=suppliedActual&&!actualMatches?null:bound.observation;
+    if(bound.prediction?.mode!=='formal')throw new ApiError(409,'智能搜索需要已验证正式基线。');
+    const identity={...predictionIdentity(bound.prediction,bound.observation),contextFingerprint:reportInputFingerprint(bound.caseData),operation_scope:input.operation_scope};
+    const current=input.executionPath==='MAX_REACHABILITY_SCAN'?envelopeBaselineIsCurrent({...identity,...maxReachabilityIdentity(bound.caseData,bound.prediction)},actor):scopeIsCurrent(identity,actor);
+    if(!current)throw new ApiError(409,'搜索基线或目标已过期。');
+    const status=await predictionService.status();
+    if(!status.available||status.model_hash!==bound.prediction.model_hash||status.model_version!==bound.prediction.model_version)throw new ApiError(409,'搜索模型身份已变化。');
+    return smartSearch.start({input:bound.caseData,baseline:bound.prediction,binding:identity,customLimits:input.customLimits,targetValueT:input.targetValueT,searchMatchTolerance:input.searchMatchTolerance,executionPath:input.executionPath,observation:searchObservation,modelMetadata:status,actor});
+  }
+  const taskRegistry = await createTaskCapabilityRegistry({
+    processAgent, maintenance, cases, knowledge, freezeContext,
+    predict: (input, options) => domain('predict', input, options, 'formal'),
+    saveCase: (input, options) => caseLibrary.save(input, options),
+    deleteCase: (id, options) => caseLibrary.remove(id, options),
+    restoreCase: (original, options) => caseLibrary.restore(original, options),
+    communication: industrialCommunication, aiAnalysis, evidenceStore, state, scopeIsCurrent:taskContextIsCurrent,
+    candidateSearch:{start:startCandidateSearch,get:(id,actor)=>smartSearch.get(id,actor),cancel:(id,actor)=>smartSearch.cancel(id,actor)},
+  });
+  const taskRuntime = await createTaskOrchestrator({state,llm,registry:taskRegistry,freezeContext,isCurrent:taskContextIsCurrent});
   await maintenance.log('system', 'info', '本地服务已启动。');
   logRetention.start();
   // Bounded process-local diagnostics, readable only by the trusted startup host.
@@ -309,7 +362,7 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       res.once('close', () => { if (!res.writableFinished) res.predictTrace('response_connection_closed', { write_completed: false }); });
       res.once('error', error => res.predictTrace('response_write_failed', { error_type: error.name, error_code: error.code, message: error.message }));
     }
-    if (/^\/api\/(?:assistant\/status|agent\/|chat(?:$|\?))/.test(req.url || '')) {
+    if (/^\/api\/(?:assistant\/status|agent\/|tasks(?:$|[/?])|chat(?:$|\?))/.test(req.url || '')) {
       const supplied = req.headers['x-dkqkar-request-id'];
       res.aiRequestId = typeof supplied === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(supplied) ? supplied : randomUUID();
       res.setHeader('X-DKQKAR-Request-Id', res.aiRequestId);
@@ -343,6 +396,19 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       const actor = pathname.startsWith('/api/') && pathname !== '/api/health' ? await userAuth.require(req) : null;
       if(await industrialCommunication.route({pathname,req,res,actor,json,body:req=>body(req,4*1024*1024)}))return;
       const query = Object.fromEntries(new URL(req.url, `http://${req.headers.host}`).searchParams);
+      if (pathname === '/api/tasks/capabilities' && req.method === 'GET') { json(res, 200, {items:taskRegistry.list()}); return; }
+      if (pathname === '/api/tasks') {
+        if (req.method === 'GET') { json(res, 200, {items:taskRuntime.list(actor)}); return; }
+        if (req.method === 'POST') { json(res, 202, await taskRuntime.create(await body(req, 8 * 1024 * 1024),actor)); return; }
+      }
+      const taskPath = pathname.match(/^\/api\/tasks\/([a-zA-Z0-9_-]+)(?:\/(cancel|resume)|\/actions\/([a-zA-Z0-9_-]+)\/ack)?$/);
+      if (taskPath) {
+        const [,id,operation,stepId] = taskPath;
+        if (req.method === 'GET' && !operation && !stepId) { json(res, 200, taskRuntime.get(id,actor)); return; }
+        if (req.method === 'POST' && operation === 'cancel') { json(res, 200, await taskRuntime.cancel(id,actor)); return; }
+        if (req.method === 'POST' && operation === 'resume') { json(res, 200, await taskRuntime.resume(id,await body(req),actor)); return; }
+        if (req.method === 'POST' && stepId) { json(res, 200, await taskRuntime.ack(id,stepId,await body(req,8 * 1024 * 1024),actor)); return; }
+      }
       if (pathname === '/api/maintenance/status' && req.method === 'GET') { json(res, 200, await maintenance.status()); return; }
       if (pathname === '/api/maintenance/config') {
         if (req.method === 'GET') { json(res, 200, await maintenance.config()); return; }
@@ -353,6 +419,7 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       if (['/api/rules/apply', '/api/maintenance/rules/apply'].includes(pathname) && req.method === 'POST') { json(res, 200, await maintenance.apply(await body(req), actor)); return; }
       if (pathname === '/api/maintenance/diagnostics' && req.method === 'GET') { json(res, 200, await maintenance.diagnostics(actor)); return; }
       if (pathname === '/api/maintenance/backup' && req.method === 'POST') { json(res, 201, await maintenance.backup(actor)); return; }
+      if (pathname === '/api/maintenance/alarm-range' && req.method === 'PUT') { await maintenance.setAlarmRange(await body(req)); json(res, 200, await maintenance.getAlarmRange()); return; }
       if (pathname === '/api/logs' && req.method === 'GET') { json(res, 200, await maintenance.logs(query)); return; }
       if (pathname === '/api/logs/detail' && req.method === 'GET') {
         const item=(await state.read('activity-log.json',[])).find(row=>row.id===query.id);
@@ -500,6 +567,38 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
           json(res, 201, { doc: knowledgeMetadata(saved), docs: (await knowledge()).map(knowledgeMetadata) }); return;
         }
       }
+      if (pathname === '/api/technician/status' && req.method === 'GET') {
+        json(res, 200, await technician.status()); return;
+      }
+      if (pathname === '/api/technician/chat' && req.method === 'POST') {
+        const input = await body(req, 2 * 1024 * 1024);
+        const controller = new AbortController(), disconnect = () => controller.abort();
+        res.once('close', disconnect); req.once('aborted', disconnect);
+        try {
+          json(res, 200, await technician.chat({ message: input.message, context: isRecord(input.context) ? input.context : {}, mode: input.mode || 'auto', sessionId: typeof input.sessionId === 'string' ? input.sessionId : null, signal: controller.signal }));
+        } finally { res.removeListener('close', disconnect); req.removeListener('aborted', disconnect); }
+        return;
+      }
+      if (pathname === '/api/technician/watch' && req.method === 'GET') { json(res, 200, await technician.watch()); return; }
+      if (pathname === '/api/technician/handover' && req.method === 'POST') {
+        const input = await body(req);
+        json(res, 200, await technician.handover({ actor, note: typeof input.note === 'string' ? input.note : '' })); return;
+      }
+      if (pathname === '/api/technician/knowledge' && req.method === 'GET') {
+        const query_ = String(query.q || query.query || '').trim().slice(0, 500);
+        if (!query_) throw new ApiError(400, '请提供检索问题。');
+        json(res, 200, { ok: true, query: query_, references: await technician.search(query_, Math.min(8, Math.max(1, Number(query.limit) || 4))) }); return;
+      }
+      if (pathname === '/api/technician/memory') {
+        if (req.method === 'GET') { json(res, 200, { ok: true, memory: await technician.memory() }); return; }
+        if (req.method === 'POST') {
+          const input = await body(req);
+          if (input.action === 'remember') { json(res, 200, { ok: true, fact: await technician.remember(input) }); return; }
+          if (input.action === 'resolve') { json(res, 200, { ok: true, issue: await technician.resolveIssue(input) }); return; }
+          if (input.action === 'open_issue') { json(res, 200, { ok: true, issue: await technician.openIssue(input) }); return; }
+          throw new ApiError(400, '记忆操作无效。');
+        }
+      }
       if (pathname === '/api/assistant/status' && req.method === 'GET') {
         json(res, 200, await llm.status({force:query.check==='1'})); return;
       }
@@ -512,20 +611,12 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       if (pathname === '/api/cases') {
         if (req.method === 'GET') { json(res, 200, await cases()); return; }
         if (req.method === 'POST') {
-          const input = await body(req);
-          if (Object.keys(input).length === 0) throw new ApiError(400, '请提供需要保存的工况。');
-          if (Object.hasOwn(input, 'name') && (typeof input.name !== 'string' || input.name.length > 200)) throw new ApiError(400, '工况名称最多为 200 个字符。');
-          if (Object.hasOwn(input, 'input') && !isRecord(input.input)) throw new ApiError(400, 'input 须为工况对象。');
-          const verified = input.prediction?.snapshot_id ? await predictionService.freezeContext({caseData:input.input,prediction:input.prediction,observation:input.observation}) : null;
-          const item = { ...input, ...(verified ? {prediction:verified.prediction,observation:verified.observation,identity_status:'VERIFIED'} : {identity_status:'PENDING'}), id: randomUUID(), createdAt: new Date().toISOString() };
-          await mutate(async () => { const list = await cases(); if (list.length >= 10000) throw new ApiError(409, '已保存 10000 条工况，请先导出并整理工况记录。'); list.unshift(item); await atomicJson(casesFile, list); });
-          json(res, 201, item); return;
+          json(res, 201, await caseLibrary.save(await body(req))); return;
         }
       }
       if (pathname.startsWith('/api/cases/') && req.method === 'DELETE') {
         const id = pathname.slice('/api/cases/'.length);
-        if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) throw new ApiError(400, '工况 ID 格式无效。');
-        await mutate(async () => { const list = await cases(); const next = list.filter(item => item.id !== id); if (next.length === list.length) throw new ApiError(404, '该工况不存在。'); await atomicJson(casesFile, next); });
+        await caseLibrary.remove(id);
         json(res, 200, { ok: true }); return;
       }
       if (pathname === '/api/chat' && req.method === 'POST') {
@@ -555,20 +646,7 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       if (pathname === '/api/candidate-search' && req.method === 'POST') {
         const input = await body(req,8 * 1024 * 1024);
         if (Object.keys(input).some(key=>!['input','prediction','input_snapshot','operation_scope','customLimits','targetValueT','searchMatchTolerance','executionPath','observation'].includes(key))) throw new ApiError(400,'智能搜索请求字段无效。');
-        if (!input.operation_scope) throw new ApiError(409,'智能搜索须绑定当前工作台。');
-        const suppliedActual=Object.hasOwn(input,'observation');
-        const actualMatches=matchedCandidateActual(input.prediction,input.observation);
-        const bound = await predictionService.freezeContext({caseData:input.input,prediction:input.prediction,input_snapshot:input.input_snapshot,
-          ...(actualMatches?{observation:input.observation}:{})});
-        const searchObservation=suppliedActual&&!actualMatches?null:bound.observation;
-        if (bound.prediction?.mode !== 'formal') throw new ApiError(409,'智能搜索需要已验证正式基线。');
-        const identity = {...predictionIdentity(bound.prediction,bound.observation),contextFingerprint:reportInputFingerprint(bound.caseData),operation_scope:input.operation_scope};
-        const baselineCurrent=input.executionPath==='MAX_REACHABILITY_SCAN'
-          ?envelopeBaselineIsCurrent({...identity,...maxReachabilityIdentity(bound.caseData,bound.prediction)},actor):scopeIsCurrent(identity,actor);
-        if (!baselineCurrent) throw new ApiError(409,'搜索基线或目标已过期。');
-        const status = await predictionService.status();
-        if (!status.available || status.model_hash !== bound.prediction.model_hash || status.model_version !== bound.prediction.model_version) throw new ApiError(409,'搜索模型身份已变化。');
-        json(res,202,smartSearch.start({input:bound.caseData,baseline:bound.prediction,binding:identity,customLimits:input.customLimits,targetValueT:input.targetValueT,searchMatchTolerance:input.searchMatchTolerance,executionPath:input.executionPath,observation:searchObservation,modelMetadata:status,actor}));return;
+        json(res,202,await startCandidateSearch(input,actor));return;
       }
       const searchRoute = /^\/api\/candidate-search\/([^/]+)(?:\/(cancel))?$/.exec(pathname);
       if (searchRoute) {
@@ -597,10 +675,12 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
         if(pathname==='/api/predict')industrialCommunication.service.assertInput(data);
         res.predictTrace?.('prediction_completed', { snapshot_id: result.snapshot_id, observation_id: result.observation?.observation_id || null, mode: result.mode, model_hash: result.model_hash });
         if (res.predictTrace) res.predictStage = 'prediction_record';
-        if (pathname === '/api/predict') { await maintenance.recordPrediction(data, result, actor); await maintenance.log('prediction', 'info', 'S5 预测已完成。', {
+        if (pathname === '/api/predict') { await maintenance.recordPrediction(data, result, actor);
+          const alarmRange=validatePredictionErrorAlarmRange(input.alarm_range)??await maintenance.getAlarmRange();
+          await maintenance.log('prediction', 'info', 'S5 预测已完成。', {
           model:result.model,mode:result.mode,durationMs:lastPredictionLatency,snapshot_id:result.snapshot_id,taskId:res.predictRequestId,actorId:actor.id,
           details:{snapshot_id:result.snapshot_id,input_hash:result.input_hash,sampleId:result.input_snapshot?.sample_id,rawPrediction:result.value,
-            actualValue:result.observation?.value??null,unit:'t',modelVersion:result.model_version}}); }
+            actualValue:result.observation?.value??null,unit:'t',modelVersion:result.model_version,predictionErrorAlarmRangeSnapshot:alarmRange}}); }
         if (pathname === '/api/predict') {
           res.predictStage = 'snapshot_binding';
           const observation=input.options?.observation ? (await predictionService.freezeContext({caseData:data,prediction:result,observation:input.options.observation})).observation : result.observation;
@@ -620,7 +700,10 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       const [actualFile, actualRoot] = await Promise.all([realpath(filename), realpath(root)]);
       if (!info.isFile() || !actualFile.startsWith(`${actualRoot}${path.sep}`)) throw new ApiError(403, '资源路径无效。');
       const bytes = req.method === 'HEAD' ? null : await readFile(filename);
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(filename).toLowerCase()] || 'application/octet-stream', 'Content-Length': info.size, 'Cache-Control': path.extname(filename) === '.html' ? 'no-cache' : 'public, max-age=3600' });
+      const ext = path.extname(filename).toLowerCase();
+      // 模型/贴图按内容改名发布（*_mo.glb），可安全长缓存；HTML 保持协商缓存。
+      const modelAsset = ['.glb', '.gltf', '.bin', '.png', '.jpg', '.jpeg', '.webp', '.ktx2', '.woff2'].includes(ext);
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Content-Length': info.size, 'Cache-Control': ext === '.html' ? 'no-cache' : modelAsset ? 'public, max-age=604800, immutable' : 'public, max-age=3600' });
       res.end(bytes);
     } catch (error) {
       const predictCode = res.predictRequestId ? predictionErrorCode(error, res.predictStage) : null;
@@ -635,7 +718,7 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
   server.prepareModel = () => predictionService.status();
   server.predictionTrace = () => structuredClone(predictionTrace);
   let resourcesClosed;
-  server.closeResources = () => resourcesClosed ||= (async () => { industrialCommunication.close(); await logRetention.close(); await aiAnalysis.close(); smartSearch.close(); await evidenceStore.close(); await blueprintAgent.close(); voice.close(); predictionService.close(); })();
+  server.closeResources = () => resourcesClosed ||= (async () => { await taskRuntime.close(); industrialCommunication.close(); await logRetention.close(); await aiAnalysis.close(); smartSearch.close(); await evidenceStore.close(); await blueprintAgent.close(); voice.close(); predictionService.close(); })();
   const closeHttp = server.close.bind(server);
   server.close = callback => {
     void evidenceStore.close();
@@ -644,7 +727,7 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
   };
   server.requestTimeout = 60000;
   server.headersTimeout = 15000;
-  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', () => { server.removeListener('error', reject); resolve(); }); });
+  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, process.env.QCDKR_HOST || '127.0.0.1', () => { server.removeListener('error', reject); resolve(); }); });
   return server;
 }
 

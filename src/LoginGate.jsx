@@ -77,10 +77,10 @@ export default function LoginGate({ children }) {
     }
   }
   if (session?.authenticated) return children({ user:session.user, onLogout:logout });
-  return <main className="login-screen">
+  return <main className="login-screen"><img className="login-char" src="/assets/boot-char-asa.png" alt="" aria-hidden="true"/>
     <div className="login-scene" aria-hidden="true" />
-    <header className="login-brand"><span className="login-brand-icon"><Box size={37}/></span><div><strong>{PRODUCT_NAME}</strong><span>冷轧 S5 轧制力智能预测系统</span><small>COLD ROLLING · PROCESS INTELLIGENCE</small></div><p>量子核预测 · 工业AI · 数字孪生</p></header>
-    <section className="login-layout"><div className="login-intro"><span className="login-eyebrow">FROM DATA TO INSIGHT</span><h1>从数据到洞察<br/>让冷轧生产更智能</h1><p>聚焦 S5 轧制力，洞察工况变化。</p><div className="login-capabilities"><span>S5轧制力预测</span><span>五机架数字孪生</span><span>DK AI智能辅助</span></div></div>
+    <header className="login-brand"><span className="login-brand-icon"><Box size={37}/></span><div><strong>AI大模型与量子机器学习协同驱动</strong><span>冷轧 S5 轧制力智能预测系统</span><small>COLD ROLLING · PROCESS INTELLIGENCE</small></div><p>量子核预测 · 工业AI · 数字孪生</p></header>
+    <section className="login-layout"><div className="login-intro"><span className="login-eyebrow">FROM DATA TO INSIGHT</span><h1>冷轧轧制力预测<span className="login-accent">云平台</span></h1><p>聚焦 S5 轧制力，洞察工况变化 · 五机架数字孪生</p><div className="login-capabilities"><span>S5轧制力预测</span><span>五机架数字孪生</span><span>DK AI智能辅助</span></div></div>
     <form className="login-card" onSubmit={submit} aria-label={setupRequired?'创建本机账号':'账户登录'} noValidate>
       <span className="login-card-emblem"><ShieldCheck size={26}/></span><h2>{loading ? '正在连接本机服务' : setupRequired?'创建本机账号':'欢迎登录'}</h2><p>{setupRequired?'首次使用，请设置本机用户名和密码。软件不提供默认密码。':PRODUCT_NAME}</p>
       <label className="login-field"><UserRound size={17}/><input autoComplete="username" aria-label="用户名" placeholder="请输入用户名" value={username} onChange={e=>setUsername(e.target.value)} maxLength={64} required disabled={loading||busy}/></label>

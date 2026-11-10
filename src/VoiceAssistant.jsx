@@ -21,7 +21,7 @@ function microphoneError(error){
 }
 
 
-export default function VoiceAssistant({onCommand,onQuestion}){
+export default function VoiceAssistant({onCommand,onQuestion,onStateChange,autoStart=false}){
   const [phase,setPhase]=useState('idle'),[wakeEnabled,setWakeEnabled]=useState(false);
   const [feedback,setFeedback]=useState(''),[hint,setHint]=useState(''),[level,setLevel]=useState(0),[following,setFollowing]=useState(false);
   const mounted=useRef(false),generation=useRef(0),session=useRef(null),network=useRef(null),speechNetwork=useRef(null),playback=useRef(null),statusRequest=useRef(null);
@@ -69,21 +69,24 @@ export default function VoiceAssistant({onCommand,onQuestion}){
     if(deviceChange)blocked.current=false;
     if(gesture&&blocked.current&&!gestureRetried.current){blocked.current=false;gestureRetried.current=true;}
     if(blocked.current||busyPhases.has(phaseRef.current))return;
+    // Passive status refreshes must not open the microphone. Only an explicit
+    // click, an active wake-word session, or autoStart may record.
+    if(!autoStart&&!gesture&&!wakeRef.current)return;
     wakeRef.current=true;setWakeEnabled(true);startRecording(!awaitingCommand.current);
   }
   useEffect(()=>{
-    mounted.current=true;arm();
+    mounted.current=true;void refreshStatus();
     const leave=()=>stopAll({disable:true});
     const interact=()=>{session.current?.context?.resume().catch(()=>{});if(!busyPhases.has(phaseRef.current))arm({gesture:true});};
     const activate=()=>{gestureRetried.current=false;interact();};
     const deviceChange=()=>arm({deviceChange:true});
     const settings=()=>arm();
-    const cancel=()=>{stopAll();if(wakeRef.current)changePhase('done');};
-    const poll=setInterval(()=>arm(),15000);
-    window.addEventListener('pagehide',leave);window.addEventListener('pointerdown',interact,{once:true});
+    const cancel=()=>{stopAll({disable:true});setFeedback('语音已关闭');changePhase('done');};
+    const poll=setInterval(()=>{if(autoStart)void arm();else void refreshStatus();},15000);
+    window.addEventListener('pagehide',leave);
     window.addEventListener('dkqkar-voice-activate',activate);window.addEventListener('dkqkar-voice-settings-changed',settings);window.addEventListener('dkqkar-voice-cancel',cancel);
     navigator.mediaDevices?.addEventListener('devicechange',deviceChange);
-    return()=>{mounted.current=false;clearInterval(poll);clearTimeout(hintTimer.current);generation.current++;statusRequest.current?.abort();network.current?.abort();releaseCapture();stopPlayback();window.removeEventListener('pagehide',leave);window.removeEventListener('pointerdown',interact);window.removeEventListener('dkqkar-voice-activate',activate);window.removeEventListener('dkqkar-voice-settings-changed',settings);window.removeEventListener('dkqkar-voice-cancel',cancel);navigator.mediaDevices?.removeEventListener('devicechange',deviceChange);};
+    return()=>{mounted.current=false;clearInterval(poll);clearTimeout(hintTimer.current);generation.current++;statusRequest.current?.abort();network.current?.abort();releaseCapture();stopPlayback();window.removeEventListener('pagehide',leave);window.removeEventListener('dkqkar-voice-activate',activate);window.removeEventListener('dkqkar-voice-settings-changed',settings);window.removeEventListener('dkqkar-voice-cancel',cancel);navigator.mediaDevices?.removeEventListener('devicechange',deviceChange);};
   },[]);
   async function speak(text,id){
     if(!speakPreference.current||!statusRef.current?.synthesisAvailable||!current(id)){if(current(id))changePhase('done');return;}
@@ -219,9 +222,10 @@ export default function VoiceAssistant({onCommand,onQuestion}){
     const timer=setTimeout(()=>{if(wakeRef.current&&mounted.current&&!blocked.current)startRecording(!awaitingCommand.current);},400);
     return()=>clearTimeout(timer);
   },[wakeEnabled,phase]);
+  useEffect(()=>{onStateChange?.({phase,wakeEnabled,following});},[phase,wakeEnabled,following,onStateChange]);
   const label=wakeEnabled?(following&&phase==='recording'?'正在聆听':phaseLabels[phase]):/关闭/.test(feedback)?'语音已关闭':phase==='preparing'?'准备聆听':'语音未就绪';
   return <div className="voice-ambient" data-phase={phase} data-wake-enabled={wakeEnabled} data-following={following}>
-    <span className={'voice-ambient-status '+(wakeEnabled?'is-enabled ':'')+(busyPhases.has(phase)&&phase!=='recording'&&phase!=='preparing'?'is-working':'')} title={feedback||'说“小迪”，然后说出要做的操作'} aria-label={label}><i style={{'--voice-level':level}} aria-hidden="true"/><span>{label}</span></span>
+    <button type="button" className={'voice-ambient-status '+(wakeEnabled?'is-enabled ':'')+(busyPhases.has(phase)&&phase!=='recording'&&phase!=='preparing'?'is-working':'')} title={wakeEnabled?'点击关闭语音':feedback||'点击启用语音：说“小迪”，然后说出要做的操作'} aria-label={wakeEnabled?'关闭语音输入':label} aria-pressed={wakeEnabled} onClick={()=>{if(wakeEnabled)window.dispatchEvent(new Event('dkqkar-voice-cancel'));else window.dispatchEvent(new Event('dkqkar-voice-activate'));}}><i style={{'--voice-level':level}} aria-hidden="true"/><span>{label}</span></button>
     {hint&&<span className="voice-ambient-hint" role="status">{hint}</span>}
   </div>;
 }

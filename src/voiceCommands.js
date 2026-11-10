@@ -7,12 +7,16 @@ function clauseActions(input) {
   const clause = input.replace(/^(?:(?:请|麻烦|帮我|给我|请帮我|帮忙))+/,'').replace(/(?:一下|一点|吧|谢谢)$/,'');
   const focusZoom = clause.match(/^(?:放大|拉近)(?:S([1-5])|([1-5])号)(?:机架|主视图)?$/i);
   if(focusZoom)return [{type:'select_stand',stand:'S'+(focusZoom[1]||focusZoom[2])},{type:'zoom',direction:'in'}];
-  const stand = clause.match(/^(?:切换到|切到|转到|查看|定位到|定位|选择|选中|显示|看看)?(?:第)?(?:S([1-5])|([1-5])号)(?:机架|主视图)?$/i);
+  const stand = clause.match(/^(?:切换到|切到|转到|查看|定位到|定位|选择|选中|显示|看看|前往|去|走到)?(?:第)?(?:S([1-5])|([1-5])号)(?:机架|主视图)?$/i);
   if (stand) return [{type:'select_stand',stand:'S'+(stand[1]||stand[2])}];
   if(new RegExp('^'+modifier+'(?:整线|整线视图|全部机架|五个机架|整个机组|五机架整线)$').test(clause))return [{type:'set_scope',scope:'line'}];
   if(new RegExp('^'+modifier+'S5主视图$','i').test(clause))return [{type:'set_scope',scope:'s5'}];
   if(new RegExp('^'+modifier+'(?:透壳|透壳模式|透明|透明模式|透明显示)$').test(clause))return [{type:'set_shell',mode:'transparent'}];
   if(new RegExp('^'+modifier+'(?:实体|实体模式|实体显示)$').test(clause))return [{type:'set_shell',mode:'solid'}];
+  if(new RegExp('^'+modifier+'(?:明亮检视|明亮灯光|检视灯光|调亮)$').test(clause))return [{type:'set_lighting',mode:'inspection'}];
+  if(new RegExp('^'+modifier+'(?:车间灯光|正常灯光|标准灯光|调暗)$').test(clause))return [{type:'set_lighting',mode:'workshop'}];
+  if(/^(?:进入|打开|开启|切换到|切到)(?:游戏式)?巡视(?:模式|视角|巡游)?$/.test(clause))return [{type:'set_walk',on:true}];
+  if(/^(?:退出|关闭|离开)(?:游戏式)?巡视(?:模式|视角|巡游)?$/.test(clause))return [{type:'set_walk',on:false}];
   if(/^(?:只看|仅看|显示|切换到|切到|切换)?(?:仅辊系|辊系视图|辊系模式|辊系)$/.test(clause))return [{type:'set_shell',mode:'hidden'}];
   for(const [view,terms] of [['perspective','透视|透视图|透视视角'],['front','操作侧|操作侧视图|正面|正视图'],['top','俯视|俯视图|顶部视角'],['drive','传动侧|传动侧视图']]){
     if(new RegExp('^'+modifier+'(?:'+terms+')$').test(clause))return [{type:'set_view',view}];

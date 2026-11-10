@@ -99,6 +99,12 @@ function ConnectionDiagram(){
 }
 export default function IndustrialConnectionWorkspace({api,connection,predictionState,currentInput,onNotify,onNavigate}){
   const [dialog,setDialog]=useState(null),status=connection.status;
+  const [twinStand,setTwinStand]=useState(null);
+  useEffect(()=>{
+    const handler=event=>{const stand=String(event.detail?.stand||'').toUpperCase();if(/^S[1-5]$/.test(stand))setTwinStand(stand);};
+    window.addEventListener('qcdkr:stand-selected',handler);
+    return()=>window.removeEventListener('qcdkr:stand-selected',handler);
+  },[]);
   const detect=()=>connection.redetect().catch(error=>onNotify?.(error.message));
   const quality=status?.dataQuality??status?.quality,readCount=status?.readCount??status?.count??0,validCount=status?.validCount??0;
   const configured=status?.profileConfigured!==false&&status?.registerMapReady!==false;
@@ -106,35 +112,54 @@ export default function IndustrialConnectionWorkspace({api,connection,prediction
   const prediction=live&&currentPlc?(predictionState==='READY'?'运行中 · 已更新':predictionState==='PREDICTING'?'运行中 · 正在计算':predictionState==='FAILED'?'预测暂未完成':'等待预测服务'):'暂停，等待完整实时工况';
   const updated=quality==='STALE'?'数据已停止更新':status?.lastGoodTimestamp?new Date(status.lastGoodTimestamp).toLocaleString('zh-CN',{hour12:false}):'尚无实时数据';
   const label=status&&!configured?'尚未完成设备连接设置':status?.label||'正在读取连接状态';
+  const unconfigured=status?.profileConfigured===false||status?.registerMapReady===false||status?.state==='UNCONFIGURED';
+  const tone=live?'good':!status||!configured?'idle':['NIC_NOT_FOUND','LINK_DOWN','NETWORK_MISMATCH','COMM_BIND_FAILED','COMM_PROFILE_MISMATCH'].includes(status.state)?'bad':'warn';
+  const primary=unconfigured
+    ?{label:'打开连接设置',icon:<Settings2 size={16}/>,run:()=>setDialog('settings')}
+    :live
+      ?{label:'重新连接',icon:<RefreshCw size={16}/>,run:()=>connection.reconnect().catch(error=>onNotify?.(error.message))}
+      :{label:'重新检测',icon:<RefreshCw size={16}/>,run:detect};
   const invalidItems=status?.issues?.filter(r=>!status?.missing?.some(m=>m.field===r.field))||[];
-  return <section className="industrial-connection"><header><div><h1>工业设备连接</h1><p>连接现场PLC后，QCDKR可自动读取轧机工况，并进行S5轧制力实时预测。</p></div><button className="maint-button" onClick={()=>setDialog('settings')}><Settings2 size={16}/>连接设置</button></header>
+  return <section className="industrial-connection"><header><div><h1>工业设备连接</h1><p>连接现场PLC后，QCDKR可自动读取轧机工况，并进行S5轧制力实时预测。</p></div><div className="comm-header-actions">{twinStand&&<button type="button" className="maint-button" onClick={()=>onNavigate?.('overview')}>3D 选中 {twinStand} · 在3D中查看</button>}<button className="maint-button" onClick={()=>setDialog('settings')}><Settings2 size={16}/>连接设置</button></div></header>
     <div className="comm-main">
+    <div className="comm-col comm-col-left">
     <div className="comm-status-panel">
-      <div className={`comm-status-header ${live?'is-connected':''}`}><div className="comm-plug-icon">{live?<PlugZap size={40}/>:<Unplug size={40}/>}</div><div className="comm-status-heading"><h2><ServiceBadge good={live}>{label}</ServiceBadge></h2><p>工业网线：{status?.networkUp?'已连接':'未连接'}</p></div></div>
+      <div className={['comm-status-header',live?'is-connected':'',tone==='warn'?'is-warn':'',tone==='bad'?'is-bad':''].filter(Boolean).join(' ')}><div className="comm-plug-icon">{live?<PlugZap size={40}/>:<Unplug size={40}/>}</div><div className="comm-status-heading"><h2><ServiceBadge good={live} tone={tone}>{label}</ServiceBadge></h2><p>工业网线：{status?.networkUp?'已连接':'未连接'}</p></div></div>
       <div className="comm-connection-copy">
       {!status?.networkUp&&<p>请将工控机的“工业网口”与现场PLC使用网线连接。</p>}
       {status&&!configured?<p>尚未完成设备连接设置，请由维护人员先完成一次连接配置。</p>:<p>对于已经完成设备连接配置的PLC，插入工业网线后，软件会自动检测并连接，无需再次填写通讯参数。</p>}
       {status?.state==='CONNECTING'&&<p>已检测到工业网络。正在连接PLC并读取工况，请稍候，无需其他操作。</p>}
       {status?.identityChanged&&<p>检测到工业网卡标识变化，请维护人员在连接设置中确认并重新绑定。</p>}
       </div>
-      <div className="comm-buttons comm-main-actions"><button className="maint-button comm-primary" onClick={live?()=>connection.reconnect().catch(error=>onNotify?.(error.message)):detect}><RefreshCw size={16}/>{live?'重新连接':'重新检测'}</button><button className="maint-button" onClick={()=>setDialog('steps')}><BookOpen size={16}/>查看详细连接步骤</button>{(status?.missing?.length||status?.issues?.length)>0&&<button className="maint-button" onClick={()=>setDialog('missing')}>{status?.missing?.length?'查看缺少的数据':'查看异常数据'}</button>}</div>
-      <div className="comm-readouts"><dl className="comm-facts"><dt>设备名称</dt><dd>{status?.profileName||'尚未配置'}</dd><dt>通讯方式</dt><dd>Modbus TCP · 只读</dd><dt>工业网卡</dt><dd>{status?.nicName||'未检测到'}</dd></dl><dl className="comm-facts"><dt>读取完整度</dt><dd>{readCount} / 25</dd><dt>有效数据</dt><dd>{validCount} / 25</dd><dt>S5实际值</dt><dd>{live&&status?.frame?.observedAvailable?'已接收':'暂无'}</dd><dt>最近更新</dt><dd>{updated}</dd><dt>QCDKR实时预测</dt><dd>{prediction}</dd></dl></div>
+      <div className="comm-buttons comm-main-actions"><button className="maint-button comm-primary" onClick={primary.run}>{primary.icon}{primary.label}</button>{status&&!unconfigured&&<button className="maint-button" onClick={detect}><RefreshCw size={16}/>重新检测</button>}<button className="maint-button" onClick={()=>setDialog('steps')}><BookOpen size={16}/>查看详细连接步骤</button>{(status?.missing?.length||status?.issues?.length)>0&&<button className="maint-button" onClick={()=>setDialog('missing')}>{status?.missing?.length?'查看缺少的数据':'查看异常数据'}</button>}</div>
+      <div className="comm-readouts"><dl className="comm-facts"><dt>设备名称</dt><dd>{status?.profileName||'尚未配置'}</dd><dt>通讯方式</dt><dd>Modbus TCP · 只读</dd><dt>工业网卡</dt><dd>{status?.nicName||(unconfigured?'配置后选择工业网口':'未检测到')}</dd></dl><dl className="comm-facts"><dt>读取完整度</dt><dd>{readCount} / 25</dd><dt>有效数据</dt><dd>{validCount} / 25</dd><dt>S5实际值</dt><dd>{live&&status?.frame?.observedAvailable?'已接收':'暂无'}</dd><dt>最近更新</dt><dd>{updated}</dd><dt>QCDKR实时预测</dt><dd>{prediction}</dd></dl></div>
+      <div className="comm-read-cells" aria-label={`读取 ${readCount} / 25，有效 ${validCount} / 25`}>{Array.from({length:25},(_,i)=><i key={i} data-read={i<readCount?'true':undefined} data-valid={i<validCount?'true':undefined}/>)}</div>
+      <div className="comm-read-legend"><span>读取 <b>{readCount}</b> / 25</span><span>有效 <b>{validCount}</b> / 25</span><span>数据帧 <b>{live&&status?.frame?.observedAvailable?'已接收':'暂无'}</b></span></div>
+      <div className="comm-check" aria-label="连接检查">
+        <div className="comm-check-row"><span>工业网线</span><b data-ok={!!status?.networkUp}>{status?.networkUp?'已连接':'未连接'}</b></div>
+        <div className="comm-check-row"><span>设备配置</span><b data-ok={configured}>{configured?'已配置':'未配置'}</b></div>
+        <div className="comm-check-row"><span>数据读取</span><b data-ok={readCount>=25}>{readCount} / 25</b></div>
+        <div className="comm-check-row"><span>数据有效性</span><b data-ok={validCount>=25}>{validCount} / 25</b></div>
+      </div>
       {quality==='STALE'&&<p>数据已停止更新，保留的上一帧仅供查看，当前暂停实时预测。</p>}
       {quality==='INVALID'&&<p>为避免使用不完整或无效工况，当前暂不进行正式预测。</p>}
       {status?.state==='COMM_DATA_INVALID'&&invalidItems.map((r,i)=><p className="comm-error" key={r.field||i}>{r.label||'当前数据'}：{Number.isFinite(r.value)?<>当前值 {r.value.toFixed(3)} {r.unit}；有效范围 {Number.isFinite(r.min)?r.min.toFixed(3):'—'} ～ {Number.isFinite(r.max)?r.max.toFixed(3):'—'} {r.unit}</>:r.message||'已读取，但数值未通过检查'}</p>)}
       {connection.error&&<p role="alert">{connection.error}</p>}
     </div>
+    </div>
+    <div className="comm-col comm-col-right">
     <aside className="comm-guide-panel" aria-label="设备连接示意与步骤">
       <h2>连接示意图</h2><ConnectionDiagram/>
       <div className="comm-equipment-captions"><div><strong>现场 PLC</strong><span>五机架轧机控制系统</span></div><div><strong>工控机（QCDKR）</strong><span>请使用已配置的“工业网口”</span></div></div>
       <div className="comm-quick-guide"><h3><Info size={17}/>快速说明</h3><ol><li>将PLC工业网线插入工控机的“工业网口”</li><li>确保PLC已开机并处于正常运行状态</li><li>设备完成一次连接配置后，日常无需重复填写参数</li><li>显示“PLC已连接”，读取和有效数据均为25 / 25，即可实时预测</li></ol><button className="maint-button comm-primary" onClick={()=>setDialog('steps')}>查看详细连接步骤<ArrowRight size={16}/></button></div>
     </aside>
-    </div>
     <div className="comm-feature-grid">
       <article className="comm-feature-card"><div className="comm-feature-icon"><Settings2 size={28}/></div><div><h3>自动连接</h3><p>已配置设备插入工业网线后，软件自动检测并连接，无需重复设置。</p></div></article>
       <article className="comm-feature-card comm-feature-safe"><div className="comm-feature-icon"><ShieldCheck size={28}/></div><div><h3>只读保护</h3><p>仅在工业内网中读取PLC数据，不写入设备，不修改网络配置。</p></div></article>
       <article className="comm-feature-card comm-feature-realtime"><div className="comm-feature-icon"><BarChart3 size={28}/></div><div><h3>实时工况</h3><p>读取25项工况数据，检查通过后进行S5轧制力实时预测。</p></div></article>
       <button type="button" className="comm-feature-card comm-feature-logs" onClick={()=>onNavigate?.('logs')}><div className="comm-feature-icon"><ScrollText size={28}/></div><div><h3>日志记录</h3><p>记录连接状态与数据质量，点击查看现有运行日志。</p></div></button>
+    </div>
+    </div>
     </div>
     {dialog==='steps'&&<ConnectionSteps {...{status}} onClose={()=>setDialog(null)} onDetect={detect} onSettings={()=>setDialog('settings')}/>}
     {dialog==='settings'&&<ConnectionSettings {...{api,status,onNotify}} onClose={()=>setDialog(null)}/>}

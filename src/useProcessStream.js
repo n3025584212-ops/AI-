@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { createDemoFrame, createManualFrame, parseTelemetryCSV, framesToCSV, timeseriesTemplateCSV } from './telemetry.js';
 import { resultSampleMetadata } from './predictionSnapshot.js';
 
+// The demo tail has no source timestamps. Keep the original 1.0 s cadence so
+// the live panels stay fluid; the readouts are tweened instead of held for a
+// long static interval.
+const DEMO_SAMPLE_GAP_MS = 1000;
+
 export function useProcessStream(initialInput, onFrame, onPause, onResume) {
   const base = useRef(structuredClone(initialInput));
   const start = useRef(Date.now() - 59000);
@@ -35,7 +40,7 @@ export function useProcessStream(initialInput, onFrame, onPause, onResume) {
     }
     // Seeking resumes existing samples first; only the demo tail generates data.
     // CSV pacing follows sample timestamps, including uneven gaps.
-    const sampleGap = nextFrame ? nextFrame.time - frames[cursor].time : 1000;
+    const sampleGap = nextFrame ? nextFrame.time - frames[cursor].time : DEMO_SAMPLE_GAP_MS;
     let remaining = sampleGap / rate;
     let timer;
     let canceled = false;

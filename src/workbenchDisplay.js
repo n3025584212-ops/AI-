@@ -29,7 +29,9 @@ export function modelStateDisplay(modelStatus, dirty = false) {
   const ready = !['BLOCKED', 'FAILED', 'ERROR'].includes(status)
     && (status === 'READY' || modelStatus?.available === true);
   const label = status === 'CONNECTING' ? '预测服务连接中' : status === 'LOADING' ? '预测服务加载中'
-    : ready ? dirty ? '结果待更新' : '预测服务已就绪' : '预测服务未就绪';
+    // Keep the service label stable; pending state is shown by the small
+    // sync indicator on the prediction cards, not by swapping this text.
+    : ready ? '预测服务已就绪' : '预测服务未就绪';
   return { ready, label, reason: modelStatus?.reason || '' };
 }
 

@@ -35,9 +35,25 @@ function ForceChart({ rows, currentLabel, referenceLabel, label }) {
   const width = size.width, height = size.height;
   const left = width < 400 ? 37 : 43, right = width - 12, top = 19, bottom = height - 23;
   const values = rows.flatMap(row => chartSeries.map(series => row[series.key])).filter(finite);
-  const rawStep = Math.max(1, ...values) * 1.13 / 4;
-  const power = 10 ** Math.floor(Math.log10(rawStep));
-  const step = ([1, 2, 2.5, 5, 10].find(multiplier => multiplier * power >= rawStep) || 10) * power;
+  // 纵轴带滞回：数据流每 ~2s 刷新一次，若每批都按当批最大值重算量程，
+  // 数值跨过阈值（如 708t）时轴会从 0–1000 跳到 0–800，所有柱子整体缩放，
+  // 看起来就是"一跳一跳"。只有明显超出/远低于当前量程才换挡。
+  const dataMax = Math.max(1, ...values);
+  const niceStepFor = value => {
+    const rawStep = Math.max(1, value) * 1.13 / 4;
+    const power = 10 ** Math.floor(Math.log10(rawStep));
+    return ([1, 2, 2.5, 5, 10].find(multiplier => multiplier * power >= rawStep) || 10) * power;
+  };
+  const [axisStep, setAxisStep] = useState(() => niceStepFor(dataMax));
+  useEffect(() => {
+    const next = niceStepFor(dataMax);
+    setAxisStep(previous => {
+      const capacity = previous * 4;
+      if (dataMax > capacity * 0.99 || dataMax < capacity * 0.4) return next;
+      return previous;
+    });
+  }, [dataMax]);
+  const step = axisStep;
   const maximum = step * 4;
   const y = value => bottom - value / maximum * (bottom - top);
   const groupWidth = (right - left) / Math.max(1, rows.length);
@@ -65,7 +81,15 @@ function ForceChart({ rows, currentLabel, referenceLabel, label }) {
       <text className="dc-axis" x={left - 8} y="10" textAnchor="end">t</text>
       {[0, 1, 2, 3, 4].map(index => <g key={index}><line className="dc-grid-line" x1={left} x2={right} y1={y(step * index)} y2={y(step * index)}/><text className="dc-axis" x={left - 8} y={y(step * index) + 3.5} textAnchor="end">{format(step * index, 1)}</text></g>)}
       <line className="dc-baseline" x1={left} x2={right} y1={bottom} y2={bottom}/>
-      {rows.map((row, index) => <text key={row.label} className="dc-category" x={left + groupWidth * (index + .5)} y={height - 6} textAnchor="middle">{row.label}</text>)}
+      {rows.map((row, index) => {
+        const series = chartSeries.filter(item => finite(row[item.key]));
+        const value = series.length === 1 ? row[series[0].key] : null;
+        const center = left + groupWidth * (index + .5);
+        return <g key={row.label}>
+          {value !== null && <text className={`dc-chart-value dc-value-${series[0].color}`} x={center} y={height - 19} textAnchor="middle">{format(value, 2)}</text>}
+          <text className="dc-category" x={center} y={height - 2} textAnchor="middle">{row.label}</text>
+        </g>;
+      })}
       {visibleBars.map(bar => {
         const key = `${bar.rowIndex}-${bar.key}`;
         const position = y(bar.value), selected = active === key;
@@ -83,7 +107,6 @@ function ForceChart({ rows, currentLabel, referenceLabel, label }) {
             <line className={`dc-bar-cap dc-cap-${bar.color}`} x1={bar.x + 1.5} x2={bar.x + barWidth - 1.5} y1={position + .65} y2={position + .65}/>
             <line className={`dc-bar-edge dc-edge-${bar.color}`} x1={bar.x + .65} x2={bar.x + .65} y1={position + 2} y2={bottom - .75}/>
           </>}
-          <text className={`dc-bar-value dc-value-${bar.color}`} x={labelX} y={Math.max(12, position - 6)} textAnchor={anchor}>{format(bar.value, 2)}</text>
         </g>;
       })}
       {!visibleBars.length && <text className="dc-waiting" x={(left + right) / 2} y={(top + bottom) / 2} textAnchor="middle">等待工况数据</text>}
@@ -121,14 +144,11 @@ export default function DashboardComparisons({ caseData, result, resultSample, p
   const comparisonDelta = selectedCase && finite(prediction) && finite(selectedCase.prediction?.value) ? prediction - selectedCase.prediction.value : null;
   return <div className="dc-comparisons">
     <section className="dc-panel" aria-labelledby="dc-line-title" aria-busy={holding} data-display-snapshot-id={result?.snapshot_id}>
-      <div className="dc-heading"><h3 id="dc-line-title">各机架轧制力对照</h3>{holding&&<span className="dc-updating" role="status" title="保留上一条已完成工况，当前工况预测完成后一起更新">正在更新</span>}<Legend current="S1–S4 轧制力" reference="S5 预测"/></div>
-      <ForceChart rows={lineRows} currentLabel={holding?'上次工况轧制力':'工况轧制力'} referenceLabel={holding?'上次 S5 预测 · 正在更新':'S5 预测'} label={holding?'上一条已完成工况轧制力对照，当前工况正在更新':'S1、S2、S3、S4 轧制力与 S5 预测对照'}/>
+      <div className="dc-heading"><h3 id="dc-line-title">各机架轧制力对照</h3>{/* 状态点常驻占位（空闲时只隐藏不塌陷），避免刷新时表头宽度变化引起换行跳动 */}<span className={`dc-updating-dot${holding ? '' : ' is-idle'}`} role="status" aria-label={holding ? '当前工况预测更新中' : undefined} aria-hidden={holding ? undefined : true} title={holding ? '保留上一条已完成工况，当前工况预测完成后一起更新' : undefined}/><Legend current="S1–S4 轧制力" reference="S5 预测"/></div>
+      <ForceChart rows={lineRows} currentLabel="工况轧制力" referenceLabel="S5 预测" label={holding?'上一条已完成工况轧制力对照，当前工况正在更新':'S1、S2、S3、S4 轧制力与 S5 预测对照'}/>
     </section>
-    {secondaryPanel || <section className="dc-panel dc-history-panel" aria-labelledby="dc-history-title">
-      <div className="dc-heading"><h3 id="dc-history-title">已保存工况对比</h3><div className="dc-history-tools">{selectedCase && <select aria-label="选择已保存对比工况" value={String(selectedCase.id)} onChange={event => setSelectedId(event.target.value)}>{savedCases.map(item => <option key={item.id} value={String(item.id)}>{readableConditionName(item.name || item.input?.id || item.id)}</option>)}</select>}<button className="dc-history-link" onClick={onHistory} disabled={!onHistory} title="已保存工况" aria-label="已保存工况"><History size={13}/><ChevronRight size={11}/></button></div></div>
-      <div className="dc-history-legend"><Legend current={currentLabel} reference={referenceLabel}/>{comparisonDelta !== null && <span className="dc-difference">S5 {comparisonDelta < 0 ? <ArrowDownRight size={11}/> : <ArrowUpRight size={11}/>}{signed(comparisonDelta)}</span>}</div>
-      <ForceChart rows={historyRows} currentLabel={currentLabel} referenceLabel={referenceLabel} label={selectedCase ? `当前工况与 ${historyName} 的轧制力对比` : observed !== null ? '当前样本 S5 实际值与预测对照' : '当前工况轧制力，尚未保存已保存工况'}/>
-      <div className="dc-foot"><span>{selectedCase ? <><i className="dc-record-dot"/>{historyName}{!finite(standForce(selectedCase.input, 'S4')) && ' · 已保存 S4：—（未保存）'}</> : '尚未保存已保存工况'}</span><button className="dc-text-link" onClick={onHistory} disabled={!onHistory}>{selectedCase ? '查看记录' : '管理工况'}<ChevronRight size={11}/></button></div>
-    </section>}
+    {/* 「已保存工况对比」整栏已移除：用户要求把关键参数搬到底部右槽，
+        悬浮的关键参数卡同步撤掉。secondaryPanel 由 LiveWorkspace 固定传入。 */}
+    {secondaryPanel}
   </div>;
 }

@@ -1,0 +1,7 @@
+import fs from 'node:fs/promises';
+const tabs=await(await fetch('http://127.0.0.1:9234/json/list')).json();const tab=tabs.find(t=>t.type==='page'&&t.url==='http://127.0.0.1:5194/');if(!tab)throw new Error('Factory validation tab missing');
+const ws=new WebSocket(tab.webSocketDebuggerUrl);await new Promise(r=>ws.addEventListener('open',r,{once:true}));let id=0;const pending=new Map();ws.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.id){pending.get(m.id)?.(m.result);pending.delete(m.id);}});const send=(method,params={})=>new Promise(r=>{pending.set(++id,r);ws.send(JSON.stringify({id,method,params}));});
+const first=await send('Runtime.evaluate',{expression:`(()=>{const d=window.__qcdkr3d,c=d.character;const before=c.position.toArray();const dispatched=d.engine.inspectStand('S4');return{asset:c.model.userData.engineerAsset,clips:Object.keys(c.actions),dispatched,before,state:c.state};})()`,returnByValue:true});
+await new Promise(r=>setTimeout(r,900));
+const next=await send('Runtime.evaluate',{expression:`(()=>{const c=window.__qcdkr3d.character;return{position:c.position.toArray(),state:c.state,active:c.active};})()`,returnByValue:true});
+const report={before:first.result.value,after:next.result.value};if(report.before.asset!=='coldroll-bound-20261031'||!report.before.dispatched)throw new Error(JSON.stringify(report));await fs.writeFile('tmp/coldroll-web-import/factory-dispatch.json',JSON.stringify(report,null,2));console.log('FACTORY_DISPATCH_VERIFIED',JSON.stringify(report));ws.close();
