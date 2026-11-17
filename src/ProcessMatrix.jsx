@@ -1,6 +1,6 @@
 import { readableConditionName, userVisibleText } from './userVisibleText.js';
 import UserVisibleText from './UserVisibleText.jsx';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronUp, CircleAlert, Loader2, SlidersHorizontal } from 'lucide-react';
 import { toDisplay, fromDisplay, unitFor } from './engineeringUnits.js';
 import { isModelInput, MODEL_FEATURES, MODEL_INPUT_COUNT, modelInputValues } from './modelInputs.js';
@@ -41,7 +41,7 @@ function EngineeringNumberInput({ field, value, onFocus, onBlur, ...props }) {
 }
 
 
-export default function ProcessMatrix({ caseData, selected = 'S5', onSelectStand, onFieldChange, onCaseFieldChange, dirty = false, errors = [], focusRequest, layout='matrix', visibleFields=[], onVisibleFieldChange, historicalChecked, groupedHeader = false }) {
+function ProcessMatrix({ caseData, selected = 'S5', onSelectStand, onFieldChange, onCaseFieldChange, dirty = false, errors = [], focusRequest, layout='matrix', visibleFields=[], onVisibleFieldChange, historicalChecked, groupedHeader = false }) {
   const [expanded, setExpanded] = useState(true);
   const [preferenceError,setPreferenceError]=useState('');
   const contentId = useId();
@@ -169,3 +169,20 @@ export default function ProcessMatrix({ caseData, selected = 'S5', onSelectStand
     </div>
   </section>;
 }
+
+// 2026-11-18：参数矩阵每次父级轮询/遥测都会重渲染，40 个输入框被反复重设属性，
+// 视觉上就是跳帧闪烁。这里按内容比较拦住纯父级重渲染；回调只写草稿，忽略其引用变化。
+const sameJson = (a, b) => {
+  try { return JSON.stringify(a) === JSON.stringify(b); } catch { return a === b; }
+};
+export default memo(ProcessMatrix, (prev, next) => (
+  prev.selected === next.selected
+  && prev.dirty === next.dirty
+  && prev.layout === next.layout
+  && prev.groupedHeader === next.groupedHeader
+  && (prev.focusRequest?.revision || 0) === (next.focusRequest?.revision || 0)
+  && prev.historicalChecked === next.historicalChecked
+  && sameJson(prev.errors, next.errors)
+  && sameJson(prev.caseData, next.caseData)
+  && sameJson(prev.visibleFields, next.visibleFields)
+));

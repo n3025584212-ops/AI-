@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import ProcessMatrix from './ProcessMatrix.jsx';
 import {updateStandField} from './processState.js';
@@ -13,7 +13,20 @@ export default function CommittedParameterEditor({caseData,onApply,onEditDirty,o
   const changed=reportInputFingerprint(draft)!==reportInputFingerprint(caseData);
   const processIssues=processDisplayFieldIssues(draft);
   const valid=summarizeModelInputs(draft).valid&&!processIssues.length;
-  useEffect(()=>{setDraft(structuredClone(caseData));},[caseData]);
+  // 2026-11-18：只在工况本身变化、且本地没有未应用修改时同步草稿。
+  // 原来每次 caseData 换对象（回放每帧、父级轮询）都 structuredClone 一次，
+  // 输入框会被重置/重复重渲染，看起来像跳帧闪烁，正在输入的内容也会被冲掉。
+  const draftRef=useRef(draft);draftRef.current=draft;
+  const syncedRef=useRef(reportInputFingerprint(caseData));
+  useEffect(()=>{
+    const next=reportInputFingerprint(caseData);
+    if(next===syncedRef.current)return;
+    if(reportInputFingerprint(draftRef.current)!==syncedRef.current)return;
+    syncedRef.current=next;
+    setDraft(structuredClone(caseData));
+  },[caseData]);
+  const onFieldChange=useCallback((stand,field,value)=>setDraft(previous=>updateStandField(previous,stand,field,value)),[]);
+  const onCaseFieldChange=useCallback((field,value)=>setDraft(previous=>({...previous,[field]:value})),[]);
   useEffect(()=>{onEditDirty?.(changed);},[changed]);
   useEffect(()=>{onBeginEdit?.();return()=>onEditDirty?.(false);},[]);
   useEffect(()=>{if(!changed)setConfirmingTimeseriesReset(false);},[changed]);
@@ -28,8 +41,8 @@ export default function CommittedParameterEditor({caseData,onApply,onEditDirty,o
   };
   return <>
     <ProcessMatrix {...props} caseData={draft} dirty={changed} errors={[...(props.errors||[]),...processIssues.map(issue=>issue.message)]}
-      onFieldChange={(stand,field,value)=>setDraft(previous=>updateStandField(previous,stand,field,value))}
-      onCaseFieldChange={(field,value)=>setDraft(previous=>({...previous,[field]:value}))}/>
+      onFieldChange={onFieldChange}
+      onCaseFieldChange={onCaseFieldChange}/>
     <div className="parameter-commit-actions">
       <span>{changed?'修改尚未应用':'编辑后点击应用，自动预测当前工况'}</span>
       <button type="button" className="button secondary" disabled={!changed} onClick={()=>setDraft(structuredClone(caseData))}>取消修改</button>
