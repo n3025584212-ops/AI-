@@ -42,6 +42,11 @@ export default function ThreeViewer({ selectedStand = 'S5', onSelectStand, view 
   const host = useRef(null), engine = useRef(null), latest = useRef(null);
   latest.current = { selectedStand, onSelectStand, view, showStrip, explode, compact, expanded, focusMode, shellMode, motionPlaying, processSpeed, processData, onTelemetry, onAnchorsChange, onCharacterAnchor, hasDataOverlay, annotationInsets, controlsRef, onSceneReady, lighting, daypart, onNavigate, walkMode };
   const [status, setStatus] = useState({ phase: 'loading', percent: 0, message: '载入设备模型…' });
+  // 开屏层（public/boot.js）读取这份真实装配进度，避免长等待时进度条不动。
+  useEffect(() => {
+    globalThis.__qcdkr3dStatus = status;
+    return () => { if (globalThis.__qcdkr3dStatus === status) delete globalThis.__qcdkr3dStatus; };
+  }, [status]);
   const [interaction, setInteraction] = useState(null);
   const [hoverInfo, setHoverInfo] = useState(null);
   const [retry, setRetry] = useState(0);

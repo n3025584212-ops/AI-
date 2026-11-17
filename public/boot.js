@@ -11,16 +11,13 @@
   if (qs.get('boot') === '0') { boot.remove(); return; }
   var hold = qs.get('boot') === 'hold';
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // 2026-11-17：登录成功后不再整层跳过 boot。保留这一层继续把真实 3D 厂房等出来，
-  // 否则云端慢机器会在工作台里暴露“读取设备模型…”的加载页（本机 GPU 快所以看不到）。
-  var afterLogin = sessionStorage.getItem('obAfterLogin') === '1';
-  if (afterLogin) sessionStorage.removeItem('obAfterLogin');
-  if (afterLogin) boot.classList.add('post-login');
+  // 2026-11-18：开屏画面每次访问都完整播放，不再为“已登录”折叠成裸进度条；
+  // boot 仍作为厂房与模型的缓冲层，进度改由真实装配百分比驱动。
   if (sessionStorage.getItem('obSkipNext') === '1') { sessionStorage.removeItem('obSkipNext'); boot.remove(); return; }
-  var AUTHED = afterLogin ? true : null; // null=还没问过服务端，false=确认未登录
+  var AUTHED = null; // null=还没问过服务端，false=确认未登录
   fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' })
     .then(function (r) { return r.json(); })
-    .then(function (j) { AUTHED = !!(j && j.authenticated); if (AUTHED) boot.classList.add('post-login'); if (j && j.setupRequired) enableSetup(); })
+    .then(function (j) { AUTHED = !!(j && j.authenticated); if (j && j.setupRequired) enableSetup(); })
     .catch(function () {});
 
   var el = {
@@ -137,6 +134,7 @@
     done = true;
     window.__obDebug = { reason: reason || 'unknown', at: Math.round(performance.now() - startedAt) };
     ['runtime', 'app', 'scene', 'model'].forEach(function (k) {
+      if (!state[k]) return;
       var li = el.steps && el.steps.querySelector('li[data-k="' + k + '"]');
       if (li) {
         li.classList.add('on');
@@ -201,6 +199,15 @@
     setTimeout(function () {
       if (loginPass) { try { loginPass.focus(); loginPass.select(); } catch (e) {} }
     }, 450);
+  }
+
+  // 登录阶段曾把进度拉到 100%；登录成功后要回到真实装配进度，否则会停在 100% 却还在加载。
+  function resumeProgress() {
+    if (timer) { clearInterval(timer); timer = 0; }
+    shown = TARGET.app;
+    target = TARGET.app;
+    paint();
+    if (!done) timer = setInterval(tick, 70);
   }
 
   function loginError(msg) {
@@ -348,9 +355,9 @@ function sha256HexSync(value) {
           if (loginBtn) loginBtn.textContent = '已验证';
           status('登录成功，正在载入厂房与预测模型…');
           boot.classList.remove('login-stage');
-          boot.classList.add('post-login');
           awaitingLogin = false;
           AUTHED = true;
+          resumeProgress();
           try { window.dispatchEvent(new Event('dkqkar-session-changed')); } catch (e) {}
           setTimeout(probe, 180);
           });
@@ -368,6 +375,14 @@ function sha256HexSync(value) {
 
     if (!state.runtime && document.readyState !== 'loading' && now >= MIN_AT.runtime) step('runtime');
     if (state.runtime && !state.app && document.querySelector('.app-shell') && now >= MIN_AT.app) { step('app'); appAt = now; }
+    // 2026-11-18：进度条跟着三维装配的真实百分比走（44% → 66%），
+    // 不再长时间卡在 44% 让人以为页面死了。
+    var st3d = window.__qcdkr3dStatus;
+    if (state.app && !state.scene && st3d && typeof st3d.percent === 'number') {
+      var p3d = Math.max(0, Math.min(100, st3d.percent));
+      aim(TARGET.app + p3d / 100 * (TARGET.scene - TARGET.app - 6));
+      if (st3d.message) status(st3d.message + ' ' + Math.round(p3d) + '%');
+    }
     var api3d = window.__qcdkr3d;
     var sc3d = api3d && api3d.scene;
     var factoryReady = false;
@@ -380,6 +395,8 @@ function sha256HexSync(value) {
     // 兜底只在 45s 后才把 scene 标成就绪；云端 2C 装配厂房要 20s+，
     // 原来 15s 就放行会把工作台自己的“装配 Blender 厂房…”加载页露出来。
     if (state.app && !state.scene && appAt && now - appAt > 45000) step('scene');
+    // 三维装配报错时不再干等：提前交给工作台自己的重试界面
+    if (state.app && !state.scene && st3d && st3d.phase === 'error' && appAt && now - appAt > 6000) step('scene');
     if (state.scene && !state.model && now >= MIN_AT.model) checkModel();
     if (state.scene && !state.model && now > MIN + 2600) step('model');
 

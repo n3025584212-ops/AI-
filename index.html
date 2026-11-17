@@ -26,26 +26,8 @@ html,body{background:#02060b;margin:0}
 #boot.scene-ready .ob-tint{opacity:.55;transition:opacity .8s ease}
 /* 身份卡在登录/首次创建阶段只会显示写死的旧账号，直接收起 */
 #boot .ob-idcard,#boot .ob-cardhead{display:none!important}
-/* 登录后进入厂房缓冲阶段：只留进度，不再重复一遍品牌/人物开屏 */
-#boot.post-login .ob-brand,#boot.post-login .ob-charwrap,#boot.post-login .ob-scanbar,
-#boot.post-login .ob-meta,#boot.post-login .ob-foot{opacity:0!important;pointer-events:none;transition:opacity .4s ease}
-#boot.post-login .ob-brand,#boot.post-login .ob-charwrap,#boot.post-login .ob-scanbar,#boot.post-login .ob-meta,#boot.post-login .ob-foot,#boot.post-login .ob-bg{display:none!important}
-#boot.post-login .ob-main{display:flex!important;align-items:center;justify-content:center;padding:0}
-#boot.post-login .ob-main{align-items:center;justify-content:center;padding:0}
-#boot.post-login .ob-panel{margin:0;width:min(420px,60vw)}
-#boot.post-login .ob-skip{opacity:0;pointer-events:none}
-html[data-after-login] #boot .ob-brand,html[data-after-login] #boot .ob-charwrap,html[data-after-login] #boot .ob-scanbar,html[data-after-login] #boot .ob-meta,html[data-after-login] #boot .ob-foot,html[data-after-login] #boot .ob-bg{opacity:0!important;pointer-events:none}
-html[data-after-login] #boot .ob-steps,html[data-after-login] #boot .ob-verify{display:none!important}
-html[data-after-login] #boot .ob-brand,html[data-after-login] #boot .ob-charwrap,html[data-after-login] #boot .ob-scanbar,html[data-after-login] #boot .ob-meta,html[data-after-login] #boot .ob-foot,html[data-after-login] #boot .ob-bg{display:none!important}
-html[data-after-login] #boot .ob-main{display:flex!important;align-items:center;justify-content:center;padding:0}
-html[data-after-login] #boot .ob-main{align-items:center;justify-content:center;padding:0}
-html[data-after-login] #boot .ob-panel{margin:0;width:min(420px,60vw);padding:1em 1.3em}
-#boot.post-login .ob-steps,#boot.post-login .ob-verify{display:none!important}
-#boot.post-login .ob-status{margin-top:0;border-top:0;padding-top:.2em}
-#boot.post-login .ob-panel{padding:1em 1.3em}
-
-/* 登录后撤掉旧厂房静态封面，只留深色底 + 进度，避免被当成过期页面 */
-#boot.post-login .ob-bg{opacity:0}
+/* 2026-11-18：登录后不再把开屏折叠成裸进度条。人物/品牌/底图全程保留，
+   进度改由真实厂房装配百分比驱动，登录后仍是同一套开屏画面。 */
 #boot .ob-tint{position:absolute;inset:0;background:
   radial-gradient(120% 95% at 22% 58%,rgba(4,16,28,.10),rgba(2,6,11,.93) 78%),
   linear-gradient(90deg,rgba(2,6,11,.62) 0,rgba(2,6,11,.24) 30%,rgba(2,6,11,.09) 56%,rgba(2,6,11,.86) 100%),
@@ -321,7 +303,7 @@ html[data-after-login] #boot .ob-panel{margin:0;width:min(420px,60vw);padding:1e
   <div class="ob-skip">点击任意处跳过</div>
 
 </div>
-<script src="/boot.js?v=20261117-v11"></script>
+<script src="/boot.js?v=20261118-v12"></script>
 
 
 
