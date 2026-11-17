@@ -187,7 +187,7 @@ export function acquireModel(onProgress) {
       // 保留 meshopt 解码器以兼容旧资产，不影响普通 GLB。
       loader.setMeshoptDecoder(MeshoptDecoder);
       loader.load('/assets/DKQKAR_5Stand.glb', resolve, (event) => {
-        update({ percent: Math.min(74, Math.round(event.loaded / (event.total || 12967608) * 74)), message: '读取设备模型…' });
+        update({ percent: Math.min(74, Math.round(event.loaded / (event.total || 4587520) * 74)), message: '读取设备模型…' });
       }, reject);
     }).then((gltf) => batchModel(gltf.scene, update)).then((root) => { entry.root = root; return root; }).catch((error) => {
       if (cache === entry) cache = null;

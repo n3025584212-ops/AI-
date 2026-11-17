@@ -253,3 +253,66 @@
 @media (prefers-reduced-motion: reduce) {
   .logs-scope button, .logs-category button, .logs-level-row, .logs-detail { transition: none; }
 }
+
+/* 2026-11-17 查询区窄栏重排：工具栏可换行；分类单行横向滚动；级别完整标签 */
+.logs-controls{gap:8px}
+.logs-toolbar{flex-wrap:wrap;gap:8px 10px;align-items:center}
+.logs-search{flex:1 1 240px;max-width:none;min-width:200px;height:32px}
+.logs-sync{flex:none;margin-left:6px}
+.logs-filters{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0}
+.logs-category{flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:1px 0 4px;min-width:0;scrollbar-width:thin;scrollbar-color:#41525f transparent}
+.logs-category::-webkit-scrollbar{height:4px}
+.logs-category::-webkit-scrollbar-thumb{background:#41525f;border-radius:2px}
+.logs-category button{flex:0 0 auto;padding:4px 10px;border:1px solid #ffffff10;border-radius:14px;background:#ffffff05}
+.logs-category button b{min-width:18px;padding:0 5px;border-radius:9px;background:#ffffff0c;text-align:center;line-height:1.5}
+.logs-category button.is-active b{background:#ffffff14}
+.logs-levels{border-left:0;padding-left:0;flex-wrap:wrap;gap:6px;min-width:0}
+.logs-level-list{flex-wrap:wrap;gap:6px}
+.logs-level-row{flex:0 0 auto;padding:4px 10px;font-size:10.5px}
+.logs-level-row>span{white-space:nowrap}
+@media(max-width:720px){.logs-search{flex-basis:100%}.logs-sync{margin-left:auto}}
+
+/* 2026-11-17 第二轮：308px 左栏改成纵向网格，彻底避免分类/级别挤成一团 */
+.logs-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.logs-scope{grid-column:1;min-width:0}
+.logs-sync{grid-column:2;justify-self:end;margin-left:0}
+.logs-search{grid-column:1/-1;width:100%;max-width:none;min-width:0;flex:none;height:32px}
+.logs-range{grid-column:1/-1;flex-wrap:wrap;row-gap:6px}
+.logs-category{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:4px;overflow:visible;padding:0}
+.logs-category-label{grid-column:1/-1;margin:0 0 1px}
+.logs-category button{width:100%;justify-content:space-between;padding:4px 8px;border:1px solid #ffffff10;border-radius:6px;background:#ffffff05;font-size:10.5px}
+.logs-category button b{min-width:0;padding:0 4px;background:transparent}
+.logs-levels{display:block;padding-left:0;border-left:0}
+.logs-level-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:4px}
+.logs-level-row{justify-content:space-between;width:100%;padding:4px 8px;border-radius:6px;font-size:10.5px}
+
+/* 2026-11-17 第三轮：覆盖 holo 主题里 log 左栏的 4 列/9px 强制规则 */
+#root .logs-col-left .logs-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important}
+#root .logs-col-left .logs-search{grid-column:1 / -1!important;width:100%!important;max-width:none!important;min-width:0!important;height:32px!important}
+#root .logs-col-left .logs-range{grid-column:1 / -1!important;flex-wrap:wrap!important}
+#root .logs-col-left .logs-category{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(104px,1fr))!important;gap:4px!important;overflow:visible!important;padding:0!important}
+#root .logs-col-left .logs-category-label{grid-column:1 / -1!important;font-size:10px!important;min-width:0!important;margin:0 0 1px!important}
+#root .logs-col-left .logs-category button{width:100%!important;min-width:0!important;justify-content:space-between!important;padding:4px 8px!important;font-size:10.5px!important;white-space:nowrap!important}
+#root .logs-col-left .logs-category button b{padding:0!important;min-width:0!important;font-size:10px!important}
+#root .logs-col-left .logs-levels{display:block!important;padding-left:0!important;border-left:0!important}
+#root .logs-col-left .logs-level-list{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(92px,1fr))!important;gap:4px!important;flex-wrap:nowrap!important}
+#root .logs-col-left .logs-level-row{width:100%!important;min-width:0!important;justify-content:space-between!important;padding:4px 8px!important;font-size:10.5px!important;white-space:nowrap!important}
+
+/* 2026-11-17 第四轮：提高选择器权重，压过 holo 主题后加载的 4 列/9px 规则 */
+#root .logs-col-left .logs-controls .logs-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important}
+#root .logs-col-left .logs-controls .logs-search{grid-column:1 / -1!important;width:100%!important;max-width:none!important;min-width:0!important;height:32px!important}
+#root .logs-col-left .logs-controls .logs-range{grid-column:1 / -1!important;flex-wrap:wrap!important}
+#root .logs-col-left .logs-controls .logs-filters{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:6px!important}
+#root .logs-col-left .logs-controls .logs-category{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important;overflow:visible!important;padding:0!important}
+#root .logs-col-left .logs-controls .logs-category-label{grid-column:1 / -1!important;font-size:10px!important;min-width:0!important;margin:0!important}
+#root .logs-col-left .logs-controls .logs-category button{width:100%!important;min-width:0!important;justify-content:space-between!important;padding:4px 7px!important;font-size:10.5px!important;white-space:nowrap!important;overflow:hidden!important}
+#root .logs-col-left .logs-controls .logs-category button b{padding:0!important;min-width:0!important;font-size:10px!important}
+#root .logs-col-left .logs-controls .logs-levels{display:block!important;padding-left:0!important;border-left:0!important}
+#root .logs-col-left .logs-controls .logs-level-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important;flex-wrap:nowrap!important}
+#root .logs-col-left .logs-controls .logs-level-row{width:100%!important;min-width:0!important;justify-content:space-between!important;padding:4px 7px!important;font-size:10.5px!important;white-space:nowrap!important;overflow:hidden!important}
+
+/* 级别行再提一级权重：holo 用 #root .logs-col-left .logs-levels .logs-level-list 强制 5 列 */
+#root .logs-col-left .logs-controls .logs-levels{display:block!important;padding-left:0!important;border-left:0!important}
+#root .logs-col-left .logs-controls .logs-levels .logs-level-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important;flex-wrap:nowrap!important}
+#root .logs-col-left .logs-controls .logs-levels .logs-level-row{width:100%!important;min-width:0!important;min-height:22px!important;line-height:1.4!important;justify-content:space-between!important;padding:3px 7px!important;font-size:10.5px!important;white-space:nowrap!important;overflow:hidden!important}
+#root .logs-col-left .logs-controls .logs-levels .logs-level-row span{overflow:visible!important;text-overflow:clip!important}

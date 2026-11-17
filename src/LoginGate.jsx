@@ -5,10 +5,13 @@ import { PRODUCT_NAME } from './productBrand.js';
 import { authRequest, loginCredentials } from './loginTransport.js';
 import { installWorkspaceRefresh } from './workspaceRecovery.js';
 import { LOGIN_DEFAULTS } from './loginDefaults.js';
+import { browserFingerprint } from './browserFingerprint.js';
 import './login.css';
 
 const loginErrorText = error => error?.code === 'INVALID_CREDENTIALS'
   ? '用户名或密码错误，请重新输入。'
+  : error?.code === 'ACCOUNT_BOUND' ? '该账号已绑定其他浏览器，不能在此设备登录。请使用未使用过的分发账号。'
+  : error?.code === 'FINGERPRINT_REQUIRED' ? '无法识别当前浏览器，请换用 Chrome / Edge 后重试。'
   : error?.code === 'EMPTY_INPUT' ? '请输入用户名和密码'
   : ['SETUP_INVALID','SETUP_ALREADY_COMPLETE','SETUP_REQUIRED','AUTH_STATE_INVALID'].includes(error?.code) ? error.message
   : '本地服务暂未就绪，请稍后重试。';
@@ -20,7 +23,7 @@ export default function LoginGate({ children }) {
   const [passwordConfirmation,setPasswordConfirmation]=useState(''),[notice,setNotice]=useState('');
   const setupRequired=session?.setupRequired===true;
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
-  const requestVersion = useRef(0), submitting = useRef(false);
+  const requestVersion = useRef(0), submitting = useRef(false), handoutStarted = useRef(false);
   const clearFields = () => { setUsername(''); setPassword(''); setPasswordConfirmation(''); setVisible(false); };
   const restoreLoginFields = () => { setUsername(LOGIN_DEFAULTS.username); setPassword(LOGIN_DEFAULTS.password); setVisible(false); };
   const refresh = async () => {
@@ -48,6 +51,33 @@ export default function LoginGate({ children }) {
     return () => { ++requestVersion.current; window.removeEventListener('dkqkar-session-expired', expired); };
   }, []);
   useEffect(() => session?.authenticated ? undefined : installWorkspaceRefresh(refresh), [session?.authenticated]);
+  useEffect(() => {
+    const handler = () => refresh();
+    window.addEventListener('dkqkar-session-changed', handler);
+    return () => window.removeEventListener('dkqkar-session-changed', handler);
+  }, []);
+
+  useEffect(() => {
+    if (loading || session?.authenticated || setupRequired || handoutStarted.current) return;
+    handoutStarted.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/auth/handout?fingerprint=' + encodeURIComponent(browserFingerprint()), { cache:'no-store', credentials:'same-origin' });
+        const data = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        if (response.ok && data.username) {
+          setUsername(data.username);
+          setPassword(data.password || '');
+          setNotice(`已自动分配账号 ${data.username}，点击登录即可；首次登录绑定当前浏览器。`);
+        } else if (data.code === 'HANDOUT_EXHAUSTED') {
+          setNotice('分发账号已用完，请联系管理员。');
+        }
+      } catch { /* 自动分配失败时保留手动输入 */ }
+    })();
+    return () => { cancelled = true; };
+  }, [loading, session?.authenticated, setupRequired]);
+
   const logout = async () => {
     const version = ++requestVersion.current;
     clearFields(); setError('');
@@ -67,7 +97,7 @@ export default function LoginGate({ children }) {
     const version = ++requestVersion.current;
     submitting.current = true; setBusy(true); setError('');
     try {
-      const result = await authRequest(setupRequired?'setup':'login', { ...credentials, ...(setupRequired?{passwordConfirmation}:{remember}) });
+      const result = await authRequest(setupRequired?'setup':'login', { ...credentials, ...(setupRequired?{passwordConfirmation}:{remember,fingerprint:browserFingerprint()}) });
       if (version !== requestVersion.current) return;
       if(setupRequired){setPassword('');setPasswordConfirmation('');setVisible(false);setSession(result);setNotice('本机账号已创建，请输入密码登录。');return;}
       clearFields(); setSession(result);
@@ -82,7 +112,7 @@ export default function LoginGate({ children }) {
     <header className="login-brand"><span className="login-brand-icon"><Box size={37}/></span><div><strong>AI大模型与量子机器学习协同驱动</strong><span>冷轧 S5 轧制力智能预测系统</span><small>COLD ROLLING · PROCESS INTELLIGENCE</small></div><p>量子核预测 · 工业AI · 数字孪生</p></header>
     <section className="login-layout"><div className="login-intro"><span className="login-eyebrow">FROM DATA TO INSIGHT</span><h1>冷轧轧制力预测<span className="login-accent">云平台</span></h1><p>聚焦 S5 轧制力，洞察工况变化 · 五机架数字孪生</p><div className="login-capabilities"><span>S5轧制力预测</span><span>五机架数字孪生</span><span>DK AI智能辅助</span></div></div>
     <form className="login-card" onSubmit={submit} aria-label={setupRequired?'创建本机账号':'账户登录'} noValidate>
-      <span className="login-card-emblem"><ShieldCheck size={26}/></span><h2>{loading ? '正在连接本机服务' : setupRequired?'创建本机账号':'欢迎登录'}</h2><p>{setupRequired?'首次使用，请设置本机用户名和密码。软件不提供默认密码。':PRODUCT_NAME}</p>
+      <span className="login-card-emblem"><ShieldCheck size={26}/></span><h2>{loading ? '正在连接本机服务' : setupRequired?'创建本机账号':'欢迎登录'}</h2><p>{setupRequired?'首次使用，请设置本机用户名和密码。软件不提供默认密码。':'使用管理员分发的账号登录；首次登录将绑定当前浏览器。'}</p>
       <label className="login-field"><UserRound size={17}/><input autoComplete="username" aria-label="用户名" placeholder="请输入用户名" value={username} onChange={e=>setUsername(e.target.value)} maxLength={64} required disabled={loading||busy}/></label>
       <label className="login-field"><LockKeyhole size={17}/><input type={visible?'text':'password'} autoComplete={setupRequired?'new-password':'current-password'} aria-label="密码" placeholder={setupRequired?'设置密码（至少8位）':'请输入密码'} maxLength={setupRequired?128:256} value={password} onChange={e=>setPassword(e.target.value)} required disabled={loading||busy}/><button type="button" aria-label={visible?'隐藏密码':'显示密码'} onClick={()=>setVisible(v=>!v)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>}</button></label>
       {setupRequired&&<label className="login-field"><LockKeyhole size={17}/><input type="password" autoComplete="new-password" aria-label="确认密码" placeholder="再次输入密码" maxLength={128} value={passwordConfirmation} onChange={e=>setPasswordConfirmation(e.target.value)} required disabled={loading||busy}/></label>}

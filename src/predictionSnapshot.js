@@ -1,4 +1,5 @@
 import { modelInputValues, FEATURE_KEYS } from './modelInputs.js';
+import { sha256Hex } from './sha256.js';
 export const SAMPLE_SOURCE_TYPES = Object.freeze({ demo: 'DEMO', import: 'CSV_REPLAY', manual: 'MANUAL', draft: 'HYPOTHETICAL_DRAFT', plc:'PLC_REALTIME' });
 
 const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
@@ -47,7 +48,9 @@ export function assertObservationBinding(observation, snapshot) {
 }
 export async function verifyPredictionHashes(prediction) {
   const snapshot = prediction.input_snapshot;
-  const hash = async value => Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value))))).map(byte=>byte.toString(16).padStart(2,'0')).join('');
+  // 2026-11-17：云端裸 IP HTTP 是 insecure context，crypto.subtle 不存在；
+  // 用 sha256Hex 的纯 JS 回退，否则预测在发请求前就 TypeError（本地 localhost 不复现）。
+  const hash = value => sha256Hex(JSON.stringify(value));
   if (snapshot.input_hash !== await hash([snapshot.schema_version,snapshot.values])
     || snapshot.context_hash !== await hash(['dkqkar-engineering-context-v1',snapshot.engineering_context])) throw new Error('快照 hash 不一致');
 }

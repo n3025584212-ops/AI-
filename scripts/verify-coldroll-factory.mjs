@@ -8,7 +8,7 @@ await send('Runtime.enable');await send('Page.enable');await send('Emulation.set
 await send('Page.navigate',{url:'http://127.0.0.1:5194/'});
 let submitted=false,ready=false,status={};
 for(let i=0;i<180;i++){
- status=await evaluate(`(()=>({setup:document.body.innerText.includes('首次使用，请设置'),login:Boolean(document.querySelector('form[aria-label="账户登录"]')),loginReady:Array.from(document.querySelectorAll('form input')).filter(x=>x.type!=='checkbox').every(x=>x.value),character:Array.from(document.querySelectorAll('[data-character]')).map(x=>x.dataset.character),pet:Array.from(document.querySelectorAll('[data-avatar]')).map(x=>x.dataset.avatar),engine:Boolean(window.__qcdkr3d)}))()`);
+ status=await evaluate(`(()=>({setup:document.body.innerText.includes('首次使用，请设置'),login:Boolean(document.querySelector('form[aria-label="账户登录"]')),loginReady:Array.from(document.querySelectorAll('form input')).filter(x=>x.type!=='checkbox').every(x=>x.value),character:Array.from(document.querySelectorAll('[data-character]')).map(x=>x.dataset.character),avatar:Array.from(document.querySelectorAll('[data-avatar]')).map(x=>x.dataset.avatar),engine:Boolean(window.__qcdkr3d)}))()`);
  if(status.setup)break;
  if(status.login&&status.loginReady&&!submitted){await evaluate(`document.querySelector('form[aria-label="账户登录"]').requestSubmit()`);submitted=true;console.log('LOCAL_SOFTWARE_LOGIN_SUBMITTED');}
  if(status.character.includes('ready')){ready=true;break;}

@@ -541,3 +541,9 @@ body{background:#080f1a;color:#e7edf7}
 .scene-dock-right .dock-card{width:286px}
 .scene-dock .dock-wide .dock-body{padding:0}
 .scene-dock .dock-wide .kp-card,.scene-dock .dock-wide .key-parameter-item{box-shadow:none}
+
+/* 预测失败条：带真实原因与就地重试（2026-11-17） */
+.live-error{display:flex;align-items:center;gap:10px;line-height:1.55}
+.live-error>span{flex:1 1 auto;min-width:0}
+.live-error>button{flex:none;border:1px solid #a8795f;background:#6b3a2c;color:#ffd9c9;border-radius:4px;padding:3px 9px;font-size:11px;cursor:pointer}
+.live-error>button:hover{background:#7d4635}

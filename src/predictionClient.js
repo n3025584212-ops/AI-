@@ -1,3 +1,4 @@
+import { summarizeModelInputs, normalizeCaseNumbers } from './modelInputs.js';
 const PREDICT_SERVICE_ERROR = '正式预测服务返回异常，请重试。';
 
 export class PredictionRequestError extends Error {
@@ -43,10 +44,20 @@ export async function requestPredictionJson(url, options = {}, fetchImpl = globa
 export function createPredictionClient(request) {
   let mode = 'auto';
   const acceptStatus = status => { if (status?.available === true || status?.mode === 'formal') mode = 'formal'; return status; };
+  // 2026-11-17：建快照与正式预测走同一套输入校验/清洗，否则字符串数值会在
+  // /input-snapshot 就被后端拒收，界面只看到“预测暂未完成”。输入不全时不发请求，
+  // 避免后端换回 400 并被记成一条永久事件。
+  const committedInput = input => {
+    const guard = summarizeModelInputs(input);
+    if (guard.valid) return { input: normalizeCaseNumbers(input) };
+    const first = [...guard.missing, ...guard.invalid][0];
+    throw new PredictionRequestError('INPUT_INCOMPLETE', first ? `当前工况还缺：${first.label}${first.message ? '（' + first.message + '）' : ''}` : '当前工况输入还不完整，请补齐参数后再预测。', guard);
+  };
   const predict = async (input, options = {}) => {
     const requestedMode = mode;
     const { current, input_snapshot, prediction, observation, committed_snapshot, operation_scope, predictionErrorAlarmRange, ...transport } = options;
-    const result = await request('/predict', { ...transport, method: 'POST', body: JSON.stringify({ input, mode: requestedMode,
+    const cleanInput = committedInput(input).input;
+    const result = await request('/predict', { ...transport, method: 'POST', body: JSON.stringify({ input: cleanInput, mode: requestedMode,
       options: { kind: input_snapshot ? 'retry' : 'new', input_snapshot, prediction, observation, committed_snapshot }, operation_scope,
       alarm_range: predictionErrorAlarmRange }) });
     if (!Number.isFinite(result?.value) || !['demo', 'formal'].includes(result.mode)) throw new Error('预测服务未返回有效结果');
@@ -66,7 +77,7 @@ export function createPredictionClient(request) {
     const { operation_scope, revision, ...transport } = options;
     return request('/observation', {...transport, method:'POST', body:JSON.stringify({input_snapshot,prediction,data,operation_scope,revision})});
   };
-  const prepareCommittedInput=(input,operation_scope)=>request('/input-snapshot',{method:'POST',body:JSON.stringify({input,operation_scope})});
+  const prepareCommittedInput=(input,operation_scope)=>{const checked=committedInput(input);return request('/input-snapshot',{method:'POST',body:JSON.stringify({input:checked.input,operation_scope})});};
   return { acceptStatus, predict, optimize, appendObservation, prepareCommittedInput, get mode() { return mode; } };
 }
 

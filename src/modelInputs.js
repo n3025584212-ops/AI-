@@ -14,9 +14,20 @@ export const MODEL_INPUT_COUNT = 25;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 export function isModelInput(standId, field) { return MODEL_FEATURES.some(feature => feature.stand === standId && feature.field === field); }
 export function isCaseModelInput(field) { return isModelInput(null, field); }
+// 2026-11-17：导入/旧存档里的数值可能是字符串（"2.75"）。以前这类值一律被当成
+// “缺少模型输入字段”被后端 400 拒收，前端却显示 25/25 完整。这里统一归一化。
+const numeric = value => {
+  if (typeof value === 'string') {
+    const text = value.trim();
+    if (!text) return value;
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : value;
+  }
+  return value;
+};
 export function modelInputValues(input) {
   const stands = Array.isArray(input?.stands) ? input.stands : [];
-  return MODEL_FEATURES.map(feature => feature.stand ? stands.find(stand => stand?.id === feature.stand)?.[feature.field] : input?.[feature.field]);
+  return MODEL_FEATURES.map(feature => numeric(feature.stand ? stands.find(stand => stand?.id === feature.stand)?.[feature.field] : input?.[feature.field]));
 }
 export function modelInputFeatures(input) { const values = modelInputValues(input); return Object.fromEntries(FEATURE_KEYS.map((key, index) => [key, values[index]])); }
 /** Value dependency key, not a sample identity or cryptographic authenticity claim. */
@@ -52,4 +63,22 @@ export function summarizeModelInputs(input, { referenceRanges } = {}) {
     rangeSource: checkedRangeCount ? '冻结模型训练样本范围' : '未提供参考范围',
     issues: [...missing, ...invalid].map(item => ({ field: item.key, message: item.message })),
   };
+}
+// 把工况里“看起来是数字的字符串”转成数字（递归），供发送预测前统一清洗。
+// 跳过标识类字段，避免把 id/名称/来源/时间戳这类纯数字字符串误改。
+const KEEP_AS_TEXT = /(^id$|_id$|^name$|^unit|^source|^label|^note|timestamp|date|time$|kind|mode|type)/i;
+export function normalizeCaseNumbers(input) {
+  if (Array.isArray(input)) return input.map(normalizeCaseNumbers);
+  if (!input || typeof input !== 'object') return input;
+  const output = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (KEEP_AS_TEXT.test(key)) { output[key] = value; continue; }
+    if (typeof value === 'string') {
+      const text = value.trim();
+      output[key] = text && Number.isFinite(Number(text)) ? Number(text) : value;
+      continue;
+    }
+    output[key] = value && typeof value === 'object' ? normalizeCaseNumbers(value) : value;
+  }
+  return output;
 }

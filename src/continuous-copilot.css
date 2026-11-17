@@ -97,3 +97,7 @@
 .ccp-monitor-toggle{position:relative}
 .ccp-monitor-toggle em{position:absolute;top:-4px;right:-4px;min-width:13px;height:13px;padding:0 3px;border-radius:7px;background:#b4762a;color:#1a1206;font:9px/13px Bahnschrift,"Segoe UI",sans-serif;font-style:normal;text-align:center}
 .ccp-monitor-toggle.is-alert{border-color:rgba(255,180,84,.5)!important;color:#ffcf8a!important}
+
+/* 新建分析要有可见反馈：否则空会话看起来像没反应 */
+.ccp-flash{margin:0 0 2px;padding:4px 9px;border:1px solid #2f6f52;border-radius:4px;background:#0f2a20;color:#8fd3ad;font-size:11px;animation:ccpFlashIn .18s ease}
+@keyframes ccpFlashIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}

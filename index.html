@@ -1,9 +1,11 @@
 <!doctype html>
 <html lang="zh-CN" data-boot="blue">
 <head>
+  <script src="/boot-early.js?v=20261117"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07101d" />
+  <link rel="preload" as="image" href="/assets/factory-preview-v2.jpg">
   <title>AI大模型与量子机器学习协同驱动的冷轧轧制力预测云平台</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 </head>
@@ -15,9 +17,35 @@ html,body{background:#02060b;margin:0}
   opacity:1;transition:opacity .8s ease}
 #boot.is-out{opacity:0;pointer-events:none}
 
-#boot .ob-bg{position:absolute;inset:-3%;background:url(/assets/factory-preview-v2.png) 45% 50%/cover no-repeat;
-  animation:obDrift 26s ease-in-out infinite alternate}
+#boot .ob-bg{position:absolute;inset:-3%;background:url(/assets/factory-preview-v2.jpg) 45% 50%/cover no-repeat;
+  animation:obDrift 26s ease-in-out infinite alternate;transition:opacity .8s ease}
 @keyframes obDrift{from{transform:scale(1.02)}to{transform:scale(1.09)}}
+/* 厂房真正就绪后不再用旧静态封面挡住 3D 场景：boot 透明化成 HUD 层 */
+#boot.scene-ready{background:transparent}
+#boot.scene-ready .ob-bg{opacity:0}
+#boot.scene-ready .ob-tint{opacity:.55;transition:opacity .8s ease}
+/* 身份卡在登录/首次创建阶段只会显示写死的旧账号，直接收起 */
+#boot .ob-idcard,#boot .ob-cardhead{display:none!important}
+/* 登录后进入厂房缓冲阶段：只留进度，不再重复一遍品牌/人物开屏 */
+#boot.post-login .ob-brand,#boot.post-login .ob-charwrap,#boot.post-login .ob-scanbar,
+#boot.post-login .ob-meta,#boot.post-login .ob-foot{opacity:0!important;pointer-events:none;transition:opacity .4s ease}
+#boot.post-login .ob-brand,#boot.post-login .ob-charwrap,#boot.post-login .ob-scanbar,#boot.post-login .ob-meta,#boot.post-login .ob-foot,#boot.post-login .ob-bg{display:none!important}
+#boot.post-login .ob-main{display:flex!important;align-items:center;justify-content:center;padding:0}
+#boot.post-login .ob-main{align-items:center;justify-content:center;padding:0}
+#boot.post-login .ob-panel{margin:0;width:min(420px,60vw)}
+#boot.post-login .ob-skip{opacity:0;pointer-events:none}
+html[data-after-login] #boot .ob-brand,html[data-after-login] #boot .ob-charwrap,html[data-after-login] #boot .ob-scanbar,html[data-after-login] #boot .ob-meta,html[data-after-login] #boot .ob-foot,html[data-after-login] #boot .ob-bg{opacity:0!important;pointer-events:none}
+html[data-after-login] #boot .ob-steps,html[data-after-login] #boot .ob-verify{display:none!important}
+html[data-after-login] #boot .ob-brand,html[data-after-login] #boot .ob-charwrap,html[data-after-login] #boot .ob-scanbar,html[data-after-login] #boot .ob-meta,html[data-after-login] #boot .ob-foot,html[data-after-login] #boot .ob-bg{display:none!important}
+html[data-after-login] #boot .ob-main{display:flex!important;align-items:center;justify-content:center;padding:0}
+html[data-after-login] #boot .ob-main{align-items:center;justify-content:center;padding:0}
+html[data-after-login] #boot .ob-panel{margin:0;width:min(420px,60vw);padding:1em 1.3em}
+#boot.post-login .ob-steps,#boot.post-login .ob-verify{display:none!important}
+#boot.post-login .ob-status{margin-top:0;border-top:0;padding-top:.2em}
+#boot.post-login .ob-panel{padding:1em 1.3em}
+
+/* 登录后撤掉旧厂房静态封面，只留深色底 + 进度，避免被当成过期页面 */
+#boot.post-login .ob-bg{opacity:0}
 #boot .ob-tint{position:absolute;inset:0;background:
   radial-gradient(120% 95% at 22% 58%,rgba(4,16,28,.10),rgba(2,6,11,.93) 78%),
   linear-gradient(90deg,rgba(2,6,11,.62) 0,rgba(2,6,11,.24) 30%,rgba(2,6,11,.09) 56%,rgba(2,6,11,.86) 100%),
@@ -232,8 +260,8 @@ html,body{background:#02060b;margin:0}
   <main class="ob-main">
       <div class="ob-charwrap" aria-hidden="true">
       <div class="ob-glow"></div>
-      <div class="ob-char-mask"><video class="ob-char" src="/assets/pet/idle.webm" autoplay muted loop playsinline></video></div>
-      <video class="ob-char-line" src="/assets/pet/idle.webm" autoplay muted loop playsinline></video>
+      <div class="ob-char-mask"><video class="ob-char" src="/assets/avatar/idle.webm" autoplay muted loop playsinline></video></div>
+      <video class="ob-char-line" src="/assets/avatar/idle.webm" autoplay muted loop playsinline></video>
       <div class="ob-scanbar"></div>
     </div>
 
@@ -259,9 +287,10 @@ html,body{background:#02060b;margin:0}
       </div>
 
       <form class="ob-login-card" id="ob-login-form" autocomplete="off">
-        <div class="ob-login-head"><strong>操作员登录</strong><span>OPERATOR SIGN-IN · LOCAL</span></div>
-        <label class="ob-login-field"><span>用户名</span><input id="ob-user" name="username" type="text" value="rollcraft" maxlength="64" autocomplete="username" /></label>
-        <label class="ob-login-field"><span>密码</span><input id="ob-pass" name="password" type="password" value="Bengineer@2026" maxlength="256" autocomplete="current-password" /></label>
+        <div class="ob-login-head"><strong id="ob-login-title">操作员登录</strong><span id="ob-login-sub">OPERATOR SIGN-IN · LOCAL</span></div>
+        <label class="ob-login-field"><span>用户名</span><input id="ob-user" name="username" type="text" maxlength="64" autocomplete="username" /></label>
+        <label class="ob-login-field"><span>密码</span><input id="ob-pass" name="password" type="password" maxlength="256" autocomplete="current-password" /></label>
+        <label class="ob-login-field" id="ob-pass2-field" style="display:none"><span>确认密码</span><input id="ob-pass2" name="passwordConfirmation" type="password" maxlength="128" autocomplete="new-password" /></label>
         <button type="submit" id="ob-login-btn">登 录</button>
         <p class="ob-login-err" id="ob-login-err"></p>
       </form>
@@ -292,7 +321,7 @@ html,body{background:#02060b;margin:0}
   <div class="ob-skip">点击任意处跳过</div>
 
 </div>
-<script src="/boot.js?v=20261117-v5"></script>
+<script src="/boot.js?v=20261117-v11"></script>
 
 
 

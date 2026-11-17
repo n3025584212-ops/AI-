@@ -41,32 +41,32 @@ export function maximizedWindowRect(viewport) {
   return { x: bounds.left, y: bounds.top, width: bounds.width, height: bounds.height };
 }
 
-// 桌宠气泡：对话框挂在桌宠周围，四个方向找空间——上 → 下 → 右 → 左。
+// 助手气泡：对话框挂在助手周围，四个方向找空间——上 → 下 → 右 → 左。
 // 尺寸固定（不再为了塞进空隙压高度），四个方向都放不下时选溢出最小的那个，
-// 并允许压住桌宠的一部分。tailX / tailY 是气泡指向桌宠的箭头位置。
-export const PET_ANCHOR_GAP = 10;
-export function petAnchoredWindowRect(pet, size, viewport) {
+// 并允许压住助手的一部分。tailX / tailY 是气泡指向助手的箭头位置。
+export const AVATAR_ANCHOR_GAP = 10;
+export function avatarAnchoredWindowRect(avatar, size, viewport) {
   const bounds = viewportBounds(viewport);
-  const petWidth = finite(pet?.width) ? pet.width : 112;
-  const petHeight = finite(pet?.height) ? pet.height : 140;
-  const petX = finite(pet?.x) ? pet.x : bounds.left;
-  const petY = finite(pet?.y) ? pet.y : bounds.bottom - petHeight;
+  const avatarWidth = finite(avatar?.width) ? avatar.width : 112;
+  const avatarHeight = finite(avatar?.height) ? avatar.height : 140;
+  const avatarX = finite(avatar?.x) ? avatar.x : bounds.left;
+  const avatarY = finite(avatar?.y) ? avatar.y : bounds.bottom - avatarHeight;
   const width = clamp(finite(size?.width) ? size.width : 400, Math.min(MIN_WINDOW.width, bounds.width), bounds.width);
   const wantHeight = finite(size?.height) ? size.height : Math.min(600, Math.round(viewport?.height * 0.55) || 480);
   const height = clamp(wantHeight, Math.min(MIN_WINDOW.height, bounds.height), bounds.height);
-  const centerX = petX + petWidth / 2;
-  const centerY = petY + petHeight / 2;
+  const centerX = avatarX + avatarWidth / 2;
+  const centerY = avatarY + avatarHeight / 2;
   const clampX = value => clamp(value, bounds.left, bounds.right - width);
   const clampY = value => clamp(value, bounds.top, bounds.bottom - height);
   const spots = [
-    { side: 'above', x: clampX(centerX - width / 2), y: petY - PET_ANCHOR_GAP - height,
-      overflow: Math.max(0, bounds.top - (petY - PET_ANCHOR_GAP - height)) },
-    { side: 'below', x: clampX(centerX - width / 2), y: petY + petHeight + PET_ANCHOR_GAP,
-      overflow: Math.max(0, petY + petHeight + PET_ANCHOR_GAP + height - bounds.bottom) },
-    { side: 'right', x: petX + petWidth + PET_ANCHOR_GAP, y: clampY(centerY - height / 2),
-      overflow: Math.max(0, petX + petWidth + PET_ANCHOR_GAP + width - bounds.right) },
-    { side: 'left', x: petX - PET_ANCHOR_GAP - width, y: clampY(centerY - height / 2),
-      overflow: Math.max(0, bounds.left - (petX - PET_ANCHOR_GAP - width)) },
+    { side: 'above', x: clampX(centerX - width / 2), y: avatarY - AVATAR_ANCHOR_GAP - height,
+      overflow: Math.max(0, bounds.top - (avatarY - AVATAR_ANCHOR_GAP - height)) },
+    { side: 'below', x: clampX(centerX - width / 2), y: avatarY + avatarHeight + AVATAR_ANCHOR_GAP,
+      overflow: Math.max(0, avatarY + avatarHeight + AVATAR_ANCHOR_GAP + height - bounds.bottom) },
+    { side: 'right', x: avatarX + avatarWidth + AVATAR_ANCHOR_GAP, y: clampY(centerY - height / 2),
+      overflow: Math.max(0, avatarX + avatarWidth + AVATAR_ANCHOR_GAP + width - bounds.right) },
+    { side: 'left', x: avatarX - AVATAR_ANCHOR_GAP - width, y: clampY(centerY - height / 2),
+      overflow: Math.max(0, bounds.left - (avatarX - AVATAR_ANCHOR_GAP - width)) },
   ];
   const spot = spots.find(item => item.overflow === 0) || spots.reduce((best, item) => item.overflow < best.overflow ? item : best, spots[0]);
   const x = clampX(spot.x), y = clampY(spot.y);
@@ -75,17 +75,17 @@ export function petAnchoredWindowRect(pet, size, viewport) {
     tailX: Math.round(clamp(centerX - x, 24, width - 24)), tailY: Math.round(clamp(centerY - y, 24, height - 24)) };
 }
 
-export function petAnchoredMinimizedRect(pet, viewport) {
+export function avatarAnchoredMinimizedRect(avatar, viewport) {
   const bounds = viewportBounds(viewport);
   const width = Math.min(280, bounds.width), height = Math.min(44, bounds.height);
-  const petWidth = finite(pet?.width) ? pet.width : 112;
-  const petHeight = finite(pet?.height) ? pet.height : 140;
-  const petX = finite(pet?.x) ? pet.x : bounds.left;
-  const petY = finite(pet?.y) ? pet.y : bounds.bottom - petHeight;
-  const above = petY - PET_ANCHOR_GAP - height >= bounds.top;
-  const x = clamp(petX + petWidth / 2 - width / 2, bounds.left, bounds.right - width);
-  return { x: Math.round(x), y: Math.round(above ? petY - PET_ANCHOR_GAP - height : petY + petHeight + PET_ANCHOR_GAP),
-    width, height, side: above ? 'above' : 'below', tailX: Math.round(clamp(petX + petWidth / 2 - x, 24, width - 24)) };
+  const avatarWidth = finite(avatar?.width) ? avatar.width : 112;
+  const avatarHeight = finite(avatar?.height) ? avatar.height : 140;
+  const avatarX = finite(avatar?.x) ? avatar.x : bounds.left;
+  const avatarY = finite(avatar?.y) ? avatar.y : bounds.bottom - avatarHeight;
+  const above = avatarY - AVATAR_ANCHOR_GAP - height >= bounds.top;
+  const x = clamp(avatarX + avatarWidth / 2 - width / 2, bounds.left, bounds.right - width);
+  return { x: Math.round(x), y: Math.round(above ? avatarY - AVATAR_ANCHOR_GAP - height : avatarY + avatarHeight + AVATAR_ANCHOR_GAP),
+    width, height, side: above ? 'above' : 'below', tailX: Math.round(clamp(avatarX + avatarWidth / 2 - x, 24, width - 24)) };
 }
 
 export function minimizedWindowRect(position = {}, viewport) {

@@ -148,10 +148,6 @@ export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolu
    </dl><div className="maint-panel-actions"><button className="maint-button" disabled={!historical.checked?.rows?.length} onClick={()=>setDialog('check')}>查看检查详情</button></div></Panel>
    </div>
    <div className="maint-col maint-col-right">
-   <Panel kind="rules" title="智能调整方案" state={search}><dl>
-    {config&&<><Fact label="调节动作">{config.actions.length}项</Fact><Fact label="关联模型输入">{config.fields.length}项</Fact><Fact label="候选配置">最多{config.totalCandidates}个</Fact><Fact label="最大联合调整">{config.maxChangedActions}项</Fact></>}
-    <Fact label="当前搜索状态" tone={search.tone}>{search.label}</Fact><Fact label="最近搜索">{recentSearchDisplay(mostRecentCompletedSearch,searchState)}</Fact>
-   </dl><div className="maint-panel-actions"><button className="maint-button" disabled={!config} onClick={()=>setDialog('search')}>查看搜索配置</button>{onOpenSolutions&&<button className="maint-button" onClick={onOpenSolutions}>进入方案<ChevronRight size={14}/></button>}</div></Panel>
    <Panel kind="assistant" title="DK AI服务" state={ai}><dl>
     {safeStatusText(assistantStatus?.model)&&<Fact label={assistantStatus?.mode==='cloud'?'云端模型':'本地模型'}>{assistantStatus.model}</Fact>}
     <Fact label="服务状态" tone={ai.tone}>{ai.label}</Fact>{ai.load&&<Fact label="模型加载" tone={ai.tone}>{ai.load}</Fact>}
@@ -175,9 +171,6 @@ export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolu
    <details className="prediction-record-technical"><summary>查看技术信息</summary><dl>
     <Fact label="完整模型版本">{safeStatusText(modelStatus?.model_version)}</Fact>{/^[a-f0-9]{64}$/i.test(modelStatus?.model_hash||'')&&<Fact label="模型指纹"><code className="maint-fingerprint">{modelStatus.model_hash}</code></Fact>}<Fact label="校验算法">SHA-256</Fact><Fact label="模型校验">{modelStatus?.schema_status==='VERIFIED'?'已验证':'待校验'}</Fact>
    </dl><pre className="maint-json">{JSON.stringify(modelStatus,null,2)}</pre></details></OperationsDialog>}
-  {dialog==='search'&&config&&<OperationsDialog title="搜索配置" onClose={()=>setDialog(null)}><dl>
-   <Fact label="调节动作">{config.actions.map(action=>action.displayName).join('、')}</Fact><Fact label="关联模型输入">{config.fields.map(field=>field.label).join('、')}</Fact><Fact label="调节范围">{Math.min(...SEARCH_CONFIG.actionLevelsPercent)}%~{Math.max(...SEARCH_CONFIG.actionLevelsPercent)}%</Fact>
-  </dl></OperationsDialog>}
   {dialog==='check'&&<OperationsDialog title="当前工况检查详情" onClose={()=>setDialog(null)}><dl><Fact label="输入完整度">{completeText}</Fact>
    {inputSummary?.issues.map(issue=><Fact key={issue.field} label={MODEL_FEATURES.find(field=>field.key===issue.field)?.label||'输入提示'}><UserVisibleText value={issue.message}/></Fact>)}</dl><HistoricalRangeDetails {...historical}/></OperationsDialog>}
   {dialog==='diagnostics'&&<OperationsDialog title="系统状态详情" data-system-diagnostics onClose={()=>setDialog(null)} footer={<button className="maint-button" onClick={()=>downloadOperationalFile('QCDKR-系统诊断.json',exportSystemDiagnosticSnapshot(diagnostics))}><Download size={14}/>导出状态详情</button>}>

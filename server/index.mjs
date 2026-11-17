@@ -3,10 +3,12 @@ import { createPredictionService, ModelError, caseToModelValues } from './model-
 import { createSmartCandidateSearch, SearchError } from './smart-candidate-search.mjs';
 import { DEFAULT_INPUT_RANGE_TABLE } from '../src/inputRangeDefaults.js';
 import { validatePredictionErrorAlarmRange } from '../src/predictionErrorAlarm.js';
+import { normalizeCaseNumbers } from '../src/modelInputs.js';
 import { matchedCandidateActual, maxReachabilityIdentity, maxReachabilityBaselineIsCurrent } from '../src/candidatePrediction.js';
 import { deepFreeze, predictionIdentity, reportInputFingerprint, currentRunMatches, assertPredictionBinding } from '../src/predictionSnapshot.js';
 import { createProcessAgent, AgentError, AGENT_TOOLS } from './process-agent.mjs';
 import { createLocalState, StateError } from './local-state.mjs';
+import { createActorAwareState, setRequestActor, scopedEnabled } from './user-scope.mjs';
 import { createUserAuth } from './user-auth.mjs';
 import { createLocalLlm } from './local-llm.mjs';
 import { createCloudLlm } from './cloud-llm.mjs';
@@ -32,6 +34,7 @@ import { readFile, writeFile, rename, mkdir, stat, realpath } from 'node:fs/prom
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import { KnowledgeError, MAX_KNOWLEDGE_REQUEST_BYTES, composeKnowledgeReply, knowledgeMetadata, retrieveKnowledge, uploadedKnowledgeDocument } from './knowledge.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -185,7 +188,8 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
   const shareOrigins = String(process.env.QCDKR_SHARE_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean);
   const accessControl = createAccessControl({ mode: accessMode, authToken, allowedOrigins, shareHosts, shareOrigins });
   await mkdir(dataDir, { recursive: true });
-  const state = createLocalState(dataDir), userAuth = createUserAuth(state, { enabled: requireLogin });
+  // QCDKR_SCOPED_STATE=1 时按账号分目录读写；默认关闭时行为与改造前完全一致。
+  const state = createActorAwareState(createLocalState(dataDir)), userAuth = createUserAuth(state, { enabled: requireLogin });
   await userAuth.initialize();
   const casesFile = path.join(dataDir, 'cases.json');
   const settingsFile = path.join(dataDir, 'settings.json');
@@ -397,6 +401,10 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       if (req.method === 'OPTIONS') {
         res.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-DKQKAR-Request-Id', 'Access-Control-Max-Age': '600' }); res.end(); return;
       }
+      if (pathname === '/api/auth/handout' && req.method === 'GET') {
+        const fingerprint = new URL(req.url, 'http://local').searchParams.get('fingerprint') || '';
+        json(res, 200, await userAuth.handout(fingerprint)); return;
+      }
       if (pathname === '/api/auth/session' && req.method === 'GET') { json(res, 200, await userAuth.session(req)); return; }
       if (pathname === '/api/auth/setup' && req.method === 'POST') { json(res, 200, await userAuth.setup(await body(req))); return; }
       if (pathname === '/api/auth/login' && req.method === 'POST') {
@@ -405,14 +413,30 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
           await maintenance.log('auth', 'info', '本机管理员已登录。', { actorId:result.user.id }).catch(() => {});
           json(res, 200, result);
         } catch(error) {
-          const invalid = ['INVALID_CREDENTIALS','LOGIN_RATE_LIMIT'].includes(error.code);
-          json(res, invalid ? error.status : 503, { ok:false, error:invalid ? '用户名或密码错误' : '本地登录服务暂不可用，请稍后重试。', code:invalid ? error.code : 'LOGIN_SERVICE_UNAVAILABLE' });
+          const known = ['INVALID_CREDENTIALS','LOGIN_RATE_LIMIT','ACCOUNT_BOUND','FINGERPRINT_REQUIRED'].includes(error.code);
+          const masked = ['INVALID_CREDENTIALS','LOGIN_RATE_LIMIT'].includes(error.code);
+          json(res, known ? error.status : 503, { ok:false,
+            error: masked ? '用户名或密码错误' : known ? error.message : '本地登录服务暂不可用，请稍后重试。',
+            code: known ? error.code : 'LOGIN_SERVICE_UNAVAILABLE' });
         }
         return;
       }
       if (pathname === '/api/auth/logout' && req.method === 'POST') { json(res, 200, await userAuth.logout(req, res)); return; }
+      // 2026-11-17：多账号（第二步）。仅已登录管理员可查看/新增账号，不覆盖现有账号。
+      if (pathname === '/api/auth/accounts' && req.method === 'GET') {
+        await userAuth.require(req);
+        json(res, 200, { accounts: await userAuth.listAccounts() });
+        return;
+      }
+      if (pathname === '/api/auth/accounts' && req.method === 'POST') {
+        await userAuth.require(req);
+        json(res, 201, await userAuth.addAccount(await body(req)));
+        return;
+      }
       if (pathname.startsWith('/api/auth/')) { json(res, 404, { ok:false, error:'此账户操作不可用。', code:'AUTH_ROUTE_NOT_AVAILABLE' }); return; }
       const actor = pathname.startsWith('/api/') && pathname !== '/api/health' ? await userAuth.require(req) : null;
+      // 之后的 state 读写按这个账号分流（QCDKR_SCOPED_STATE=1 时生效）。
+      if (scopedEnabled()) setRequestActor(actor?.id || null);
       if(await industrialCommunication.route({pathname,req,res,actor,json,body:req=>body(req,4*1024*1024)}))return;
       const query = Object.fromEntries(new URL(req.url, `http://${req.headers.host}`).searchParams);
       if (pathname === '/api/copilot/status' && req.method === 'GET') {
@@ -574,6 +598,8 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       }
       if (pathname === '/api/input-snapshot' && req.method === 'POST') {
         const input=await body(req);invalidateOperation(input.operation_scope,actor);
+        // 与 /api/predict 同口径清洗：旧存档/导入的字符串数值不能在建快照这一步被拒收。
+        if(input.input)input.input=normalizeCaseNumbers(input.input);
         industrialCommunication.service.assertInput(input.input);
         const committed=await predictionService.prepareCommittedInput(input.input);
         if(input.operation_scope&&operation(input.operation_scope,actor).revision!==input.operation_scope.revision)
@@ -733,7 +759,11 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
         if (searchRoute[2] === 'cancel' && req.method === 'POST') {json(res,200,smartSearch.cancel(searchRoute[1],actor));return;}
       }
       if (['/api/predict', '/api/optimize'].includes(pathname) && req.method === 'POST') {
-        const input = await body(req); const data = input.input ?? input;
+        const input = await body(req);
+        // 2026-11-17：导入/旧存档里数值可能是字符串，先归一化成数字再取 data 与校验，
+        // 否则会以“工程量须为有限 number”拒收，前端却显示参数完整。
+        if (pathname === '/api/predict' && input.input) input.input = normalizeCaseNumbers(input.input);
+        const data = input.input ?? input;
         res.predictTrace?.('request_payload_parsed', { snapshot_id: input.options?.input_snapshot?.snapshot_id || null, observation_id: input.options?.observation?.observation_id || null, operation_scope: input.operation_scope || null });
         if (pathname === '/api/predict') {
           res.predictStage = 'operation_scope';
@@ -779,10 +809,20 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       const [actualFile, actualRoot] = await Promise.all([realpath(filename), realpath(root)]);
       if (!info.isFile() || !actualFile.startsWith(`${actualRoot}${path.sep}`)) throw new ApiError(403, '资源路径无效。');
       const bytes = req.method === 'HEAD' ? null : await readFile(filename);
+      // 2026-11-17：boot.js/uuid-polyfill.js 不带内容哈希，必须每次协商，
+      // 否则开屏会缓存一小时旧封面/旧登录页（云端“历史淘汰页面”就是它）。
+      const unhashedRuntime = /(?:^|[\\/])(?:boot|uuid-polyfill)\.js$/i.test(filename);
+      // 2026-11-17：文本资源走 gzip。云端带宽有限，app.js 832KB 压到 ~250KB 才能不卡开屏。
+      const compressible = ['.js','.mjs','.css','.html','.json','.svg','.txt','.map'].includes(path.extname(filename).toLowerCase());
+      if (bytes && compressible && bytes.length > 1024 && String(req.headers['accept-encoding'] || '').includes('gzip')) {
+        const gzipped = gzipSync(bytes, { level: 6 });
+        res.writeHead(200, { 'Content-Type': MIME[path.extname(filename).toLowerCase()] || 'application/octet-stream', 'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding', 'Content-Length': gzipped.length, 'Cache-Control': path.extname(filename).toLowerCase() === '.html' || unhashedRuntime ? 'no-cache' : 'public, max-age=3600' });
+        res.end(gzipped); return;
+      }
       const ext = path.extname(filename).toLowerCase();
       // 模型/贴图按内容改名发布（*_mo.glb），可安全长缓存；HTML 保持协商缓存。
       const modelAsset = ['.glb', '.gltf', '.bin', '.png', '.jpg', '.jpeg', '.webp', '.ktx2', '.woff2'].includes(ext);
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Content-Length': info.size, 'Cache-Control': ext === '.html' ? 'no-cache' : modelAsset ? 'public, max-age=604800, immutable' : 'public, max-age=3600' });
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Content-Length': info.size, 'Cache-Control': ext === '.html' || unhashedRuntime ? 'no-cache' : modelAsset ? 'public, max-age=604800, immutable' : 'public, max-age=3600' });
       res.end(bytes);
     } catch (error) {
       const predictCode = res.predictRequestId ? predictionErrorCode(error, res.predictStage) : null;

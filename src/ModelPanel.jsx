@@ -28,7 +28,7 @@ function NumericControl({ label, value, step = 1, min = 0, max = 10000, onChange
   </label>;
 }
 
-function ModelPanel({ full = false, workspace = false, caseData, predictionValue, result, dirty = false, autoStatus, errors = [], selected = 'S5', setSelected, view = 'perspective', setView, explode = false, setExplode, showStrip = true, setShowStrip, onFieldChange, onCaseFieldChange, onTargetChange, onNavigate, resultCase, resultSample, lastUpdated, sessionKey, onReset }) {
+function ModelPanel({ full = false, workspace = false, caseData, predictionValue, result, dirty = false, autoStatus, errors = [], predictionState, selected = 'S5', setSelected, view = 'perspective', setView, explode = false, setExplode, showStrip = true, setShowStrip, onFieldChange, onCaseFieldChange, onTargetChange, onNavigate, resultCase, resultSample, lastUpdated, sessionKey, onReset }) {
   const [expanded, setExpanded] = useState(false);
   const focusMode = 'line';
   const [shellMode, setShellMode] = useState('transparent');
@@ -76,7 +76,7 @@ function ModelPanel({ full = false, workspace = false, caseData, predictionValue
     return () => { window.removeEventListener('keydown', escape); document.removeEventListener('fullscreenchange', changed); unsubscribeNative?.(); if (expandedRef.current) window.dkqkarDesktop?.setSceneFullscreen?.(false).catch(() => {}); };
   }, []);
   return <section ref={panelRef} className={`panel model-panel cockpit-panel prediction-workbench ${full ? 'model-full' : ''} ${workspace ? 'model-workspace' : ''} ${expanded ? 'scene-expanded' : ''} ${showData ? 'has-scene-data' : 'scene-data-hidden'}`} aria-label="S5 预测工作台">
-    <PredictionSummary result={liveResult} resultCase={resultCase || caseData} resultSample={resultSample} caseData={caseData} dirty={dirty} errors={errors} autoStatus={autoStatus} onTargetChange={onTargetChange} lastUpdated={lastUpdated} />
+    <PredictionSummary result={liveResult} resultCase={resultCase || caseData} resultSample={resultSample} caseData={caseData} dirty={dirty} errors={errors} autoStatus={autoStatus} predictionState={predictionState} onTargetChange={onTargetChange} lastUpdated={lastUpdated} />
     <div className="cockpit-toolbar">
       <div className="scene-identity"><span className="scene-line-mark"><Layers3 size={25} /></span><div><b>五机架冷轧机组</b></div></div>
       <div className="cockpit-segment shell-segment" role="group" aria-label="外壳显示">{[['solid', '实体'], ['transparent', '透壳'], ['hidden', '仅辊系']].map(([key, label]) => <button key={key} className={shellMode === key ? 'active' : ''} aria-pressed={shellMode === key} onClick={() => setShellMode(key)}>{label}</button>)}</div>

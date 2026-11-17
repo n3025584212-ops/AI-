@@ -1,17 +1,5 @@
-# Verified CPython 3.12 model training and inference environment.
-# Full dependency lock for rebuilding persisted-model runtime.
-cloudpickle==3.1.2
-et_xmlfile==2.0.0
-joblib==1.6.0
+# 模型运行时依赖（model_runtime.py）
+# Python 3.11+；与云端 /opt/qcdkr/model-runtime 保持一致
 numpy==2.3.3
-openpyxl==3.1.5
-pandas==2.3.2
-python-dateutil==2.9.0.post0
-pytz==2026.4
 scikit-learn==1.7.2
-scipy==1.18.1
-six==1.17.0
-threadpoolctl==3.7.0
-tzdata==2026.4
-edge-tts==7.2.8
-miniaudio==1.71
+scipy

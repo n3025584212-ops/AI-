@@ -1,22 +1,45 @@
+# 依赖与构建产物
 node_modules/
 dist/
-data/
-qa/
-tmp/
-.venv-model/
-
-node_modules/
-model-runtime/
-data/local-llm/
-toolchain/
-dist/
+dist-3d/
+dist-no3d/
+build/
+release/
+release-web-cloud/
 rebuild-output/
-.runtime-data/
+
+# 本地运行数据与缓存
+data/
+data/local-llm/
 tmp/
-# 本地协作/备份文件不纳入版本库
+qa/
+.runtime-data/
+toolchain/
+.venv-model/
+model-runtime/
+__pycache__/
+*.pyc
+
+# 日志、临时截图与备份
+*.log
+*.pid
+*.bak
+*.bak-*
+*.orig
+*.rej
+
+# 本地协作/备份文件
 AGENTS.md
 MEMORY.md
 MEMORY.md.*
 .zcode/
 notes/
-*.bak-*
+.env
+.env.local
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

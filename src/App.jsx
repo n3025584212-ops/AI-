@@ -1,5 +1,5 @@
 import { buildAssistantExperience } from './assistantTaskPolicy.js';
-import { PET_FIRST_REPORT_DELAY_MS, PET_MIN_GAP_MS, PET_SPEECH_VISIBLE_MS, eventSpeech, incidentFingerprint, incidentSpeech, taskSpeech } from './petSpeech.js';
+import { AVATAR_FIRST_REPORT_DELAY_MS, AVATAR_MIN_GAP_MS, AVATAR_SPEECH_VISIBLE_MS, eventSpeech, incidentFingerprint, incidentSpeech, taskSpeech } from './assistantSpeech.js';
 import { useTaskRuntime, assertTaskApproval, assertTaskWriteBinding, sceneActionMatches, downloadTaskArtifact, TASK_TERMINAL } from './useTaskRuntime.js';
 import { projectAssistantTask, receiptFromAgentRun } from './assistantTaskRuntime.js';
 import { useAssistantActivity } from './useAssistantActivity.js';
@@ -34,7 +34,7 @@ import { AssistantConversation, AssistantComposer } from './AssistantConversatio
 import { exportJSON, exportCSV, exportWord, exportPowerPoint, downloadSingleConditionTemplate } from './exports.js';
 import LiveWorkspace from './LiveWorkspace.jsx';
 import FloatingAssistant from './FloatingAssistant.jsx';
-import AssistantPet from './AssistantPet.jsx';
+import AssistantAvatar from './AssistantAvatar.jsx';
 // 2026-11-14 恢复第一阶段接线：连续工艺分析面板为副驾驶默认入口（自 backups/panel-fix-20261113 移植）。
 import ContinuousCopilotPanel from './ContinuousCopilotPanel.jsx';
 import { ASSISTANT_MODE_LABELS, readAssistantMode, writeAssistantMode } from './assistantAccess.js';
@@ -220,35 +220,35 @@ function App({ user, onLogout }){
  const [assistantOpen,setAssistantOpen]=useState(false),[assistantSourcesOpen,setAssistantSourcesOpen]=useState(false);
  const [assistantUi,setAssistantUi]=useState('continuous');
  const [assistantMode,setAssistantMode]=useState(()=>readAssistantMode());
- // 桌宠就是副驾驶本人：它有自己的嘴（气泡）和声音（TTS），这里只管排队、去重和冷却。
- const [petSpeech,setPetSpeech]=useState(null);
- const petSpeechRef=useRef({at:0,key:'',seq:0,pending:null,pendingKey:'',pendingTimer:null}),petSpeechTimer=useRef(null),petVoiceRef=useRef(null);
- const petSayNow=(line,key,options)=>{
-  const state=petSpeechRef.current;
+ // 助手就是副驾驶本人：它有自己的嘴（气泡）和声音（TTS），这里只管排队、去重和冷却。
+ const [avatarSpeech,setAvatarSpeech]=useState(null);
+ const avatarSpeechRef=useRef({at:0,key:'',seq:0,pending:null,pendingKey:'',pendingTimer:null}),avatarSpeechTimer=useRef(null),avatarVoiceRef=useRef(null);
+ const avatarSayNow=(line,key,options)=>{
+  const state=avatarSpeechRef.current;
   state.at=Date.now();state.key=key;state.seq+=1;
-  setPetSpeech({id:state.seq,text:line});
-  if(petSpeechTimer.current)clearTimeout(petSpeechTimer.current);
-  petSpeechTimer.current=setTimeout(()=>setPetSpeech(null),PET_SPEECH_VISIBLE_MS);
-  if(options.voice!==false)petVoiceRef.current?.(line);
+  setAvatarSpeech({id:state.seq,text:line});
+  if(avatarSpeechTimer.current)clearTimeout(avatarSpeechTimer.current);
+  avatarSpeechTimer.current=setTimeout(()=>setAvatarSpeech(null),AVATAR_SPEECH_VISIBLE_MS);
+  if(options.voice!==false)avatarVoiceRef.current?.(line);
   return true;
  };
- const petSay=(text,key='',options={})=>{
+ const avatarSay=(text,key='',options={})=>{
   const line=String(text||'').trim();
   if(!line)return false;
-  const state=petSpeechRef.current,now=Date.now();
+  const state=avatarSpeechRef.current,now=Date.now();
   if(key&&(key===state.key||key===state.pendingKey))return false;
   // 冷却期内不丢话：排队，等够最小间隔再说（否则事件刚播完，紧接着的告警就永远说不出来）
-  const wait=PET_MIN_GAP_MS-(now-state.at);
+  const wait=AVATAR_MIN_GAP_MS-(now-state.at);
   if(state.at&&wait>0){
    state.pending={line,key,options};state.pendingKey=key;
    if(state.pendingTimer)clearTimeout(state.pendingTimer);
    state.pendingTimer=setTimeout(()=>{
     const item=state.pending;state.pending=null;state.pendingKey='';state.pendingTimer=null;
-    if(item)petSayNow(item.line,item.key,item.options);
+    if(item)avatarSayNow(item.line,item.key,item.options);
    },wait);
    return true;
   }
-  return petSayNow(line,key,options);
+  return avatarSayNow(line,key,options);
  };
  const voiceState={phase:'idle',wakeEnabled:false,following:false};
  const [lastTaskChange,setLastTaskChange]=useState(null);
@@ -518,6 +518,27 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
   };
   window.addEventListener('keydown',escape,true);return()=>window.removeEventListener('keydown',escape,true);
  },[pendingPlan,actionPanel]);
+ // 预测失败的真实原因要能落到界面上；只写“暂未完成”会让同类故障看起来永远修不好。
+ const PREDICTION_FAILURE_TEXT=Object.freeze({
+  STALE_COMMITTED_INPUT:'工况在预测途中发生变化，本次结果已作废，将按最新工况重算。',
+  COMMITTED_SNAPSHOT_MODEL_MISMATCH:'输入快照与当前模型版本不一致，请重新预测。',
+  INPUT_INCOMPLETE:'当前工况输入不完整，请补齐缺少的参数后再预测。',
+  SNAPSHOT_INPUT_MISMATCH:'输入已编辑但预测快照未更新，请重新应用参数后再预测。',
+  IDENTITY_MISMATCH:'输入或模型身份已变化，请重新预测当前工况。',
+  PREDICT_TIMEOUT:'预测服务 25 秒未返回，已中止本次计算。',
+ });
+ const predictionFailureText=error=>{
+  const code=String(error?.code||'');
+  const message=typeof error?.message==='string'?error.message.trim():'';
+  const key=code||message;
+  const known=PREDICTION_FAILURE_TEXT[key];
+  // 错误码只进控制台；界面说人话。注意 code 为空时不能拿 message 冒充 code，
+  // 否则 detail 会被算成空串，真实原因（如 crypto.subtle 缺失）被吞掉。
+  try{if(key)console.warn('[prediction]',key,error?.name||'');}catch{}
+  if(known)return code==='INPUT_INCOMPLETE'&&message?message:known;
+  return message?`预测未完成：${message}`:'预测未完成，请稍后重试或查看系统状态。';
+ };
+ const lastPredictionError=useRef(null);
  const jobCurrent=(job,current)=>current()&&inputRevision.current===job.scope.revision
   &&(job.input.importProvenance?.source_type!=='PLC_REALTIME'||plcInputReadyRef.current===true)
   &&operationSession.current===job.scope.session_id&&reportInputFingerprint(currentCaseRef.current)===job.fingerprint
@@ -526,9 +547,13 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
  autoHandlers.current={
   state:(state,job,error)=>{
    setPredictionState(state);setPredictionPending(state==='PREDICTING');setAutoStatus(PREDICTION_STATUS_TEXT[state]);
+   if(state==='READY')lastPredictionError.current=null;
    if(state==='STALE'||state==='PREDICTING'){setDirty(true);setErrors([]);}
    if(state==='FAILED'){
-    setDirty(true);streamRef.current.fail();setErrors([PREDICTION_STATUS_TEXT.FAILED]);
+    // 2026-11-17：以前这里只显示一句“当前工况预测暂未完成”，真实原因（输入不全 /
+    // 工况切换 / 快照不一致 / 超时）被丢掉，用户只能反复点重试。
+    const failure=predictionFailureText(error);lastPredictionError.current=error;
+    setDirty(true);streamRef.current.fail();setErrors([failure]);setAutoStatus(failure);notify(failure,'WARNING');
     if(!recoveryPrediction.current&&error?.details?.http_status===503&&['MODEL_UNAVAILABLE','MODEL_LOADING','MODEL_NOT_READY','MODEL_EXITED'].includes(error.code)){
      recoveryPrediction.current=true;
      setModelStatus(previous=>({...previous,available:false,status:'BLOCKED'}));readinessRecovery.current?.start();
@@ -617,7 +642,7 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
  const systemHealth=modelStatus?.available!==true
   ?modelPending?{level:'pending',label:'预测服务加载中',reason:modelStatus?.reason||'正在连接 QCDKR 正式模型',page:'maintenance'}
   :{level:'error',label:'预测服务未就绪',reason:modelStatus?.reason||'请打开系统状态与维护查看详情',page:'maintenance'}
-  :predictionState==='FAILED'?{level:'error',label:'预测计算异常',reason:'当前工况预测未完成，可重试或查看系统状态',page:'maintenance'}
+  :predictionState==='FAILED'?{level:'error',label:'预测计算异常',reason:Array.isArray(errors)&&errors.length?errors[0]:'当前工况预测未完成，可重试或查看系统状态',page:'maintenance'}
   :plcSource&&plcQuality&&['STALE','DISCONNECTED'].includes(plcQuality)?{level:'warning',label:'工业数据中断',reason:'PLC 数据已暂停，等待恢复',page:'communication'}
   :{level:'ok',label:'系统正常',reason:modelStatus?.mode==='demo'?'当前为演示模型；点击查看系统状态':'模型、数据与预测服务可用；点击查看系统状态',page:'maintenance'};
  const healthNotice=useRef('init');
@@ -645,19 +670,24 @@ const invalidatePrediction=({observationOnly=false,promotingDraftId=null,streamA
  };
  // Recover once from a transient model-service failure. Input/model changes
  // reset the attempt; a second failure stays visible with the manual retry.
+ // 2026-11-17：以前这里要求 !dirty，但 FAILED 分支一定会把 dirty 置 true，
+ // 导致自动重试永远不触发——一次失败就永久停在“预测暂未完成”。
  const autoPredictionRetry=useRef({key:null,count:0});
  useEffect(()=>{
-  if(predictionState!=='FAILED'||dirty||!formalModelReady(modelStatus))return;
-  const key=`${modelKey}:${modelStatus.model_hash||''}`;
+  if(predictionState!=='FAILED'||!formalModelReady(modelStatus))return;
+  if(lastPredictionError.current?.code==='INPUT_INCOMPLETE')return; // 补齐参数会触发新的预测，重试没有意义
+  const current=readActiveProjection();
+  if(!selectRecoveryProjection(null,current).eligible)return;
+  const key=`${modelKey}:${modelStatus.model_hash||''}:${reportInputFingerprint(current.input)}`;
   if(autoPredictionRetry.current.key!==key)autoPredictionRetry.current={key,count:0};
   if(autoPredictionRetry.current.count>=1)return;
   const timer=setTimeout(()=>{
-   if(predictionStateRef.current!=='FAILED'||dirtyRef.current)return;
+   if(predictionStateRef.current!=='FAILED')return;
    autoPredictionRetry.current.count+=1;
    queueCurrentPrediction(readActiveProjection(),{recovered:true});
   },2500);
   return()=>clearTimeout(timer);
- },[predictionState,dirty,modelKey,modelStatus.available,modelStatus.model_hash,modelStatus.model_version]);
+ },[predictionState,modelKey,modelStatus.available,modelStatus.model_hash,modelStatus.model_version,caseData]);
  const startHistoricalReplay=async(modelHash,{seededDemo=false,baseInput}={})=>{
   historicalReplayLoad.current?.controller.abort();
   const controller=new AbortController(),load={controller,revision:inputRevision.current,controlVersion:streamRef.current.controlVersion};
@@ -849,12 +879,12 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
  useEffect(()=>()=>draftPredictionGate.current.invalidate(),[]);
  useEffect(()=>{assistantMounted.current=true;const scheduler=createAssistantStatusScheduler(fetchAssistantStatus);assistantStatusScheduler.current=scheduler;void scheduler.refresh();return()=>{assistantMounted.current=false;scheduler.stop();assistantStatusScheduler.current=null;abortAiController(agentRequest.current,'APP_UNMOUNT');};},[]);
  // 事件语音播报：轮询新事件，warning/error 级入队，逐条 TTS 播报；同类 60 秒冷却，
- // 应用启动时只标记历史事件不回放。这条队列也是桌宠的嗓子：服务端合成失败时退回浏览器语音。
+ // 应用启动时只标记历史事件不回放。这条队列也是助手的嗓子：服务端合成失败时退回浏览器语音。
  const eventVoiceRef=useRef({seen:new Set(),queue:[],speaking:false,cooldown:new Map(),voiceDownUntil:0});
  useEffect(()=>{
   const state=eventVoiceRef.current;
   // 浏览器自带中文语音兜底：服务端 SAPI 在 Windows 服务进程里会被系统拒绝，
-  // 有了这条，桌宠开口才有声音，而不是只剩气泡。
+  // 有了这条，助手开口才有声音，而不是只剩气泡。
   const speakWithBrowser=text=>new Promise(resolve=>{
    try{
     const synth=window.speechSynthesis;
@@ -883,8 +913,8 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
    state.speaking=false;
    if(state.queue.length)pump();
   };
-  // 桌宠借这条队列出声：先排进 TTS，再说气泡，两者同一句。
-  petVoiceRef.current=text=>{state.queue.push({text});void pump();};
+  // 助手借这条队列出声：先排进 TTS，再说气泡，两者同一句。
+  avatarVoiceRef.current=text=>{state.queue.push({text});void pump();};
   const poll=async()=>{
    try{
     const data=await api('/events?limit=20');
@@ -907,17 +937,17 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
      const line=eventSpeech(item);
      if(line)lines.push('event:'+item.id+'|'+line);
     }
-    // 事件本身已经排进 TTS，气泡只负责把同一句显示在桌宠旁边。
-    if(lines.length){const [key,line]=lines[0].split('|');petSay(line,key,{voice:false});}
+    // 事件本身已经排进 TTS，气泡只负责把同一句显示在助手旁边。
+    if(lines.length){const [key,line]=lines[0].split('|');avatarSay(line,key,{voice:false});}
     if(state.queue.length)pump();
    }catch{}
   };
   poll();const timer=setInterval(poll,10000);
   return()=>clearInterval(timer);
  },[]);
- // 桌宠值守：AI 浮窗关着也每 30 秒问一次事件中心（后端同频巡检），
+ // 助手值守：AI 浮窗关着也每 30 秒问一次事件中心（后端同频巡检），
  // 问题清单有变化才开口；首次加载先让人看清界面，8 秒后再报旧账。
- const petWatchRef=useRef({fingerprint:null,timer:null});
+ const avatarWatchRef=useRef({fingerprint:null,timer:null});
  useEffect(()=>{
   let stopped=false,pending=null;
   const poll=async()=>{
@@ -925,18 +955,18 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
     // api() 自己会补 /api 前缀，这里写相对路径，否则拼成 /api/api/... 会 404
     const data=await api('/copilot/incidents',{method:'POST'});
     if(stopped)return;
-    const incidents=data.incidents||[],fingerprint=incidentFingerprint(incidents),previous=petWatchRef.current.fingerprint;
-    petWatchRef.current.fingerprint=fingerprint;
+    const incidents=data.incidents||[],fingerprint=incidentFingerprint(incidents),previous=avatarWatchRef.current.fingerprint;
+    avatarWatchRef.current.fingerprint=fingerprint;
     const line=incidentSpeech(incidents);
     if(!line||fingerprint===previous)return;
-    if(previous===null){pending=setTimeout(()=>{if(!stopped)petSay(line,'incident:'+fingerprint);},PET_FIRST_REPORT_DELAY_MS);return;}
-    petSay(line,'incident:'+fingerprint);
+    if(previous===null){pending=setTimeout(()=>{if(!stopped)avatarSay(line,'incident:'+fingerprint);},AVATAR_FIRST_REPORT_DELAY_MS);return;}
+    avatarSay(line,'incident:'+fingerprint);
    }catch{}
   };
   poll();const timer=setInterval(poll,30000);
   return()=>{stopped=true;clearInterval(timer);if(pending)clearTimeout(pending);};
  },[]);
- useEffect(()=>()=>{if(petSpeechTimer.current)clearTimeout(petSpeechTimer.current);if(petSpeechRef.current.pendingTimer)clearTimeout(petSpeechRef.current.pendingTimer);},[]);
+ useEffect(()=>()=>{if(avatarSpeechTimer.current)clearTimeout(avatarSpeechTimer.current);if(avatarSpeechRef.current.pendingTimer)clearTimeout(avatarSpeechRef.current.pendingTimer);},[]);
  const captureAssistantTurn=(q,options={})=>{
   const accepted=completedRef.current,ready=currentBinding.current.valid&&!dirty&&predictionState==='READY';
   const data=ready?accepted.caseData:currentCaseRef.current,requestSnapshot=ready?accepted.activeSnapshot:committedInput.current?.input_snapshot??null;
@@ -1343,7 +1373,7 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
   return reply;
  };
  const assistantAction=(action,message)=>{if(!runIsCurrent(message)){notify('该结果属于先前工况或旧实际值，请重新分析');return;}if(['apply','applyPlan','undo','generate','loadDraft','predictDraft','promoteDraft','discardDraft','load-draft','predict-draft','promote-draft','discard-draft'].includes(action)){applyPlan();return;}if(action==='three'){setPage('overview');globalThis.__qcdkrInspectRequest={stand:selected,at:Date.now()};window.setTimeout(()=>window.dispatchEvent(new CustomEvent('qcdkr:inspect',{detail:{stand:selected}})),500);return;}if(action==='generate'){setPage('optimize');generate();}else setPage(action);};
- const importFile=async(ev)=>{const f=ev.target.files?.[0];if(!f)return;try{const {input:incoming,audit}=await parseCaseFile(f,caseData,{chooseLegacyUnits:chooseImportUnits});const validation=assertCaseImportValid(incoming,rangeTable,readCustomLimits(globalThis.localStorage),audit);invalidatePrediction();pendingFrame.current=null;stream.manual();setPredictionEpoch(value=>value+1);setSessionKey(key=>key+1);unsavedEdits.current={parameterEdits:false,dataEdits:false};setOptimizationTask(null);currentCaseRef.current=newDashboardInput(incoming);setCase(currentCaseRef.current);setAppliedPlan(null);setDirty(true);setPlans([]);setErrors([]);notify('已导入 '+f.name+'，预测自动同步'+(validation.trueOutOfRange.length?' · '+validation.trueOutOfRange.length+'项超出当前参考范围':''));setPage('overview');}catch(e){notify('导入失败：'+(e.category==='PARSER_SCHEMA_ERROR'?'解析 / schema错误（PARSER_SCHEMA_ERROR）：':'')+e.message);}ev.target.value='';};
+ const importFile=async(ev)=>{const f=ev.target.files?.[0];if(!f)return;try{const {input:incoming,audit}=await parseCaseFile(f,caseData,{chooseLegacyUnits:chooseImportUnits});const validation=assertCaseImportValid(incoming,rangeTable,readCustomLimits(globalThis.localStorage),audit);invalidatePrediction();pendingFrame.current=null;stream.manual();setPredictionEpoch(value=>value+1);setSessionKey(key=>key+1);unsavedEdits.current={parameterEdits:false,dataEdits:false};setOptimizationTask(null);currentCaseRef.current=newDashboardInput(incoming);setCase(currentCaseRef.current);setAppliedPlan(null);setDirty(true);setPlans([]);setErrors([]);notify('已导入 '+f.name+'，预测自动同步'+(validation.trueOutOfRange.length?' · '+validation.trueOutOfRange.length+'项超出当前参考范围':''));setDataTab('current');if(page!=='data')setPage('data');}catch(e){notify('导入失败：'+(e.category==='PARSER_SCHEMA_ERROR'?'解析 / schema错误（PARSER_SCHEMA_ERROR）：':'')+e.message);}ev.target.value='';};
  const currentDiagnostics=currentDiagnosticsFor({result,observation,resultCase,currentBinding:currentBinding.current,auditBundle,dirty,operation_scope:operationScope()});
  if(activeSnapshot&&!dirty&&currentRunMatches({...predictionIdentity(result,observation),contextFingerprint:reportInputFingerprint(resultCase),operation_scope:operationScope()},currentBinding.current))coherentProjection.current={completed,binding:{...currentBinding.current},audit:sameIdentity(auditIdentity.current,predictionIdentity(result,observation))?auditBundle:{status:'PENDING',evidence:[],findings:[]},frame:completed.frame,updatedAt:lastUpdated};
  diagnosticsRef.current=currentDiagnostics;
@@ -1618,16 +1648,16 @@ const generatePresets=async()=>{setWorkbenchViewMode('CURRENT');policyOwner.curr
  const taskRuntimeView={...nativeTaskRuntime,start:startCopilotTask,importRequest:taskImportRequest,chooseImport:()=>taskImportRequest?.kind==='knowledge'?knowledgeFileRef.current?.click():fileRef.current?.click()};
  const assistantTask=projectAssistantTask({messages,busy:chatBusy||trialConfirming,runState,binding:currentBinding.current,uiActivity:assistantActivity.active});
  const assistantExperience=buildAssistantExperience({input:caseData,result,diagnostics:currentDiagnostics,binding:currentBinding.current,modelStatus,predictionState,dirty,page,task:assistantTask,mode:assistantMode,alarm:currentPredictionErrorAlarm(modelProps,predictionErrorAlarmRange)});
- // 任务收尾时桌宠报一句结论：同一个任务从执行态落到终态才说，切任务/旧任务不说话。
- const petTaskRef=useRef({id:null,state:null});
+ // 任务收尾时助手报一句结论：同一个任务从执行态落到终态才说，切任务/旧任务不说话。
+ const avatarTaskRef=useRef({id:null,state:null});
  useEffect(()=>{
   const task=assistantTask;
-  if(!task||task.historical){petTaskRef.current={id:null,state:null};return;}
-  const previous=petTaskRef.current;
-  petTaskRef.current={id:task.id,state:task.state};
+  if(!task||task.historical){avatarTaskRef.current={id:null,state:null};return;}
+  const previous=avatarTaskRef.current;
+  avatarTaskRef.current={id:task.id,state:task.state};
   if(previous.id!==task.id||previous.state===task.state)return;
   const line=taskSpeech(task);
-  if(line)petSay(line,'task:'+task.id+':'+task.state);
+  if(line)avatarSay(line,'task:'+task.id+':'+task.state);
  },[assistantTask?.id,assistantTask?.state]);
  const performAssistantTaskAction=async(action,{signal}={})=>{
   signal?.throwIfAborted();
@@ -1732,10 +1762,10 @@ function Optimization(){return <><OptimizationWorkspace resultSample={resultSamp
  const cancelAgent=()=>{assistantActivity.cancel();abortAiController(agentRequest.current,'USER_CANCEL');setChatBusy(false);setRunState('');if(activeRun.current)api('/agent/runs/'+activeRun.current+'/cancel',{method:'POST',body:'{}'}).catch(()=>{});};
  const STAGE_PANEL_TITLES={data:'数据接入',maintenance:'系统状态与维护',communication:'工业设备连接',logs:'运行日志'};
  const STAGE_SIDES={data:'left',maintenance:'left',communication:'right',logs:'right'};
- const businessFor=id=>id==='communication'?<IndustrialConnectionWorkspace api={api} connection={industrialDisplayConnection} predictionState={predictionState} currentInput={caseData} onNotify={notify} onNavigate={setPage}/>:id==='data'?<DataWorkspace {...{stream,caseData,modelProps,cases,result}} onResolveImportUnits={chooseImportUnits} tab={dataTab} onTabChange={setDataTab} onImport={()=>fileRef.current.click()} onTemplate={downloadSingleConditionTemplate} onSave={save} onLoad={loadSavedCase} onDelete={deleteSavedCase} onNotify={notify} onNavigate={setPage} onReplayHistorical={()=>startHistoricalReplay(modelStatus.model_hash,{seededDemo:true,baseInput:currentCaseRef.current})}/>:id==='maintenance'?<MaintenanceWorkspace currentPrediction={result} predictionBound={modelProps.currentPredictionBound} dirty={dirty} industrialStatus={industrialDisplayConnection.status} predictionUpdatedAt={modelProps.currentPredictionBound?lastUpdated:null} api={api} onNotify={notify} onNavigate={setPage} onOpenSolutions={()=>setPage('optimize')} user={user} {...{caseData,stream,modelStatus,assistantStatus,searchState:policySearchState,mostRecentCompletedSearch,predictionState}} onRefreshAssistant={refreshAssistantStatus} onRefreshModel={async()=>{const status=await api('/model/status');predictionClient.current.acceptStatus(status);setModelStatus(status);return status;}}/>:<LogsWorkspace api={api} onNotify={notify} onNavigate={setPage} user={user} analysisStatus={aiAnalysis.status} analysisError={aiAnalysis.error} onAnalysisHistory={openAnalysisHistory} onAnalyzeCurrent={()=>void analyzeRecords().catch(error=>notify(error.message))} focusLogId={focusLogId} predictionRecordContext={analysisContext} onLogFocused={()=>setFocusLogId(null)}/>;
- // 2026-11-15 桌宠接线：恢复 AssistantPet（3D 工程师形象，11-14 死代码清理时误删），接到工作台状态与浮窗开关。
- const deskPetLabel=runState||assistantTask?.label||'';
- return <><CsvImportUnitDialog inspection={importUnitRequest} onChoose={finishImportUnits}/><AssistantPet open={assistantOpen} onToggle={()=>setAssistantOpen(v=>!v)} busy={chatBusy||trialConfirming||assistantActivity.active?.state==='EXECUTING'} runState={deskPetLabel} suggestion={assistantExperience?.suggestion||null} task={assistantTask} voiceState={voiceState} voice="" speech={petSpeech} onSpeechDismiss={()=>setPetSpeech(null)}/><input ref={knowledgeFileRef} type="file" accept=".txt,.md,.docx" hidden onChange={uploadTaskKnowledge}/><input ref={fileRef} type="file" accept=".json,.csv" hidden onChange={importTaskFile} onCancel={()=>taskImportOwner.current?.reject(new Error('文件选择已取消。'))}/><AppShell {...{page,navActive:[page,pin].filter(Boolean),user,onLogout,caseData,modelStatus,dirty,refreshing,systemHealth}} twin={{selected,setSelected,view,setView,caseData,processSpeed:caseData.stands?.find(stand=>stand.id==='S5')?.speed||0,onOpenWorkbench:()=>setPage('overview'),playback:{running:stream.running,available:stream.frames.length>1&&!['manual','plc'].includes(stream.mode),onToggle:stream.toggle}}} onRefresh={requestWorkspaceRefresh} onNavigate={setPage} onSave={save} onOpenReport={()=>setActionPanel('report')} assistantExperience={assistantExperience} assistantTask={assistantTask} assistantBusy={chatBusy||trialConfirming||assistantActivity.active?.state==='EXECUTING'} assistantRunState={runState||assistantTask?.label} assistantOpen={assistantOpen} onAssistantToggle={()=>setAssistantOpen(v=>!v)} assistantMode={assistantMode} onAssistantModeChange={changeAssistantMode} assistant={assistantUi==='continuous'?<ContinuousCopilotPanel open={assistantOpen} onOpenChange={setAssistantOpen} sessionId={appSessionId} status={assistantStatus} caseData={resultCase} selected={selected} source={stream.sourceName} notify={notify} accessMode={assistantMode} onAccessModeChange={changeAssistantMode} readContext={readTaskContext} onLegacy={()=>{setAssistantUi('legacy');setAssistantOpen(true);}}/>:<AssistantPanel onUseContinuous={()=>{setAssistantUi('continuous');setAssistantOpen(true);}} taskRuntime={taskRuntimeView} task={assistantTask} taskHistory={assistantActivity.history} accessMode={assistantMode} onAccessModeChange={changeAssistantMode} lastTaskChange={lastTaskChange} onUndoTaskChange={undoTaskChange} onLoadCandidate={loadTaskCandidate} taskStorageError={assistantActivity.storageError} experience={assistantExperience} onTaskAction={assistantTaskAction} open={assistantOpen} onOpenChange={setAssistantOpen} sessionId={appSessionId} binding={currentBinding.current} status={assistantStatus} messages={messages.map(message=>targetReferenceMessage(message,currentTargetReference))} question={question} setQuestion={setQuestion} busy={chatBusy} onCancel={cancelAgent} ask={ask} caseData={resultCase} selected={selected} source={stream.sourceName} notify={notify} onAction={assistantAction} onDiagnosticAction={diagnosticAction} onTrialPreviewAction={trialPreviewAction} trialConfirming={trialConfirming} currentDiagnostics={currentDiagnostics} reference={agentReference} setReference={setAgentReference} cases={cases} baseline={defaultInput.current} runState={runState} selectedEvent={selectedEvent} onClearEvent={()=>setSelectedEvent(null)} diagnosticShortcutTitle={diagnosticShortcutTitle} onAnalysisHistory={openAnalysisHistory} analysisContext={analysisContext} onClearAnalysis={()=>{setAnalysisContext(null);setAnalysisChoice(null);}} analysisChoice={analysisChoice} onAnalysisChoice={mode=>{const pending=analysisChoice;setAnalysisChoice(null);if(pending)void ask(pending.question,{analysisMode:mode});}}/>}>{['CHECKING','FAST_RETRY','SLOW_POLL','EXHAUSTED'].includes(recoveryPhase)&&<div className="micro-note workspace-recovery" role="status" data-recovery-phase={recoveryPhase}><span>{recoveryPhase==='EXHAUSTED'?RECOVERY_UNAVAILABLE:RECOVERY_CONNECTING}</span>{recoveryPhase==='EXHAUSTED'&&<button type="button" onClick={requestWorkspaceRefresh} disabled={refreshing}>刷新</button>}</div>}{<div className={'twin-stage'+(page!=='overview'||pin?' stage-docked':'')+(page!=='overview'&&pin?' both-docks':'')+(page!=='overview'?' has-'+STAGE_SIDES[page]:'')+(pin?' has-'+STAGE_SIDES[pin]:'')+(pin?' has-pin-'+STAGE_SIDES[pin]:'')} data-stage-page={page}>
+ const businessFor=id=>id==='communication'?<IndustrialConnectionWorkspace api={api} connection={industrialDisplayConnection} predictionState={predictionState} currentInput={caseData} onNotify={notify} onNavigate={setPage}/>:id==='data'?<DataWorkspace {...{stream,caseData,modelProps,cases,result}} onResolveImportUnits={chooseImportUnits} tab={dataTab} onTabChange={setDataTab} onImport={()=>fileRef.current.click()} onTemplate={downloadSingleConditionTemplate} onSave={save} onLoad={loadSavedCase} onDelete={deleteSavedCase} onNotify={notify} onNavigate={setPage} onReplayHistorical={()=>startHistoricalReplay(modelStatus.model_hash,{seededDemo:true,baseInput:currentCaseRef.current})} searchState={policySearchState} mostRecentCompletedSearch={mostRecentCompletedSearch} onOpenSolutions={()=>setPage('optimize')}/>:id==='maintenance'?<MaintenanceWorkspace currentPrediction={result} predictionBound={modelProps.currentPredictionBound} dirty={dirty} industrialStatus={industrialDisplayConnection.status} predictionUpdatedAt={modelProps.currentPredictionBound?lastUpdated:null} api={api} onNotify={notify} onNavigate={setPage} onOpenSolutions={()=>setPage('optimize')} user={user} {...{caseData,stream,modelStatus,assistantStatus,searchState:policySearchState,mostRecentCompletedSearch,predictionState}} onRefreshAssistant={refreshAssistantStatus} onRefreshModel={async()=>{const status=await api('/model/status');predictionClient.current.acceptStatus(status);setModelStatus(status);return status;}}/>:<LogsWorkspace api={api} onNotify={notify} onNavigate={setPage} user={user} analysisStatus={aiAnalysis.status} analysisError={aiAnalysis.error} onAnalysisHistory={openAnalysisHistory} onAnalyzeCurrent={()=>void analyzeRecords().catch(error=>notify(error.message))} focusLogId={focusLogId} predictionRecordContext={analysisContext} onLogFocused={()=>setFocusLogId(null)}/>;
+ // 2026-11-15 助手接线：恢复 AssistantAvatar（3D 工程师形象，11-14 死代码清理时误删），接到工作台状态与浮窗开关。
+ const assistantCaption=runState||assistantTask?.label||'';
+ return <><CsvImportUnitDialog inspection={importUnitRequest} onChoose={finishImportUnits}/><AssistantAvatar open={assistantOpen} onToggle={()=>setAssistantOpen(v=>!v)} busy={chatBusy||trialConfirming||assistantActivity.active?.state==='EXECUTING'} runState={assistantCaption} suggestion={assistantExperience?.suggestion||null} task={assistantTask} voiceState={voiceState} voice="" speech={avatarSpeech} onSpeechDismiss={()=>setAvatarSpeech(null)}/><input ref={knowledgeFileRef} type="file" accept=".txt,.md,.docx" hidden onChange={uploadTaskKnowledge}/><input ref={fileRef} type="file" accept=".json,.csv" hidden onChange={importTaskFile} onCancel={()=>taskImportOwner.current?.reject(new Error('文件选择已取消。'))}/><AppShell {...{page,navActive:[page,pin].filter(Boolean),user,onLogout,caseData,modelStatus,dirty,refreshing,systemHealth}} twin={{selected,setSelected,view,setView,caseData,processSpeed:caseData.stands?.find(stand=>stand.id==='S5')?.speed||0,onOpenWorkbench:()=>setPage('overview'),playback:{running:stream.running,available:stream.frames.length>1&&!['manual','plc'].includes(stream.mode),onToggle:stream.toggle}}} onRefresh={requestWorkspaceRefresh} onNavigate={setPage} onSave={save} onOpenReport={()=>setActionPanel('report')} assistantExperience={assistantExperience} assistantTask={assistantTask} assistantBusy={chatBusy||trialConfirming||assistantActivity.active?.state==='EXECUTING'} assistantRunState={runState||assistantTask?.label} assistantOpen={assistantOpen} onAssistantToggle={()=>setAssistantOpen(v=>!v)} assistantMode={assistantMode} onAssistantModeChange={changeAssistantMode} assistant={assistantUi==='continuous'?<ContinuousCopilotPanel open={assistantOpen} onOpenChange={setAssistantOpen} sessionId={appSessionId} status={assistantStatus} caseData={resultCase} selected={selected} source={stream.sourceName} notify={notify} accessMode={assistantMode} onAccessModeChange={changeAssistantMode} readContext={readTaskContext} onLegacy={()=>{setAssistantUi('legacy');setAssistantOpen(true);}}/>:<AssistantPanel onUseContinuous={()=>{setAssistantUi('continuous');setAssistantOpen(true);}} taskRuntime={taskRuntimeView} task={assistantTask} taskHistory={assistantActivity.history} accessMode={assistantMode} onAccessModeChange={changeAssistantMode} lastTaskChange={lastTaskChange} onUndoTaskChange={undoTaskChange} onLoadCandidate={loadTaskCandidate} taskStorageError={assistantActivity.storageError} experience={assistantExperience} onTaskAction={assistantTaskAction} open={assistantOpen} onOpenChange={setAssistantOpen} sessionId={appSessionId} binding={currentBinding.current} status={assistantStatus} messages={messages.map(message=>targetReferenceMessage(message,currentTargetReference))} question={question} setQuestion={setQuestion} busy={chatBusy} onCancel={cancelAgent} ask={ask} caseData={resultCase} selected={selected} source={stream.sourceName} notify={notify} onAction={assistantAction} onDiagnosticAction={diagnosticAction} onTrialPreviewAction={trialPreviewAction} trialConfirming={trialConfirming} currentDiagnostics={currentDiagnostics} reference={agentReference} setReference={setAgentReference} cases={cases} baseline={defaultInput.current} runState={runState} selectedEvent={selectedEvent} onClearEvent={()=>setSelectedEvent(null)} diagnosticShortcutTitle={diagnosticShortcutTitle} onAnalysisHistory={openAnalysisHistory} analysisContext={analysisContext} onClearAnalysis={()=>{setAnalysisContext(null);setAnalysisChoice(null);}} analysisChoice={analysisChoice} onAnalysisChoice={mode=>{const pending=analysisChoice;setAnalysisChoice(null);if(pending)void ask(pending.question,{analysisMode:mode});}}/>}>{['CHECKING','FAST_RETRY','SLOW_POLL','EXHAUSTED'].includes(recoveryPhase)&&<div className="micro-note workspace-recovery" role="status" data-recovery-phase={recoveryPhase}><span>{recoveryPhase==='EXHAUSTED'?RECOVERY_UNAVAILABLE:RECOVERY_CONNECTING}</span>{recoveryPhase==='EXHAUSTED'&&<button type="button" onClick={requestWorkspaceRefresh} disabled={refreshing}>刷新</button>}</div>}{<div className={'twin-stage'+(page!=='overview'||pin?' stage-docked':'')+(page!=='overview'&&pin?' both-docks':'')+(page!=='overview'?' has-'+STAGE_SIDES[page]:'')+(pin?' has-'+STAGE_SIDES[pin]:'')+(pin?' has-pin-'+STAGE_SIDES[pin]:'')} data-stage-page={page}>
 <div className="twin-stage-3d">{Overview()}</div>
 {page!=='overview'&&<section className={'twin-stage-panel dock-'+STAGE_SIDES[page]} data-page={page} aria-label={STAGE_PANEL_TITLES[page]+' · 3D 工作台侧挂面板'}>
 <header className="twin-stage-panel-head"><span className="twin-stage-live-dot" aria-hidden="true"/><small>3D 工作台持续运行 · {STAGE_PANEL_TITLES[page]}</small><button type="button" className="twin-stage-close" aria-label="收起此面板" title="收起此面板" onClick={()=>setPage(page)}><X size={15}/></button></header>

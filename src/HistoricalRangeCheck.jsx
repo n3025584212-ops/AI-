@@ -63,23 +63,30 @@ export function useHistoricalRangeCheck(caseData) {
   return {checked,effectiveRanges,limits,error,save,reset,resetAll};
 }
 
-export function HistoricalRangeDetails({checked,limits={},error,save,reset,resetAll}) {
+export function HistoricalRangeDetails({checked,limits={},error,save,reset,resetAll,expanded=false}) {
   const items=dataCheckSummary(checked);
   if (!items) return <div className="historical-range-check" aria-label="数据检查"><div className="historical-range-heading status-row">{DataCheckHeading({items:null})}</div></div>;
+  const content = <>
+    <p className="historical-range-description">{RANGE_EXPLANATION}</p>
+    <p className="historical-range-source">默认输入参考范围 · 用户自定义范围优先 · 范围只作提示，不阻断导入或预测</p>
+    <div className="historical-range-table-scroll"><table className="historical-range-table">
+      <thead><tr><th scope="col">字段 / 工程单位</th><th scope="col">当前值</th><th scope="col">当前参考范围 / 逐侧来源</th><th scope="col">默认范围 / 逐侧来源</th><th scope="col">状态</th><th scope="col">按字段自定义</th></tr></thead>
+      <tbody>{checked.sortedRows.map(row=><tr key={row.key} data-range-status={row.status}>
+        <th scope="row">{row.label}<small>{row.unit || '—'}{!row.isModelInput && ' · 工艺显示字段'}</small></th><td>{number(row.value)} {row.unit || ''}</td>
+        <td className="range-status-source">{range(row.min,row.max,row.unit)}<small>{rangeConstraintLabel(row)}</small></td>
+        <td className="range-status-source">{range(row.defaultLower,row.defaultUpper,row.unit)}<small>下限：{rangeBoundSourceLabel(row.defaultLowerSource)}；上限：{rangeBoundSourceLabel(row.defaultUpperSource)}</small></td><td>{statusText[row.status]}</td>
+        <td><RangeEditor row={row} onSave={save} onReset={reset}/></td>
+      </tr>)}</tbody>
+    </table></div>
+    <div className="historical-range-reset"><button type="button" disabled={!Object.keys(limits).length} onClick={resetAll}>恢复全部默认范围</button>{error&&<span role="alert">{error}</span>}</div>
+  </>;
+  if (expanded) return <div className="historical-range-check is-expanded" aria-label="数据检查">
+    <div className="historical-range-heading status-row">{DataCheckHeading({items})}<span className="data-check-detail-action">查看详情 <span aria-hidden="true">›</span></span></div>
+    {content}
+  </div>;
   return <div className="historical-range-check" aria-label="数据检查">
     <details className="historical-range-details"><summary className="historical-range-heading status-row">{DataCheckHeading({items})}<span className="data-check-detail-action">查看详情 <span aria-hidden="true">›</span></span></summary>
-      <p className="historical-range-description">{RANGE_EXPLANATION}</p>
-      <p className="historical-range-source">默认输入参考范围 · 用户自定义范围优先 · 范围只作提示，不阻断导入或预测</p>
-      <div className="historical-range-table-scroll"><table className="historical-range-table">
-        <thead><tr><th scope="col">字段 / 工程单位</th><th scope="col">当前值</th><th scope="col">当前参考范围 / 逐侧来源</th><th scope="col">默认范围 / 逐侧来源</th><th scope="col">状态</th><th scope="col">按字段自定义</th></tr></thead>
-        <tbody>{checked.sortedRows.map(row=><tr key={row.key} data-range-status={row.status}>
-          <th scope="row">{row.label}<small>{row.unit || '—'}{!row.isModelInput && ' · 工艺显示字段'}</small></th><td>{number(row.value)} {row.unit || ''}</td>
-          <td className="range-status-source">{range(row.min,row.max,row.unit)}<small>{rangeConstraintLabel(row)}</small></td>
-          <td className="range-status-source">{range(row.defaultLower,row.defaultUpper,row.unit)}<small>下限：{rangeBoundSourceLabel(row.defaultLowerSource)}；上限：{rangeBoundSourceLabel(row.defaultUpperSource)}</small></td><td>{statusText[row.status]}</td>
-          <td><RangeEditor row={row} onSave={save} onReset={reset}/></td>
-        </tr>)}</tbody>
-      </table></div>
-      <div className="historical-range-reset"><button type="button" disabled={!Object.keys(limits).length} onClick={resetAll}>恢复全部默认范围</button>{error&&<span role="alert">{error}</span>}</div>
+      {content}
     </details>
   </div>;
 }

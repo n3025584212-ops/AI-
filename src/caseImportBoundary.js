@@ -2,6 +2,7 @@ import { LEGACY_ENGINEERING_UNIT_SYSTEM, decodeUnitProfile, engineeringField, un
 import { MODEL_FEATURES, summarizeModelInputs } from './modelInputs.js';
 import { effectiveRangeProjection } from './effectiveRangeProjection.js';
 import { readCSV } from './csv.js';
+import { sha256Hex } from './sha256.js';
 
 export class CaseImportError extends Error {
   constructor(code, stage, message, details = {}) {
@@ -25,7 +26,6 @@ const confirmedLegacyArtifacts = Object.freeze({
 });
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const numeric = text => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(text) && Number.isFinite(Number(text));
-const hex = bytes => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 
 // A unit choice is an explicit per-file user decision, never a magnitude or
 // filename heuristic. Known byte-confirmed legacy files retain their adapter.
@@ -56,7 +56,7 @@ export async function readImportFile(file) {
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (bytes.byteLength > 8 * 1024 * 1024) throw new CaseImportError('FILE_SIZE', 'BYTES', '导入文件最多为8 MiB。');
   if (!bytes.byteLength) throw new CaseImportError('EMPTY_FILE', 'BYTES', '导入文件为空。');
-  const sourceSha256 = hex(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes)));
+  const sourceSha256 = await sha256Hex(bytes);
   let text, encoding;
   try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); encoding = 'UTF-8'; }
   catch {

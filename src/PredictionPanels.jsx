@@ -47,11 +47,11 @@ export function usePredictionHistory({ result, resultCase, resultSample, dirty, 
   return record.caseId === caseId && record.sessionKey === sessionKey ? record.points : [];
 }
 
-export function PredictionSummary({ result, resultCase, resultSample, caseData, dirty = false, observationMatches = true, errors = [], autoStatus, onTargetChange, lastUpdated }) {
+export function PredictionSummary({ result, resultCase, resultSample, caseData, dirty = false, observationMatches = true, errors = [], autoStatus, predictionState, onTargetChange, lastUpdated }) {
   const values = completedPredictionValues(result, caseData || resultCase, resultSample);
   const observed = currentActualValue({caseData:caseData||resultCase,result,resultSample,dirty,observationMatches});
   const observedDelta = finite(values.value) && finite(observed) ? values.value - observed : null;
-  const status = dirty ? ['连接中断', '预测失败'].includes(autoStatus) ? autoStatus : errors.length ? '参数待修正' : '正在更新' : '已更新';
+  const status = dirty ? predictionState === 'FAILED' ? '预测失败' : ['连接中断', '预测失败'].includes(autoStatus) ? autoStatus : errors.length ? '参数待修正' : '正在更新' : '已更新';
   return <section className={`prediction-ribbon ${dirty ? 'is-stale' : ''}`} aria-label="S5 轧制力预测结果">
     <div className="prediction-primary">
       <span className="prediction-eyebrow">S5 轧制力预测 <small className="prediction-mode" title={result?.mode==='formal'?'QCDKR 已训练模型':'当前使用演示计算，尚未加载正式训练权重'}>{result?.mode==='formal'?'模型':result?.mode==='pending'?'等待':'演示'}</small></span>

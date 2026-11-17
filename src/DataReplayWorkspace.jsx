@@ -2,7 +2,7 @@ import { readableConditionName } from './userVisibleText.js';
 import { trendActualValue, trendActualAvailability } from './s5ActualDisplay.js';
 import { observationDisplay, referenceRangeDisplay } from './workbenchDisplay.js';
 import { useEffect, useRef, useState } from 'react';
-import { Activity, Archive, ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, CircleAlert, Download, FileText, Layers3, MoreHorizontal, Play, SlidersHorizontal, Upload } from 'lucide-react';
+import { Activity, Archive, ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, CircleAlert, Download, FileText, Layers3, MoreHorizontal, Play, ShieldCheck, SlidersHorizontal, Upload, WandSparkles, X } from 'lucide-react';
 import CommittedParameterEditor from './CommittedParameterEditor.jsx';
 import { HistoryWorkspace } from './OperationsPages.jsx';
 import { formatEngineering } from './engineeringUnits.js';
@@ -10,6 +10,9 @@ import { modelInputFingerprint, summarizeModelInputs } from './modelInputs.js';
 import { engineeringContextForRequest, reportInputFingerprint } from './predictionSnapshot.js';
 import './data-access.css';
 import { currentModelReferenceRanges } from './inputRangeDefaults.js';
+import { HistoricalRangeDetails, useHistoricalRangeCheck } from './HistoricalRangeCheck.jsx';
+import { searchStateDisplay, recentSearchDisplay, searchConfigDisplay } from './maintenanceStatusProjection.js';
+import { SEARCH_CONFIG } from './smartCandidateConfig.js';
 
 // 上一次真正算完的 S5 预测值。改参数/等模型期间继续显示它，
 // 新结果到达时整块替换——界面不会退回"计算中"这种空态。
@@ -105,7 +108,7 @@ function TargetBullet({ value, target }) {
   </div>;
 }
 
-export function DataWorkspace({ stream, caseData, modelProps, cases = [], result, onSave, onLoad, onDelete, tab = 'current', onTabChange, onImport, onTemplate, onNotify, onNavigate, onReplayHistorical, onResolveImportUnits }) {
+export function DataWorkspace({ stream, caseData, modelProps, cases = [], result, onSave, onLoad, onDelete, tab = 'current', onTabChange, onImport, onTemplate, onNotify, onNavigate, onReplayHistorical, onResolveImportUnits, searchState = null, mostRecentCompletedSearch = null, onOpenSolutions }) {
   const file = useRef(null), matrix = useRef(null);
   useEffect(() => {
     const handler = event => {
@@ -120,6 +123,13 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
     return () => window.removeEventListener('qcdkr:stand-selected', handler);
   }, []);
   const [importing, setImporting] = useState(false), [importError, setImportError] = useState('');
+  const smartSearch = searchStateDisplay(searchState), smartConfig = searchConfigDisplay(SEARCH_CONFIG);
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const historical = useHistoricalRangeCheck(caseData);
+  useEffect(() => {
+    document.body.classList.toggle('range-check-open', rangeOpen);
+    return () => document.body.classList.remove('range-check-open');
+  }, [rangeOpen]);
   const check = summarizeModelInputs(caseData, { referenceRanges: currentModelReferenceRanges(readCustomLimits(globalThis.localStorage)) });
   const inputErrors = [...check.missing, ...check.invalid].map(item => `${item.label}：${item.message}`);
   const frozenInput = result?.inputContext || modelProps.resultCase;
@@ -129,6 +139,9 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
   // 中间只挂一个"更新中"标记，不把数字清空成"计算中"。
   const livePrediction = check.valid && !modelProps.predictionPending && !modelProps.dirty && resultCurrent ? finiteNumber(result?.value) : null;
   if (livePrediction !== null) lastCompletedPrediction.value = livePrediction;
+  // 页面是在回放中途切进来的：此时 dirty=true，拿不到 livePrediction，但服务端
+  // 已有上一帧的正式结果。用 result 兜底，否则 KPI 会一直停在"结果待更新"。
+  else if (result?.mode === 'formal' && finiteNumber(result.value)) lastCompletedPrediction.value = result.value;
   const predictionStale = livePrediction == null && lastCompletedPrediction.value !== null && check.valid;
   const predictionValue = livePrediction !== null ? livePrediction : (predictionStale ? lastCompletedPrediction.value : null);
   const predictionLabel = !check.valid ? '输入待修正'
@@ -137,6 +150,14 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
   const targetValue = finiteNumber(caseData?.target);
   const delta = predictionValue != null && targetValue ? predictionValue - targetValue : null;
   const deltaPercent = delta != null && targetValue ? delta / targetValue * 100 : null;
+  const modelReady = modelProps.modelStatus?.available === true && modelProps.modelStatus?.mode !== 'demo';
+  const formalPredictionReady = result?.mode === 'formal' && Number.isFinite(result?.value) && !modelProps.dirty && !modelProps.predictionPending;
+  const inputStatusChecks = [
+    { ok: check.valid, label: `输入完整性 · ${check.completeCount} / ${check.total} 项已读取` },
+    { ok: check.invalid.length === 0, label: `有限数值检查 · ${check.total} / ${check.total} 项有效` },
+    { ok: modelReady, label: `QCDKR 正式模型 · ${modelReady ? '可计算' : '未就绪'}` },
+    { ok: formalPredictionReady, label: `当前工况预测 · ${formalPredictionReady ? '已更新' : modelProps.predictionPending ? '计算中' : '待更新'}` },
+  ];
   const actualSeries = trendActualAvailability(stream.frames, stream.sourceName);
   const observationLabel = '实际值';
   const recordCount = stream.frames.length;
@@ -164,8 +185,8 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
       const { text, audit } = await readImportFile(selected);
       const legacyForceUnit = await resolveLegacyCsvUnits(text, audit, onResolveImportUnits);
       stream.loadCSV(text, selected.name, caseData, { legacyForceUnit });
-      onNotify('已载入 ' + selected.name + '，正在预测工作台中计算');
-      onNavigate('overview');
+      onNotify('已载入 ' + selected.name + '，可在时序记录中查看');
+      onTabChange?.('series');
     } catch (error) { setImportError(error.message); onNotify('导入失败：' + error.message); }
     finally { setImporting(false); event.target.value = ''; }
   };
@@ -203,6 +224,26 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
         </div>
       </div>
       <div className="data-access-heading-actions">
+        <details className="data-smart-menu">
+          <summary className="data-btn" aria-label="智能调整方案"><WandSparkles size={14}/>智能调整方案<ChevronDown size={12}/></summary>
+          <div className="data-menu-pop is-smart" role="menu">
+            <header className="data-smart-head"><b>智能调整方案</b><span className={`data-smart-state is-${smartSearch.tone}`}>{smartSearch.label}</span></header>
+            {smartConfig ? <dl className="data-smart-grid">
+              <div><dt>调节动作</dt><dd>{smartConfig.actions.length} 项</dd></div>
+              <div><dt>关联模型输入</dt><dd>{smartConfig.fields.length} 项</dd></div>
+              <div><dt>候选配置</dt><dd>最多 {smartConfig.totalCandidates} 个</dd></div>
+              <div><dt>最大联合调整</dt><dd>{smartConfig.maxChangedActions} 项</dd></div>
+            </dl> : <p className="data-smart-empty">搜索配置待载入。</p>}
+            <div className="data-smart-row"><span>当前搜索状态</span><b>{smartSearch.label}</b></div>
+            <div className="data-smart-row"><span>最近搜索</span><b>{recentSearchDisplay(mostRecentCompletedSearch, searchState)}</b></div>
+            <details className="data-smart-config"><summary>查看搜索配置</summary>
+              <p>调节动作：{smartConfig ? smartConfig.actions.map(action => action.displayName).join('、') : '—'}</p>
+              <p>关联输入：{smartConfig ? smartConfig.fields.map(field => field.label).join('、') : '—'}</p>
+              <p>调节范围：{Math.min(...SEARCH_CONFIG.actionLevelsPercent)}% ~ {Math.max(...SEARCH_CONFIG.actionLevelsPercent)}%</p>
+            </details>
+            <button type="button" className="data-smart-enter" disabled={!onOpenSolutions} onClick={() => onOpenSolutions?.()}>进入方案<ArrowRight size={12}/></button>
+          </div>
+        </details>
         <details className="data-import-menu">
           <summary className="data-btn is-primary" aria-label="导入数据"><Upload size={14}/>导入数据<ChevronDown size={12}/></summary>
           <div className="data-menu-pop" role="menu">
@@ -210,12 +251,13 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
             <button type="button" role="menuitem" disabled={importing} onClick={event => { closeMenu(event); file.current?.click(); }}><Activity size={14}/><span><b>时序 CSV</b><small>{importing ? '正在导入…' : '载入多条采样记录用于回放'}</small></span></button>
           </div>
         </details>
+        <button className="data-btn" aria-pressed={rangeOpen} onClick={() => setRangeOpen(value => !value)} title="查看 25 维输入的参考范围，并按字段自定义"><ShieldCheck size={14}/>工况范围检查</button>
         <button className="data-btn" onClick={() => onNavigate('overview')}>预测工作台<ArrowRight size={15}/></button>
       </div>
     </header>
     <input hidden type="file" accept=".csv" ref={file} onChange={load} aria-label="导入时序文件"/>
 
-    <div className="data-split"><div className="data-col-left"><div className="data-kpi-band" aria-label="数据概览">
+    <div className="data-split" hidden={rangeOpen}><div className="data-col-left"><div className="data-kpi-band" aria-label="数据概览">
       <article className="data-kpi" data-tone={check.valid ? 'ok' : 'warn'}>
         <InputRing complete={check.completeCount} total={check.total}/>
         <div className="data-kpi-body">
@@ -235,7 +277,7 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
           </> : predictionValue != null ? <>
             <div className="data-bullet is-empty" aria-hidden="true"/>
             <span className="data-kpi-note">未设置 S5 目标</span>
-          </> : <span className="data-kpi-note">{check.valid ? '应用参数后自动计算' : '先补齐缺失输入'}</span>}
+          </> : <span className="data-kpi-note">{!check.valid ? '先补齐缺失输入' : modelProps.predictionPending ? '正在计算…' : modelProps.dirty ? '等待首个预测结果' : '应用参数后自动计算'}</span>}
         </div>
       </article>
       <article className="data-kpi data-kpi-records" data-tone={recordCount ? 'ok' : 'idle'}>
@@ -291,5 +333,14 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
       {tab === 'saved' && <HistoryWorkspace cases={cases} caseData={caseData} resultCase={modelProps.resultCase} result={result} dirty={modelProps.dirty} onSave={onSave} onLoad={onLoad} onDelete={onDelete} onBack={() => onTabChange('current')}/>}
     </div>
     <footer className="data-access-foot"><FileText size={14}/><span>模板单位：轧制力 t · 总张力 t；弯辊力 kN · 厚度与宽度 mm。保留模板中的单位标识列，导入时自动换算。</span></footer>
-  </div></div></section>;
+  </div></div>
+    {rangeOpen && <section className="data-range-view" aria-label="输入状态与工况范围检查">
+      <div className="data-range-status" role="status">
+        <b>输入状态</b>
+        {inputStatusChecks.map(item => <span key={item.label} data-ok={item.ok}><i aria-hidden="true">{item.ok ? '✓' : '✗'}</i>{item.label}</span>)}
+        <button type="button" className="data-range-close" onClick={() => setRangeOpen(false)}>收起<X size={14}/></button>
+      </div>
+      <HistoricalRangeDetails {...historical} expanded/>
+    </section>}
+  </section>;
 }

@@ -53,6 +53,8 @@ export default function ProcessMatrix({ caseData, selected = 'S5', onSelectStand
   ])), [stands]);
   const steelGrades = [...new Set([caseData?.steelGrade || 'DC01', 'DC01', 'DC04', 'Q235', 'SPCC'])];
   const issue = errors[0];
+  // errors[0] 也可能是预测失败原因，不是参数错误；不能再显示成“1 项待修正”。
+  const predictionFailure = /^(预测|工况在预测途中|当前工况输入不完整|输入已编辑|输入或模型|预测服务)/.test(String(issue || ''));
   const changeCaseNumber = (key, event) => onCaseFieldChange?.(key, toValue(key, event.target.value));
   const contextRow = (stand, field) => <div className="pm-context-control" key={field.key}>
     <label className="pm-parameter-value pm-context-row"><span>{stand.id} {field.label}</span><span className="pm-parameter-number"><EngineeringNumberInput field={field.key} data-stand={stand.id} data-field={field.key} aria-label={`${stand.id} ${field.ariaLabel || field.label}`} step={field.key === 'force' ? .001 : field.step} value={stand[field.key]} disabled={!!optionalProcessLabel(stand.id, field.key) && stand[field.key] == null} readOnly={!onFieldChange} onFocus={()=>onSelectStand?.(stand.id)} onChange={event=>onFieldChange?.(stand.id,field.key,toValue(field.key,event.target.value))}/><small>{unitFor(field.key)}</small><Info/></span></label>
@@ -132,7 +134,7 @@ export default function ProcessMatrix({ caseData, selected = 'S5', onSelectStand
       <button type="button" className="pm-collapse" aria-expanded={expanded} aria-controls={contentId} aria-label={expanded ? '收起工况参数' : '展开工况参数'} onClick={() => setExpanded(value => !value)}><SlidersHorizontal size={14} aria-hidden="true" /><strong>工况参数</strong>{expanded ? <ChevronDown size={13} aria-hidden="true" /> : <ChevronUp size={13} aria-hidden="true" />}</button>
       <span className="pm-scope">S1—S5</span>
       {caseFields}
-      <span className={`pm-sync ${issue ? 'pm-invalid' : dirty ? 'pm-pending' : ''}`} role="status">{issue ? <CircleAlert size={12} aria-hidden="true" /> : dirty ? <Loader2 size={12} className="spin" aria-hidden="true" /> : <Check size={12} aria-hidden="true" />}<span>{issue ? String(issue).startsWith('自动预测暂未完成') ? '连接中断' : `${errors.length} 项待修正` : dirty ? '更新中' : '已同步'}</span></span>
+      <span className={`pm-sync ${issue ? 'pm-invalid' : dirty ? 'pm-pending' : ''}`} role="status">{issue ? <CircleAlert size={12} aria-hidden="true" /> : dirty ? <Loader2 size={12} className="spin" aria-hidden="true" /> : <Check size={12} aria-hidden="true" />}<span>{issue ? String(issue).startsWith('自动预测暂未完成') ? '连接中断' : predictionFailure ? '预测失败' : `${errors.length} 项待修正` : dirty ? '更新中' : '已同步'}</span></span>
     </header>
     <div className="pm-content" id={contentId} hidden={!expanded}>
 

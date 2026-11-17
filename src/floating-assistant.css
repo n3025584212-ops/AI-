@@ -200,10 +200,10 @@ body.ai-window-gesturing, body.ai-window-gesturing * { user-select: none !import
 /* 窗口容器只用于接收初始焦点，不需要画出焦点框（手柄的键盘焦点样式保留） */
 .ai-floating-window:focus,
 .ai-floating-window:focus-visible { outline: none; }
-/* 跟随桌宠：气泡指向桌宠的小尾巴（位置由 petAnchoredWindowRect 的 tailX 决定） */
+/* 跟随助手：气泡指向助手的小尾巴（位置由 avatarAnchoredWindowRect 的 tailX 决定） */
 .ai-window-tail{position:absolute;width:12px;height:12px;transform:rotate(45deg);pointer-events:none;z-index:3;border:1px solid rgba(120,205,225,.30)}
 .ai-window-tail.is-above{bottom:-7px;border-top:0;border-left:0;background:#040e14}
 .ai-window-tail.is-below{top:-7px;border-right:0;border-bottom:0;background:#081a23}
-/* 气泡可能出现在桌宠的上 / 下 / 左 / 右四个方向，尾巴要跟着换边 */
+/* 气泡可能出现在助手的上 / 下 / 左 / 右四个方向，尾巴要跟着换边 */
 .ai-window-tail.is-left{right:-7px;border-bottom:0;border-left:0;background:#061119}
 .ai-window-tail.is-right{left:-7px;border-top:0;border-right:0;background:#061119}

@@ -65,7 +65,7 @@ export function restoreTaskActivities(raw) {
     return data.tasks.filter(t=>typeof t.task_id==='string'&&typeof t.goal==='string'&&typeof t.context_key==='string'&&TASK_STATE_LABELS[t.state]).map(t=>activeStates.has(t.state)?{...t,state:'UNCERTAIN',receipt:{status:'UNVERIFIED',message:'上次窗口关闭前没有终态回执；未自动重放。'}}:t);
   } catch {return [];}
 }
-export function petTaskState({task,busy=false,runState='',voiceState={},attention=false}) {
+export function avatarTaskState({task,busy=false,runState='',voiceState={},attention=false}) {
   if(voiceState.following&&voiceState.phase==='recording')return {id:'LISTENING',label:'正在聆听'};
   if(['recognizing','thinking'].includes(voiceState.phase))return {id:'PLANNING',label:'理解任务'};
   if(voiceState.phase==='executing')return {id:'EXECUTING',label:'执行中'};

@@ -28,6 +28,8 @@ export async function authRequest(route, body, { fetchImpl = globalThis.fetch } 
     try { result = JSON.parse(text); } catch { throw serviceError(); }
     if (!result || typeof result !== 'object' || Array.isArray(result)) throw serviceError();
     if (!response.ok) {
+      if (route === 'login' && ['ACCOUNT_BOUND','FINGERPRINT_REQUIRED'].includes(result.code))
+        throw new LoginRequestError(result.error || result.message || INVALID_CREDENTIALS, result.code);
       if (route === 'login' && [401,429].includes(response.status))
         throw new LoginRequestError(INVALID_CREDENTIALS, 'INVALID_CREDENTIALS');
       if (['SETUP_INVALID','SETUP_ALREADY_COMPLETE','SETUP_REQUIRED','AUTH_STATE_INVALID'].includes(result.code))

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { sha256Hex } from './sha256.js';
 
 export const TASK_TERMINAL = new Set(['succeeded','completed','failed','cancelled','partial']);
 export const taskId = task => task?.taskId || task?.id;
@@ -7,7 +8,7 @@ export const taskStatus = task => task?.status || 'queued';
 export async function downloadTaskArtifact(artifact) {
   if(typeof artifact?.content!=='string')throw new Error('任务成果没有可下载的实际内容。');
   const bytes=new TextEncoder().encode(artifact.content);
-  const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(value=>value.toString(16).padStart(2,'0')).join('');
+  const digest=await sha256Hex(bytes);
   if(artifact.sha256&&String(artifact.sha256).toLowerCase()!==digest)throw new Error('任务成果内容与校验值不一致，下载未执行。');
   if(Number.isFinite(artifact.bytes)&&artifact.bytes!==bytes.byteLength)throw new Error('任务成果内容长度与回执不一致，下载未执行。');
   const filename=String(artifact.filename||artifact.name||'QCDKR-任务成果.txt').replace(/[\\/:*?"<>|]/g,'_');

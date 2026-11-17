@@ -47,8 +47,10 @@ export default function ContinuousCopilotPanel({ open, onOpenChange, sessionId: 
   const [busy, setBusy] = useState(false), [loading, setLoading] = useState(false), [error, setError] = useState(''), [run, setRun] = useState(null);
   const [outcome, setOutcome] = useState(''), [publishing, setPublishing] = useState(false), [published, setPublished] = useState(null);
   const [incidents, setIncidents] = useState([]), [heartbeat, setHeartbeat] = useState(null), [incidentError, setIncidentError] = useState(''), [handover, setHandover] = useState(null);
-  const [showMonitor, setShowMonitor] = useState(false);
-  const requestRef = useRef(null), messagesRef = useRef(null);
+  const [showMonitor, setShowMonitor] = useState(false), [flash, setFlash] = useState('');
+  const requestRef = useRef(null), messagesRef = useRef(null), flashTimer = useRef(null);
+  const showFlash = text => { setFlash(text); clearTimeout(flashTimer.current); flashTimer.current = setTimeout(() => setFlash(''), 1800); };
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
   const load = useCallback(async id => {
     setLoading(true); setError('');
     try {
@@ -102,7 +104,12 @@ export default function ContinuousCopilotPanel({ open, onOpenChange, sessionId: 
   };
   const createSession = async () => {
     setBusy(true); setError('');
-    try { const response = await request('/api/copilot/session', { method: 'POST', body: '{}' }); setSession(response.session); setRun(null); setPublished(null); setSessions(items => [response.session, ...items]); }
+    try {
+      const response = await request('/api/copilot/session', { method: 'POST', body: '{}' });
+      setSession(response.session); setRun(null); setPublished(null); setSessions(items => [response.session, ...items]);
+      showFlash('已新建分析'); notify?.('已新建分析');
+      requestAnimationFrame(() => document.querySelector('.ccp-panel textarea')?.focus());
+    }
     catch (failure) { setError(failure.message); }
     finally { setBusy(false); }
   };
@@ -125,7 +132,7 @@ export default function ContinuousCopilotPanel({ open, onOpenChange, sessionId: 
           <span>{status?.available ? '已连接' : '降级'}</span>
           {activeIncidents.length > 0 && <button type="button" className="ccp-event-chip" onClick={() => setShowMonitor(true)}><Activity size={11}/>{activeIncidents.length} 事件</button>}
         </div>
-        <div className="ccp-header-actions"><button type="button" title="新建分析" aria-label="新建分析" onClick={createSession} disabled={busy}><Plus size={15}/></button><button type="button" className={'ccp-monitor-toggle' + (activeIncidents.length ? ' is-alert' : '')} title="全软件监控 · 事件与交接" aria-label="打开全软件监控" onClick={() => setShowMonitor(true)}><Activity size={14}/>{activeIncidents.length > 0 && <em>{activeIncidents.length}</em>}</button>{onLegacy && <button type="button" className="ccp-legacy" onClick={onLegacy}><Wrench size={13}/>高级工具</button>}</div>
+        <div className="ccp-header-actions"><button type="button" title="新建分析（清空当前对话）" aria-label="新建分析" onClick={createSession} disabled={busy}><Plus size={15}/></button><button type="button" className={'ccp-monitor-toggle' + (activeIncidents.length ? ' is-alert' : '')} title="全软件监控 · 事件与交接" aria-label="打开全软件监控" onClick={() => setShowMonitor(true)}><Activity size={14}/>{activeIncidents.length > 0 && <em>{activeIncidents.length}</em>}</button>{onLegacy && <button type="button" className="ccp-legacy" onClick={onLegacy}><Wrench size={13}/>高级工具</button>}</div>
       </header>
 
       <div className="ccp-meta">
@@ -134,6 +141,7 @@ export default function ContinuousCopilotPanel({ open, onOpenChange, sessionId: 
         {onAccessModeChange && <div className="ccp-permission" aria-label="副驾驶权限模式">{ASSISTANT_MODES.map(mode => <button type="button" key={mode} aria-pressed={accessMode === mode} title={ASSISTANT_MODE_LABELS[mode].description} onClick={() => onAccessModeChange(mode)}>{ASSISTANT_MODE_LABELS[mode].label}</button>)}</div>}
       </div>
 
+      {flash && <p className="ccp-flash" role="status">{flash}</p>}
       {session?.constraints?.length > 0 && <div className="ccp-constraints">{session.constraints.map(item => <span key={item}>约束：{item}</span>)}</div>}
 
       {activeIncidents.length > 0 && <button type="button" className="ccp-incident-banner" onClick={() => setShowMonitor(true)}>

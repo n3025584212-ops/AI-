@@ -3,7 +3,8 @@
    只做三件事：换色、换字体、加发光。不改任何布局与组件结构。
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&display=swap');
+/* 2026-11-17 审核：CSP style-src 'self' 会拦掉这个 Google Fonts @import，
+   每次开页都报一条 console error；字体本来就走本地回退，直接删掉。 */
 
 :root{
   --holo:        #B6FF3C;
@@ -472,7 +473,7 @@ html,body{ background:#03080A !important }
 .comm-col{display:flex;flex-direction:column;min-width:0}
 .logs-col{display:contents}
 
-@media (min-width:1281px){
+@media (min-width:1100px){
 
 /* ---------- 面板退成透明舞台层 ---------- */
 .twin-stage.stage-docked[data-stage-page="maintenance"] .twin-stage-panel[data-page="maintenance"],
@@ -674,7 +675,7 @@ html,body{ background:#03080A !important }
 } /* media */
 
 /* 栏内子项不得被 flex 压缩（否则卡片被压扁、文字被裁） */
-@media (min-width:1281px){
+@media (min-width:1100px){
   .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col>*,
   .twin-stage.stage-docked[data-stage-page="communication"] .comm-col>*,
   .twin-stage.stage-docked[data-stage-page="logs"] .logs-col>*{flex:0 0 auto !important}
@@ -686,7 +687,7 @@ body:has(.twin-stage.stage-docked) .holo-hud .tag{display:none !important}
 body:has(.twin-stage.stage-docked) .holo-hud .scan{opacity:.35 !important}
 
 /* 栏体按内容收口：不再用固定高度撑出大片空面板 */
-@media (min-width:1281px){
+@media (min-width:1100px){
   .twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
     bottom:auto !important;height:auto !important;
     max-height:calc(100% - 58px - 200px) !important;
@@ -794,7 +795,7 @@ body:has(.twin-stage.stage-docked) .holo-hud .ruler-l{opacity:.18 !important}
 .logs-dist-row em{font-style:normal;text-align:right;color:#CFEBDC;font-variant-numeric:tabular-nums}
 
 /* 栏体回到满高，内容两端分布，避免半截空框 */
-@media (min-width:1281px){
+@media (min-width:1100px){
   .twin-stage.stage-docked[data-stage-page="data"] .data-col-left,
   .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col,
   .twin-stage.stage-docked[data-stage-page="communication"] .comm-col,
@@ -831,7 +832,7 @@ body:has(.twin-stage.stage-docked) .holo-hud .ruler-l{opacity:.18 !important}
    tasteskill 整理：实底信息板、单强调色、去掉装饰与编号
    —— 3D 场景保留为唯一主视觉，面板只做信息承载
    ========================================================================== */
-@media (min-width:1281px){
+@media (min-width:1100px){
   /* 面板页隐藏整套 HUD 装饰（四角框/扫描线/环/刻度） */
   body:has(.twin-stage.stage-docked) .holo-hud{display:none !important}
 
@@ -2327,3 +2328,30 @@ body:has(.twin-stage[data-stage-page="logs"]) #root .sidebar{top:60px !important
 /* 2026-11-17：开屏登录阶段 .ob-main 是 pointer-events:none，面板必须自己收点击，
    否则点击落到 .ob-tint 上，登录键没有任何反应（每次重建都会丢的补丁，写进打包 CSS 固化）。 */
 #boot.login-stage .ob-panel{pointer-events:auto}
+
+/* 2026-11-17 窄视口适配：整套版式按 ≥1280 CSS 像素设计。高 DPI 屏（150% 缩放）下
+   CSS 宽度可能只有 1100 左右，直接压缩会叠字、面板出界。这里锁住最小版式尺寸，
+   窄屏改为整体横向滚动，版式本身不被压扁。 */
+/* 2026-11-17 回滚：窄视口锁宽 + 收窄右栏会误伤「工业设备连接」等其他页面的版式，已撤销。
+   窄屏（<1280 CSS 像素）当前不做特殊处理。 */
+
+/* 机架快照行禁止被 flex 压扁（矮视口时靠容器滚动，不叠字）。 */
+#root .data-stand-snap{min-height:0;overflow-y:auto}
+#root .data-stand-row{flex:0 0 auto;min-height:18px}
+/* 2026-11-17 矮视口：机架快照行被 flex:1 1 0 压到 5px，文字叠在一起。
+   给行设下限、容器自己滚动（高视口下仍然是分摊剩余高度，不受影响）。 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row{min-height:18px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-snap{overflow-y:auto !important}
+/* 2026-11-17 操作者：绿色四角括号/刻度/光晕那层 HUD 之前就该删掉，这里彻底隐藏。
+   main.jsx 仍会注入 .holo-hud（保留代码不动），只让它在界面上不再出现。 */
+#root ~ .holo-hud, body .holo-hud{display:none !important}
+
+/* 2026-11-17 R2: 窄屏下停靠面板标题与顶部导航同一行会叠字，≤1399 只留指示灯+收起键 */
+@media (max-width:1399px){ .twin-stage-panel-head small{display:none !important} }
+
+/* 2026-11-17 R3: 1280 是版式下限（整套 rules 都挂在 min-width:1281）。
+   低于它（150% 缩放屏常见 1266）不再压缩版式，改为锁 1280 宽 + 横向滚动。 */
+@media (max-width:1280px){
+  html,body{overflow-x:auto}
+  #root{min-width:1280px}
+}

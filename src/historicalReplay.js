@@ -1,4 +1,5 @@
 import { summarizeModelInputs } from './modelInputs.js';
+import { sha256Hex } from './sha256.js';
 
 export const HISTORICAL_REPLAY_URL = '/assets/crd-dashboard-context.json';
 export const HISTORICAL_REPLAY_SOURCE = '工业数据';
@@ -46,8 +47,7 @@ export async function loadHistoricalReplay({ modelHash, signal, fetchImpl = glob
   const response = await fetchImpl(HISTORICAL_REPLAY_URL, { signal });
   if (!response.ok) fail('HISTORICAL_SOURCE_UNAVAILABLE', '工业数据暂不可用，请刷新重试。');
   const text = await response.text();
-  const digest = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256',
-    new TextEncoder().encode(text)))).map(byte => byte.toString(16).padStart(2, '0')).join('');
+  const digest = await sha256Hex(text);
   if (digest !== ASSET_SHA256) fail('HISTORICAL_SOURCE_INVALID', '工业数据文件完整性核验失败。');
   return prepareHistoricalReplay(JSON.parse(text), modelHash);
 }

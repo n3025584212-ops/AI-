@@ -432,7 +432,7 @@ export default function ThreeViewer({ selectedStand = 'S5', onSelectStand, view 
     }
     function openInteraction(descriptor) {
       if (!descriptor) return;
-      // 厂区技术员是巡检/派工演出角色；点击仍可唤起副驾驶，但 AI 人格由页面桌宠承担（2026-11-15 起）。
+      // 厂区技术员是巡检/派工演出角色；点击仍可唤起副驾驶，但 AI 人格由页面助手承担（2026-11-15 起）。
       if (descriptor.kind === 'character') {
         window.dispatchEvent(new Event('dkqkar-assistant-open'));
         return;
@@ -1610,7 +1610,7 @@ export default function ThreeViewer({ selectedStand = 'S5', onSelectStand, view 
             // 2026-11-01 用户要求移除操作台柱子（pulpits_S*_mo.glb）；回滚：恢复 loadPulpits 调用
             Promise.resolve({ skipped: true }),
             loadLineAssets(factoryAssetGroup),
-            // 2026-11-16 操作者口径：移除厂区“巡检技术员”3D 人偶；角色形象统一由开屏/桌宠的大肥鱼承担。
+            // 2026-11-16 操作者口径：移除厂区“巡检技术员”3D 角色模型；角色形象统一由开屏与页内助手承担。
             Promise.resolve(null),
           ]);
           if (characterResult.status === 'fulfilled') factoryCharacter = characterResult.value;
@@ -1732,7 +1732,7 @@ export default function ThreeViewer({ selectedStand = 'S5', onSelectStand, view 
     data-shell-mode={shellMode} data-motion-playing={motionPlaying} data-process-speed={processSpeed}
     style={{ position: 'relative', width: '100%', height: '100%', minHeight: compact ? 260 : 0, overflow: 'hidden', background: '#182731' }}>
     <div ref={host} className="three-host" style={{ position: 'absolute', inset: 0 }} />
-    {status.phase !== 'ready' && <div style={{ position: 'absolute', inset: 0, zIndex: 3, background: lastSceneFrame ? `#0c1723 center/cover no-repeat url(${lastSceneFrame})` : '#0c1723' }}>
+    {status.phase !== 'ready' && <div className="three-loading" style={{ position: 'absolute', inset: 0, zIndex: 3, background: lastSceneFrame ? `#0c1723 center/cover no-repeat url(${lastSceneFrame})` : '#0c1723' }}>
       {!lastSceneFrame && <img src="/assets/factory-preview.png" alt="轧制设备预览" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25 }} />}
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg,#18212ce8,transparent 90%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, color: '#c5d7e0', fontSize: 12 }} role="status" aria-live="polite">
         <span>{status.message}</span>
