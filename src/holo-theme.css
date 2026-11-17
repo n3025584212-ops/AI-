@@ -1362,7 +1362,7 @@ body:has(.twin-stage.stage-docked) .holo-hud .ruler-l{opacity:.18 !important}
   background:linear-gradient(100deg,#0a1420,#08111b) !important;
 }
 #root .holo-hud{inset:46px 0 0 0 !important}
-#root .twin-stage-topbar-hint{display:none !important}
+/* 2026-11-18：恢复顶栏“3D 运行中”立方体标识（历史版本有，被这条全局隐藏规则收掉）。 */
 
 /* HUD 挂在 body 上，不在 #root 里，上一版选择器没命中，这里补一条 */
 .holo-hud{inset:46px 0 0 0 !important}
