@@ -2355,3 +2355,11 @@ body:has(.twin-stage[data-stage-page="logs"]) #root .sidebar{top:60px !important
   html,body{overflow-x:auto}
   #root{min-width:1280px}
 }
+
+/* 2026-11-18 四页左上标题对齐：以“运行日志”为基准（图标 24px + 标题 15px + 说明 9px） */
+.twin-stage.stage-docked[data-stage-page="data"] .data-access-title{gap:8px !important}
+.twin-stage.stage-docked[data-stage-page="data"] .data-access-heading h1{font-size:15px !important;letter-spacing:.6px !important}
+.twin-stage.stage-docked[data-stage-page="data"] .data-access-heading .data-access-sub{font-size:9px !important;line-height:1.45 !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1 .page-identity-icon{width:24px !important;height:24px !important;margin-right:2px}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1 .page-identity-icon svg{width:15px !important;height:15px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading .page-identity-icon{width:24px !important;height:24px !important}

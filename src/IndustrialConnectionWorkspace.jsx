@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import { RefreshCw,Settings2,PlugZap,Unplug,BookOpen,Info,ArrowRight,ShieldCheck,BarChart3,ScrollText } from 'lucide-react';
+import { RefreshCw,Settings2,PlugZap,Unplug,BookOpen,Info,ArrowRight,ShieldCheck,BarChart3,ScrollText,Cable } from 'lucide-react';
 import { OperationsDialog,ServiceBadge,downloadOperationalFile } from './MaintenanceWorkspace.jsx';
 import { MODEL_FEATURES } from './modelInputs.js';
 import './industrial-connection.css';
@@ -120,7 +120,7 @@ export default function IndustrialConnectionWorkspace({api,connection,prediction
       ?{label:'重新连接',icon:<RefreshCw size={16}/>,run:()=>connection.reconnect().catch(error=>onNotify?.(error.message))}
       :{label:'重新检测',icon:<RefreshCw size={16}/>,run:detect};
   const invalidItems=status?.issues?.filter(r=>!status?.missing?.some(m=>m.field===r.field))||[];
-  return <section className="industrial-connection"><header><div><h1>工业设备连接</h1><p>连接现场PLC后，QCDKR可自动读取轧机工况，并进行S5轧制力实时预测。</p></div><div className="comm-header-actions">{twinStand&&<button type="button" className="maint-button" onClick={()=>onNavigate?.('overview')}>3D 选中 {twinStand} · 在3D中查看</button>}<button className="maint-button" onClick={()=>setDialog('settings')}><Settings2 size={16}/>连接设置</button></div></header>
+  return <section className="industrial-connection"><header><div><h1><span className="page-identity-icon"><Cable size={14}/></span>工业设备连接</h1><p>连接现场PLC后，QCDKR可自动读取轧机工况，并进行S5轧制力实时预测。</p></div><div className="comm-header-actions">{twinStand&&<button type="button" className="maint-button" onClick={()=>onNavigate?.('overview')}>3D 选中 {twinStand} · 在3D中查看</button>}<button className="maint-button" onClick={()=>setDialog('settings')}><Settings2 size={16}/>连接设置</button></div></header>
     <div className="comm-main">
     <div className="comm-col comm-col-left">
     <div className="comm-status-panel">

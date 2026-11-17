@@ -2,7 +2,7 @@ import { readableConditionName } from './userVisibleText.js';
 import { trendActualValue, trendActualAvailability } from './s5ActualDisplay.js';
 import { observationDisplay, referenceRangeDisplay } from './workbenchDisplay.js';
 import { useEffect, useRef, useState } from 'react';
-import { Activity, Archive, ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, CircleAlert, Download, FileText, Layers3, MoreHorizontal, Play, ShieldCheck, SlidersHorizontal, Upload, WandSparkles, X } from 'lucide-react';
+import { Activity, Archive, ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, CircleAlert, Database, Download, FileText, Layers3, MoreHorizontal, Play, ShieldCheck, SlidersHorizontal, Upload, WandSparkles, X } from 'lucide-react';
 import CommittedParameterEditor from './CommittedParameterEditor.jsx';
 import { HistoryWorkspace } from './OperationsPages.jsx';
 import { formatEngineering } from './engineeringUnits.js';
@@ -212,7 +212,7 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
   return <section className="data-workspace reference-page data-access" aria-label="数据接入工作区">
     <header className="reference-page-heading data-access-heading">
       <div className="data-access-title">
-        <DataProjectionMark complete={check.completeCount} total={check.total} running={stream.running}/>
+        <span className="page-identity-icon"><Database size={14}/></span>
         <div>
           <h1>数据接入</h1>
           <p className="data-access-sub">

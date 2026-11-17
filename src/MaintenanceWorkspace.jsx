@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronRight, Download, Loader2, RefreshCw, ShieldCheck, X } from 'lucide-react';
+import { ChevronRight, Download, Loader2, RefreshCw, Settings2, ShieldCheck, X } from 'lucide-react';
 import './maintenance-workspace.css';
 import MaintenanceGlyph from './MaintenanceGlyph.jsx';
 import { modelDisplayName, readableConditionName, userVisibleText } from './userVisibleText.js';
@@ -119,7 +119,7 @@ export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolu
  if(predictionState==='READY'||predictionState==='FAILED')settledPrediction.current=predictionState;
  const shownPredictionState=settledPrediction.current;
  return <section className="maintenance-workspace competition-system-status" aria-label="系统状态与维护">
-  <header className="maint-page-heading"><div><h2>系统状态与维护</h2><p>设备健康、模型与数据服务；异常会同步到全局状态与通知</p></div>
+  <header className="maint-page-heading"><span className="page-identity-icon"><Settings2 size={14}/></span><div><h2>系统状态与维护</h2><p>设备健康、模型与数据服务；异常会同步到全局状态与通知</p></div>
    <div><button type="button" className="maint-button" disabled={busy} onClick={()=>refresh(true)}><RefreshCw size={14}/>刷新状态</button></div>
   </header>
   {refreshFailed&&<div className="maint-error" role="alert">{UNAVAILABLE}<button type="button" onClick={()=>refresh(true)} disabled={busy}>刷新状态</button></div>}

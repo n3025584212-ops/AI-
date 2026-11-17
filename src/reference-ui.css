@@ -61,3 +61,14 @@ body:has(.reference-shell) .ai-floating-dock{left:42px!important;right:auto!impo
 @media(max-width:1100px){.s5-shell.reference-shell .console-clock{display:none}.topbar-product strong{font-size:13px}.console-user>span:nth-child(2){max-width:60px}.data-entry-grid{gap:12px}.data-entry-card{padding:17px}.data-entry-actions{grid-template-columns:1fr;gap:8px}.data-entry-icon{display:none}.data-entry-card h2{font-size:18px}.data-entry-card p{font-size:11px}.data-entry-card footer{font-size:9px}.data-import-note p{font-size:10px}.replay-current strong{font-size:14px}}
 @media(max-height:740px){.s5-shell.reference-shell .sidebar nav{gap:3px}.s5-shell.reference-shell .sidebar nav button{height:42px}.sidebar-signature{gap:5px;padding-top:14px}.data-import-note{display:none}.reference-page-heading p{font-size:10px}.data-source-current{padding:10px 17px}.data-entry-card p{font-size:11px}.data-entry-card h2{margin-top:5px}.replay-source{gap:10px}.replay-current{padding:13px 18px}.replay-note{font-size:10px}.s5-shell.reference-shell .dashboard-primary{grid-template-rows:minmax(140px,1fr) 122px 122px}}
 @media print{html,body,#root,.reference-shell,.reference-shell .workspace,.reference-shell .main-shell{height:auto!important;overflow:visible!important}.reference-shell .sidebar,.reference-shell .topbar,.ai-floating-dock{display:none!important}.action-panel-backdrop{position:static!important}.action-panel,.action-panel-body{height:auto!important;overflow:visible!important;border:0!important}.action-panel>header{display:none!important}}
+
+/* 2026-11-18 页面标题身份图标：四页统一为 24px 圆角图标 + 标题 */
+.page-identity{display:flex;align-items:center;gap:9px;min-width:0}
+.page-identity-icon{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;
+  border:1px solid rgba(115,190,237,.42);background:linear-gradient(160deg,rgba(115,190,237,.22),rgba(115,190,237,.06));
+  color:#c2e8ff;flex:none;box-shadow:0 0 12px -6px rgba(115,190,237,.7)}
+.page-identity-icon svg{width:16px;height:16px}
+/* 2026-11-18 标题级别对齐：非停靠布局也统一到“运行日志”的 21px 标题 */
+.maintenance-workspace .maint-page-heading h2{font-size:21px}
+.industrial-connection h1{font-size:21px}
+.data-access .data-access-heading h1{font-size:21px}
