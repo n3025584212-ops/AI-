@@ -1,0 +1,19 @@
+# 统一换行，避免 Windows / Linux 提交互相覆盖
+* text=auto eol=lf
+
+# 二进制资源不做行尾转换
+*.glb binary
+*.gltf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.webm binary
+*.mp4 binary
+*.onnx binary
+*.pkl binary
+*.ico binary
+*.docx binary
+*.xlsx binary
+*.zip binary
