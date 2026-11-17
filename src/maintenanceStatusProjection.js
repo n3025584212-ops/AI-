@@ -73,7 +73,7 @@ export function safeMaintenanceDiagnostics(report) {
  const model=report?.prediction,ai=report?.ai||report?.assistant;
  return {readAt:localStatusStamp(report?.checkedAt),model:{status:modelServiceState(model).label,version:safeStatusText(model?.model_version),
   fingerprint:typeof model?.model_hash==='string'&&/^[a-f0-9]{64}$/i.test(model.model_hash)?model.model_hash:null,verification:model?.schema_status==='VERIFIED'?'已验证':null},
-  ai:{...aiServiceState(ai),model:safeStatusText(ai?.model),provider:ai?.provider==='ollama'?'Ollama':'未核实',endpoint:safeAiEndpoint(ai?.endpoint),
+  ai:{...aiServiceState(ai),model:safeStatusText(ai?.model),provider:({ollama:'Ollama',modelscope:'ModelScope',openai:'OpenAI','openai-compatible':'OpenAI 兼容'})[ai?.provider]||safeStatusText(ai?.provider)||'未核实',endpoint:safeAiEndpoint(ai?.endpoint),
    service:({CONNECTED:'已连接',DISCONNECTED:'未连接'})[ai?.serviceStatus]||'未核实',modelAvailability:({AVAILABLE:'已找到',MISSING:'未找到'})[ai?.modelAvailability]||'未核实',
    inference:({PASS:'PASS',FAIL:'FAIL',RUNNING:'正在检查',NOT_RUN:'未执行'})[ai?.inferenceTest]||'未执行',
    lastError:/^[A-Z0-9_]{1,64}$/.test(ai?.lastError?.code||'')?ai.lastError.code:'无',failureStage:({SERVICE:'服务连接',MODEL:'模型检查',INFERENCE:'最小推理'})[ai?.failureStage]||'无',

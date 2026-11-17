@@ -16,6 +16,12 @@
 .parameter-drawer .dashboard-drawer-heading>div{gap:10px}
 .parameter-drawer .dashboard-drawer-heading span{font-size:10px}
 .live-expanded>.parameter-drawer{display:block}
+/* 2026-11-14 布局修复：参数编辑抽屉是 fixed 右槽位，和 dock 右栏同坐标；
+   抽屉在 .live-workspace{isolation:isolate} 里，z-index 再高也压在右栏(z-index:6)之下，
+   结果右栏盖住抽屉输入区与关闭按钮。抽屉打开时让出右栏，关闭自动恢复。 */
+.twin-stage.stage-docked:has(.live-matrix.parameter-drawer) :is(.data-col-right,.maint-col-right,.comm-col-right,.logs-col-right){
+  visibility:hidden !important;
+}
 @media(min-width:980px){
   .s5-shell.workbench-shell .dashboard-workspace:not(.live-expanded) .dashboard-primary:has(.key-parameter-panel){grid-template-columns:minmax(0,1.2fr) minmax(0,1.8fr) minmax(0,1fr)}
 }

@@ -1,0 +1,99 @@
+.ccp-panel{display:flex;flex-direction:column;gap:9px;min-height:0;color:#dce9f5;font-size:12px}.ccp-header{display:flex;align-items:center;justify-content:space-between;gap:8px}.ccp-header>div:first-child{display:flex;flex-direction:column;gap:3px}.ccp-header strong{font-size:14px;color:#ecf7ff}.ccp-header span{font-size:10px;color:#7894ad}.ccp-header-actions{display:flex;align-items:center;gap:5px}.ccp-header-actions button{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid #36516a;border-radius:6px;background:#122435;color:#a9c8dc;padding:5px 7px;cursor:pointer}.ccp-header-actions button:hover{border-color:#4bc7e6;color:#d9f7ff}.ccp-header-actions .ccp-legacy{font-size:10px}.ccp-subject{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border:1px solid #2c4c62;border-radius:9px;background:linear-gradient(135deg,#0e2738,#10202f)}.ccp-subject>div:first-child{display:flex;flex-direction:column;gap:3px;min-width:0}.ccp-subject small{color:#5bc4df;font-size:10px}.ccp-subject strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ccp-subject span{color:#8ba2b5;font-size:10px}.ccp-session-select select{max-width:145px;border:1px solid #36526a;border-radius:5px;background:#0b1b2b;color:#bad1df;padding:5px;font-size:10px}.ccp-state-line{display:flex;align-items:center;gap:11px;color:#89a1b4;font-size:10px}.ccp-state-line .is-ready{color:#67dfad}.ccp-state-line .is-degraded{color:#e4b86d}.ccp-permission{display:flex;gap:4px}.ccp-permission button{flex:1;padding:5px 3px;border:1px solid #32485b;border-radius:5px;background:#101e2c;color:#8da4b7;cursor:pointer}.ccp-permission button[aria-pressed=true]{border-color:#42bdd9;background:#15384a;color:#d6f6ff}.ccp-constraints{display:flex;flex-wrap:wrap;gap:4px}.ccp-constraints span{padding:4px 6px;border:1px solid #6b5935;border-radius:5px;background:#2c261b;color:#e2c480;font-size:10px}.ccp-hypotheses,.ccp-evidence,.ccp-experiences,.ccp-publish{border:1px solid #30465b;border-radius:7px;background:#0d1c2b;padding:7px 9px}.ccp-hypotheses summary,.ccp-evidence summary,.ccp-experiences summary,.ccp-publish summary{display:flex;align-items:center;gap:5px;color:#a5bfd3;cursor:pointer}.ccp-hypotheses>div{display:flex;justify-content:space-between;gap:6px;padding-top:7px;color:#a5b7c7}.ccp-hypotheses>div small{flex-shrink:0;color:#859cb0}.ccp-hypotheses .is-superseded{text-decoration:line-through;opacity:.6}.ccp-messages{display:flex;flex-direction:column;gap:9px;min-height:170px;max-height:47vh;overflow-y:auto;padding:3px 2px 3px 0;scrollbar-width:thin;scrollbar-color:#38566c transparent}.ccp-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;text-align:center;color:#7d9ab2;line-height:1.8}.ccp-empty svg{color:#5ac9e8;margin-bottom:8px}.ccp-message{padding:9px 10px;border:1px solid #30495d;border-radius:9px;background:#102335;overflow-wrap:anywhere}.ccp-message.is-user{margin-left:22px;border-color:#285e72;background:#123344}.ccp-message.is-assistant{margin-right:5px}.ccp-message header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:#b6d4e8}.ccp-message header small{font-size:9px;color:#7fa7bf}.ccp-message pre{white-space:pre-wrap;font:inherit;line-height:1.65;margin:0}.ccp-receipts{display:flex;flex-direction:column;gap:4px;margin-top:8px}.ccp-receipts span{display:flex;align-items:center;gap:5px;color:#78d6ac;font-size:10px}.ccp-evidence{margin-top:8px;font-size:10px}.ccp-evidence>div{margin-top:7px;border-top:1px solid #253b50;padding-top:6px}.ccp-evidence strong{display:block;color:#9dd7ed}.ccp-evidence small{display:block;color:#7c96ac;margin-top:3px}.ccp-evidence p{white-space:pre-wrap;color:#9bb1c1;line-height:1.55;margin-bottom:0}.ccp-thinking{display:flex;align-items:center;gap:6px;color:#72c8e2;padding:7px}.ccp-error{position:relative;padding:8px 26px 8px 9px;border:1px solid #80564d;border-radius:7px;background:#342523;color:#f0b7a7}.ccp-error button{position:absolute;right:6px;top:5px;border:0;background:transparent;color:inherit;cursor:pointer}.ccp-degraded{margin:0;color:#d5b16f;font-size:10px}.ccp-experiences>div{padding:7px 0;border-top:1px solid #263f52}.ccp-experiences strong,.ccp-experiences span{display:block}.ccp-experiences span{color:#86a6b9;font-size:10px;margin-top:4px}.ccp-experiences p{color:#b0c4d0;line-height:1.5}.ccp-publish p{color:#8ca4b5;font-size:10px}.ccp-publish textarea{box-sizing:border-box;width:100%;min-height:54px;resize:vertical;border:1px solid #38536a;border-radius:5px;background:#0a1826;color:#d7e8f4;padding:6px}.ccp-publish button{margin-top:6px;padding:6px 9px;border:1px solid #3a8ba1;border-radius:5px;background:#143444;color:#bcecf6;cursor:pointer}.ccp-publish small{display:block;margin-top:6px;color:#77d6ab}.ccp-composer-hint{display:inline-flex;align-items:center;gap:4px;color:#7997ae;font-size:10px}@media(max-width:600px){.ccp-messages{max-height:42vh}.ccp-subject{align-items:flex-start;flex-direction:column}.ccp-session-select,.ccp-session-select select{width:100%;max-width:none}}
+.ccp-monitor{border:1px solid #2d4b5f;border-radius:8px;background:#0b1b29;padding:8px 9px}.ccp-monitor>header{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#b7d5e5}.ccp-monitor>header span{display:inline-flex;align-items:center;gap:5px;color:#78d5e9;font-weight:600}.ccp-monitor>header small{color:#809aaf;font-size:9px;text-align:right}.ccp-monitor>p.is-healthy{display:flex;align-items:center;gap:5px;color:#78d6ac;margin:7px 0 0;font-size:10px}.ccp-incident{margin-top:7px;padding:7px;border:1px solid #5b4c32;border-radius:6px;background:#251f17}.ccp-incident.is-high{border-color:#874f46;background:#2c1d1c}.ccp-incident>div{display:flex;align-items:center;gap:5px;color:#e6c27f}.ccp-incident.is-high>div{color:#f2a596}.ccp-incident strong{font-size:11px;font-weight:600;min-width:0;overflow-wrap:anywhere}.ccp-incident em{margin-left:auto;font-style:normal;font-size:9px;color:#cfaa69}.ccp-incident p{margin:5px 0;color:#aebecb;font-size:10px;line-height:1.5}.ccp-incident>small{display:block;color:#8197a9;font-size:9px}.ccp-incident>button{margin-top:5px;border:1px solid #596f7d;border-radius:4px;background:#122632;color:#bad1dc;padding:3px 6px;cursor:pointer;font-size:9px}.ccp-monitor details{margin-top:6px;color:#8198aa;font-size:10px}.ccp-monitor details summary{cursor:pointer}.ccp-monitor .ccp-recovered{display:flex;align-items:center;gap:5px;padding-top:5px;color:#78d6ac}.ccp-monitor .ccp-recovered small{color:#7c98a8}.ccp-handover-button{margin-top:6px;border:1px solid #3b7183;border-radius:4px;background:#12313c;color:#a7dce8;padding:4px 7px;cursor:pointer;font-size:9px}.ccp-handover{white-space:pre-wrap;margin:6px 0 0;padding:6px;border:1px solid #294355;border-radius:4px;background:#0a1824;color:#b7ccda;font:10px/1.55 "Microsoft YaHei",sans-serif}
+
+/* ===== v2：对话优先，监控抽屉，权限进 meta ===== */
+.ccp-panel{flex:1;min-height:0;gap:7px;position:relative;font-size:12px}
+.ccp-header{flex:none;min-height:36px;padding-bottom:7px;border-bottom:1px solid #16384f}
+.ccp-title{display:flex;align-items:baseline;gap:7px;min-width:0}
+.ccp-title strong{font-size:13px;letter-spacing:.08em;color:#eaf8ff}
+.ccp-title span{font-size:10px;color:#6f94ad;letter-spacing:.08em}
+.ccp-head-status{display:flex;align-items:center;gap:5px;color:#8fb1c6;font-size:10px;white-space:nowrap}
+.ccp-head-status i{width:5px;height:5px;border-radius:50%;background:#67dfad;box-shadow:0 0 7px #67dfad}
+.ccp-head-status i.is-warn{background:#ffb454;box-shadow:0 0 7px #ffb454}
+.ccp-event-chip{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(255,180,84,.35);border-radius:4px;background:rgba(120,80,20,.16);color:#ffcf8a;padding:2px 5px;font:9px/1 inherit;cursor:pointer}
+.ccp-header-actions button{padding:4px 6px;font-size:10px}
+.ccp-meta{flex:none;display:flex;align-items:center;gap:7px;min-height:24px;padding:0 0 6px;border-bottom:1px solid #102b3e;font-size:10px;overflow:hidden}
+.ccp-object{color:#dff3ff;font-weight:600;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.ccp-source{color:#5b7d94;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis}
+.ccp-session-select{max-width:128px;min-width:64px;margin-left:auto;border:1px solid #2c4c62;border-radius:4px;background:#0b1b2b;color:#a9c4d6;padding:3px 4px;font-size:9px}
+.ccp-task{color:#6f94ad;font:9px/1 monospace;white-space:nowrap}
+.ccp-permission{display:flex;gap:2px;flex:none}
+.ccp-permission button{padding:3px 5px;font-size:9px;border-radius:4px;line-height:1;white-space:nowrap}
+.ccp-constraints{flex:none;gap:3px;overflow:hidden;max-height:22px}
+.ccp-constraints span{padding:2px 5px;font-size:9px;white-space:nowrap}
+.ccp-incident-banner{flex:none;display:flex;align-items:center;gap:6px;width:100%;border:1px solid rgba(255,180,84,.35);border-radius:5px;background:rgba(120,80,20,.14);color:#e8c58d;padding:5px 8px;font:10px/1.3 inherit;text-align:left;cursor:pointer}
+.ccp-incident-banner span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ccp-incident-banner em{font-style:normal;color:#ffcf8a;font-size:9px}
+.ccp-incident-banner b{color:#ffcf8a;font-weight:500;font-size:9px}
+.ccp-messages{flex:1;min-height:0;max-height:none;overflow-y:auto;padding:4px 2px 4px 0;gap:0}
+.ccp-message{padding:8px 2px;border:0;border-bottom:1px solid #102b3e;border-radius:0;background:transparent}
+.ccp-message.is-user{margin:2px 0 4px;padding:7px 9px;border:1px solid rgba(40,110,140,.35);border-radius:6px;background:rgba(18,51,68,.55)}
+.ccp-message.is-assistant{margin-right:0}
+.ccp-message header{margin-bottom:4px;font-size:10px}
+.ccp-message header span{color:#9fc0d4;font-weight:600}
+.ccp-message header small{font-size:9px;color:#5b7d94}
+.ccp-receipts{margin-top:5px}
+.ccp-evidence{margin-top:5px}
+.ccp-thinking{padding:6px 2px;font-size:11px}
+.ccp-more{flex:none;border-top:1px solid #102b3e;padding-top:3px}
+.ccp-more>summary{display:flex;align-items:center;gap:5px;color:#6f94ad;font-size:10px;cursor:pointer;list-style:none;min-height:20px}
+.ccp-more>summary::-webkit-details-marker{display:none}
+.ccp-more>summary:after{content:'展开';margin-left:auto;color:#51738a;font-size:9px}
+.ccp-more[open]>summary:after{content:'收起'}
+.ccp-more-body{max-height:170px;overflow:auto;padding:5px 0 2px}
+.ccp-more-body .ccp-hypotheses,.ccp-more-body .ccp-experiences,.ccp-more-body .ccp-publish{border:0;background:transparent;padding:0}
+.ccp-more-body .ccp-publish textarea{min-height:44px}
+.ccp-drawer-backdrop{position:absolute;inset:0;z-index:50;display:flex;justify-content:flex-end;background:rgba(1,6,10,.58)}
+.ccp-drawer{width:min(92%,340px);height:100%;overflow:auto;border-left:1px solid #1f4a66;background:linear-gradient(160deg,#081a29,#050f19);padding:14px 13px;box-shadow:-20px 0 50px rgba(0,0,0,.45)}
+.ccp-drawer>header{display:flex;align-items:center;justify-content:space-between;color:#b9d9ea;font-size:12px;font-weight:600;padding-bottom:7px;border-bottom:1px solid #16384f}
+.ccp-drawer>header span{display:inline-flex;align-items:center;gap:5px}
+.ccp-drawer>header button{border:0;background:transparent;color:#8fb1c6;font-size:18px;line-height:1;cursor:pointer;padding:0 3px}
+.ccp-drawer-sub{display:block;color:#6f94ad;font-size:9px;margin:6px 0 8px}
+.ccp-drawer .is-healthy{display:flex;align-items:center;gap:5px;color:#78d6ac;font-size:10px;margin:8px 0}
+.ccp-drawer .ccp-incident{margin-top:7px;border-radius:6px}
+.ccp-drawer details{margin-top:10px;color:#8198aa;font-size:10px}
+.ccp-drawer details summary{cursor:pointer}
+@media(max-width:620px){.ccp-source,.ccp-task{display:none}.ccp-object{max-width:118px}}
+.ccp-meta{flex-wrap:wrap;row-gap:4px;overflow:visible;align-content:center}
+.ccp-object{max-width:140px;flex:0 1 auto}
+.ccp-session-select{max-width:104px;margin-left:0}
+.ccp-permission{margin-left:auto}
+.ccp-session-select{max-width:120px}
+.ai-floating-window .ai-window-drag-handle:focus{outline:none}
+.ai-floating-window .ai-window-drag-handle:focus-visible{outline:1px solid rgba(99,211,255,.55);outline-offset:-2px}
+.ccp-session-select{width:92px;flex:0 0 92px;max-width:92px}
+.ai-floating-window .ai-window-drag-handle[role="button"]:focus-visible{outline:1px solid rgba(99,211,255,.35)!important;outline-offset:-2px!important}
+
+/* ===== 2026-11-16 浮窗布局收口 =====
+   问题：连续面板根节点直接挂在 .ai-floating-body 下，没有 .assistant-content 那层
+   padding，内容全部贴着窗口描边；标题栏已经把「DK AI 工艺副驾驶」写全，面板里再写一遍
+   就是两条标题；空态只有一段居中说明，420px 高的窗口中间空出一大片。 */
+.ai-floating-body > .ccp-panel{padding:10px 12px 11px}
+.ccp-header{min-height:24px;padding-bottom:0;border-bottom:0}
+/* 基类 .ccp-header>div:first-child 是给旧标题块用的纵向排列，去掉标题后会把状态点竖着排 */
+.ccp-header>div.ccp-head-status{flex-direction:row;gap:5px}
+.ccp-header-actions button{padding:4px 7px}
+.ccp-meta{padding:5px 0 7px;border-bottom:1px solid #16384f}
+.ccp-session-select{width:140px;flex:0 0 140px;max-width:140px}
+.ccp-messages{padding:8px 2px 6px 0}
+.ccp-empty{flex:1;min-height:0;justify-content:center;align-items:stretch;gap:11px;padding:2px;text-align:left}
+.ccp-empty-head{display:flex;align-items:center;gap:7px;color:#8fb0c6;font-size:11.5px}
+.ccp-empty-head svg{flex:none;color:#5ac9e8}
+.ccp-empty-head p{margin:0}
+.ccp-starters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ccp-starters button{display:flex;align-items:center;min-height:32px;padding:6px 9px;border:1px solid #24495c;border-radius:5px;background:rgba(11,31,44,.72);color:#a6c6d9;font-size:10.5px;line-height:1.45;font-family:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.ccp-starters button:hover:not(:disabled){border-color:#3f8fb0;background:rgba(20,54,71,.85);color:#d9f2ff}
+.ccp-starters button:disabled{opacity:.45;cursor:default}
+.ai-floating-window .chat-input{padding:8px 10px 7px}
+.ai-floating-window .chat-input textarea{min-height:28px}
+.ai-floating-window .chat-input > div{padding-top:6px}
+.ccp-composer-hint{display:none}
+/* 权限三档是一个分段控件，不该显示成三颗互不相干的按钮 */
+.ccp-permission{gap:0;border:1px solid #2c4c62;border-radius:4px;overflow:hidden;background:#0b1b2b}
+.ccp-permission button{border:0;border-right:1px solid #2c4c62;border-radius:0;background:transparent;padding:4px 7px}
+.ccp-permission button:last-child{border-right:0}
+.ccp-permission button[aria-pressed=true]{border-color:transparent;background:#15384a;box-shadow:inset 0 -2px 0 #42bdd9}
+/* 头部监控入口：健康时也能打开监控抽屉，有活动事件时显示数量 */
+.ccp-monitor-toggle{position:relative}
+.ccp-monitor-toggle em{position:absolute;top:-4px;right:-4px;min-width:13px;height:13px;padding:0 3px;border-radius:7px;background:#b4762a;color:#1a1206;font:9px/13px Bahnschrift,"Segoe UI",sans-serif;font-style:normal;text-align:center}
+.ccp-monitor-toggle.is-alert{border-color:rgba(255,180,84,.5)!important;color:#ffcf8a!important}

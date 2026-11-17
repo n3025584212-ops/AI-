@@ -2,7 +2,7 @@ import { readableConditionName } from './userVisibleText.js';
 import { trendActualValue, trendActualAvailability } from './s5ActualDisplay.js';
 import { observationDisplay, referenceRangeDisplay } from './workbenchDisplay.js';
 import { useEffect, useRef, useState } from 'react';
-import { Activity, Archive, ArrowRight, CheckCircle2, ChevronDown, CircleAlert, Download, FileText, Layers3, MoreHorizontal, Pause, Play, SlidersHorizontal, Upload } from 'lucide-react';
+import { Activity, Archive, ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, CircleAlert, Download, FileText, Layers3, MoreHorizontal, Play, SlidersHorizontal, Upload } from 'lucide-react';
 import CommittedParameterEditor from './CommittedParameterEditor.jsx';
 import { HistoryWorkspace } from './OperationsPages.jsx';
 import { formatEngineering } from './engineeringUnits.js';
@@ -140,14 +140,18 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
   const actualSeries = trendActualAvailability(stream.frames, stream.sourceName);
   const observationLabel = '实际值';
   const recordCount = stream.frames.length;
-  const trendPointCount = stream.frames.reduce((count, frame) => finiteNumber(frame.predicted) !== null ? count + 1 : count, 0);
   // Import/manual entry points own this identity; record count only indicates loaded data.
   const datasetType = stream.mode === 'manual' ? 'SINGLE_CONDITION' : ['demo', 'import'].includes(stream.mode) ? 'TIMESERIES' : null;
   const hasData = recordCount > 0 || check.completeCount > 0;
   const mode = !hasData ? '数据未载入' : datasetType === 'TIMESERIES' ? '时序数据' : datasetType === 'SINGLE_CONDITION' ? '单工况数据' : '数据已载入';
-  const canPlayback = recordCount > 1 && !['manual', 'plc'].includes(stream.mode);
   const sourceName = '工业数据';
   const rangeDisplay = referenceRangeDisplay(check);
+  // 卡片只有一百多像素宽，说明行只写一个结论；把「完整度 + 范围 + 提示」拼起来再省略号，
+  // 读者只能看到「输入已完整 · …」这种半句话（2026-11-16 观感修正）。
+  const rangeNote = check.outOfRangeCount ? `${check.outOfRangeCount} 项超出范围`
+    : !check.checkedRangeCount || check.rangeStatus === 'UNKNOWN' ? '范围未载入'
+      : check.rangeStatus === 'PARTIAL' ? `${check.checkedRangeCount} 项已核范围`
+        : '参考范围内';
   const entryThickness = finiteNumber(caseData?.stands?.[0]?.entryThickness) ?? finiteNumber(caseData?.entrySetThickness);
   const exitThickness = finiteNumber(caseData?.stands?.[caseData.stands.length - 1]?.exitThickness);
   const reduction = entryThickness && exitThickness != null ? (entryThickness - exitThickness) / entryThickness * 100 : null;
@@ -215,9 +219,9 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
       <article className="data-kpi" data-tone={check.valid ? 'ok' : 'warn'}>
         <InputRing complete={check.completeCount} total={check.total}/>
         <div className="data-kpi-body">
-          <span className="data-kpi-label">模型输入完整度</span>
+          <span className="data-kpi-label" title="模型输入完整度">输入完整度</span>
           <strong className="data-kpi-value">{check.completeCount}<small>/ {check.total}</small></strong>
-          <span className="data-kpi-note">{inputErrors.length ? `${inputErrors.length} 项待补全或修正` : '输入已完整'} · {rangeDisplay.label}</span>
+          <span className="data-kpi-note" title={inputErrors.length ? `${inputErrors.length} 项待补全或修正 · ${rangeDisplay.label}` : `输入已完整 · ${rangeDisplay.label}`}>{inputErrors.length ? `${inputErrors.length} 项待补全` : rangeNote}</span>
         </div>
       </article>
       <article className="data-kpi" data-focus={predictionValue != null} data-tone={delta == null ? 'idle' : Math.abs(deltaPercent) <= 5 ? 'ok' : 'warn'}>
@@ -226,36 +230,39 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
           <strong className="data-kpi-value is-number">{predictionValue != null ? <>{predictionValue.toFixed(3)}<small>t</small></> : predictionLabel}</strong>
           {predictionValue != null && targetValue != null ? <>
             <TargetBullet value={predictionValue} target={targetValue}/>
-            <span className="data-kpi-note">{predictionStale ? '上次完成的结果 · 等待新计算' : <>{delta >= 0 ? '高于' : '低于'}目标 {formatEngineering('force', Math.abs(delta), 1)}{' '}
-              <em data-side={delta >= 0 ? 'over' : 'under'}>{deltaPercent >= 0 ? '+' : ''}{deltaPercent.toFixed(1)}%</em></>}</span>
+            <span className="data-kpi-note">{delta >= 0 ? '高于目标' : '低于目标'}{' '}
+              <em data-side={delta >= 0 ? 'over' : 'under'}>{deltaPercent >= 0 ? '+' : ''}{deltaPercent.toFixed(1)}%</em></span>
           </> : predictionValue != null ? <>
             <div className="data-bullet is-empty" aria-hidden="true"/>
-            <span className="data-kpi-note">{predictionStale ? '上次完成的结果 · 未设置 S5 目标' : '未设置 S5 目标 · 填写后可显示偏差'}</span>
+            <span className="data-kpi-note">未设置 S5 目标</span>
           </> : <span className="data-kpi-note">{check.valid ? '应用参数后自动计算' : '先补齐缺失输入'}</span>}
         </div>
       </article>
       <article className="data-kpi data-kpi-records" data-tone={recordCount ? 'ok' : 'idle'}>
         <div className="data-kpi-body is-wide">
-          <span className="data-kpi-label">已载入记录 <em>{recordCount ? `第 ${stream.cursor + 1} / ${recordCount} 条` : '暂无数据'}</em>{canPlayback && <button type="button" className="data-kpi-play" onClick={stream.toggle} aria-label={stream.running ? '暂停时序播放' : '继续时序播放'} title={stream.running ? '暂停时序播放' : '继续时序播放'}>{stream.running ? <Pause size={11}/> : <Play size={11}/>}</button>}</span>
+          <span className="data-kpi-label">已载入记录 <em>{recordCount ? `${stream.cursor + 1}/${recordCount}` : '空'}</em></span>
           <strong className="data-kpi-value">{recordCount}<small>条</small></strong>
+          <span className="data-kpi-note">{recordCount ? (stream.running ? '播放中' : '已暂停') : '导入时序后显示走势'}</span>
           <PredictionSparkline frames={stream.frames} cursor={stream.cursor}/>
-          <span className="data-kpi-note">{recordCount ? `${stream.running ? '播放中' : '播放已暂停'} · 最近 ${Math.min(60, trendPointCount)} 条` : '导入时序后显示走势'}</span>
         </div>
       </article>
       <article className="data-kpi" data-tone={reduction != null ? 'ok' : 'idle'}>
         <div className="data-kpi-body is-wide">
           <span className="data-kpi-label">五机架压下</span>
           <strong className="data-kpi-value is-number">{entryThickness != null ? entryThickness.toFixed(3) : '—'}<small>→</small>{exitThickness != null ? exitThickness.toFixed(3) : '—'}<small>mm</small></strong>
+          <span className="data-kpi-note">{reduction != null ? `总压下率 ${reduction.toFixed(1)}%` : '待载入工况'}</span>
           <ThicknessChain stands={caseData?.stands || []}/>
-          <span className="data-kpi-note">{reduction != null ? `总压下率 ${reduction.toFixed(1)}%` : '待载入工况'}{caseData?.width ? ` · 带宽 ${caseData.width} mm` : ''}</span>
         </div>
       </article>
     </div>
 
     {importError && <div className="data-access-error" role="alert"><CircleAlert size={15}/>{importError}</div>}
 
-    <div className="data-access-bar">
-      <div className="data-access-tabs" role="tablist" aria-label="数据内容">{[['current','当前工况',null,Layers3],['series','时序记录',recordCount,Activity],['saved','已保存工况',cases.length,Archive]].map(([id,label,count,Icon]) => <button key={id} id={'data-tab-'+id} data-tab={id} role="tab" aria-selected={tab===id} aria-controls={'data-panel-'+id} onClick={() => onTabChange(id)}><Icon size={15}/>{label}{count!==null && <small>{count}</small>}</button>)}</div>
+    <div className="data-stand-snap" aria-label="五机架快照">
+      <div className="data-stand-head"><span>机架快照</span><small>入口 → 出口 / 轧制力</small></div>
+      {(caseData?.stands||[]).map(stand=><div className="data-stand-row" key={stand.id}><b>{stand.id}</b><span>{Number(stand.entryThickness).toFixed(3)} → {Number(stand.exitThickness).toFixed(3)} mm</span><em>{Number(stand.force).toFixed(0)} t</em><i style={{width:`${Math.min(100,Number(stand.force)/1200*100)}%`}}/></div>)}
+    </div>
+    </div><div className="data-col-right"><div className="data-access-tabs is-right" role="tablist" aria-label="数据内容">{[['current','当前工况',null,Layers3],['series','时序记录',recordCount,Activity],['saved','已保存工况',cases.length,Archive]].map(([id,label,count,Icon]) => <button key={id} id={'data-tab-'+id} data-tab={id} role="tab" aria-selected={tab===id} aria-controls={'data-panel-'+id} onClick={() => onTabChange(id)}><Icon size={14}/>{label}{count!==null && <small>{count}</small>}</button>)}</div>    <div className="data-access-bar is-right">
       <div className="data-access-tools">
         <button className="data-btn" onClick={edit}><SlidersHorizontal size={14}/>编辑当前工况</button>
         <button className="data-btn" data-tone="save" onClick={onSave} title={modelProps.dirty ? '预测更新中，完成后可保存' : '保存当前工况'}><Archive size={14}/>保存当前工况</button>
@@ -270,11 +277,7 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
         </details>
       </div>
     </div>
-    <div className="data-stand-snap" aria-label="五机架快照">
-      <div className="data-stand-head"><span>机架快照</span><small>入口 → 出口 / 轧制力</small></div>
-      {(caseData?.stands||[]).map(stand=><div className="data-stand-row" key={stand.id}><b>{stand.id}</b><span>{Number(stand.entryThickness).toFixed(3)} → {Number(stand.exitThickness).toFixed(3)} mm</span><em>{Number(stand.force).toFixed(0)} t</em><i style={{width:`${Math.min(100,Number(stand.force)/1200*100)}%`}}/></div>)}
-    </div>
-    </div><div className="data-col-right"><div className={'data-access-body data-access-'+tab} id={'data-panel-'+tab} role="tabpanel" aria-labelledby={'data-tab-'+tab}>
+<div className={'data-access-body data-access-'+tab} id={'data-panel-'+tab} role="tabpanel" aria-labelledby={'data-tab-'+tab}>
       {tab === 'current' && <>
         {!!inputErrors.length && <ul className="data-access-issues">{inputErrors.map((text,index) => <li key={index}>{text}</li>)}</ul>}
         {!!check.outOfRange.length && <details className="data-access-range"><summary>查看超出参考范围的 {check.outOfRange.length} 项参数</summary><ul>{check.outOfRange.map(item => <li key={item.key}>{item.label} {formatEngineering(item.field,item.value)}，参考范围 {formatEngineering(item.field,item.minimum)}—{formatEngineering(item.field,item.maximum)}</li>)}</ul></details>}
@@ -282,10 +285,10 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
         <div className="data-access-current-result"><span>当前 S5 预测 <strong>{predictionLabel}</strong></span><span>目标 <strong data-empty={targetValue == null}>{targetValue != null ? formatEngineering('force',caseData.target,3) : '未设置'}</strong></span><button onClick={() => onTabChange('series')}>查看数据记录<ArrowRight size={13}/></button></div>
       </>}
       {tab === 'series' && <>
-        <div className="data-access-record-heading"><span>{recordCount ? `当前工况 第 ${stream.cursor+1} / ${recordCount} 条` : '尚未载入记录'}</span><small>选择记录可在预测工作台中查看机组与计算结果</small></div>
+        <div className="data-access-record-heading"><span>{recordCount ? `当前工况 第 ${stream.cursor+1} / ${recordCount} 条` : '尚未载入记录'}</span><small>选择记录可在预测工作台中查看机组与计算结果</small><button type="button" className="data-record-back" onClick={() => onTabChange('current')}><ArrowLeft size={13}/>返回参数</button></div>
         <div className="data-access-table-scroll"><table className="data-access-table" aria-label="已载入的时序记录"><thead><tr><th>序号</th><th>工况</th><th>采样时间</th><th>S5 预测 / t</th>{actualSeries.available&&<th>{observationLabel} / t</th>}<th>输入完整度</th><th>操作</th></tr></thead><tbody>{stream.frames.map((frame,index) => { const validation=summarizeModelInputs(frame.input); const ratio=validation.completeCount/validation.total*100; return <tr key={index} className={index===stream.cursor?'is-current':''}><td>{index+1}</td><td title={readableConditionName(frame.input?.id)}>{readableConditionName(frame.input?.id)}</td><td>{stamp(frame)}</td><td>{formatEngineering('force',frame.predicted,3)}</td>{actualSeries.available&&<td title={trendActualValue(frame)!==null?observationDisplay(frame).tooltip:undefined}>{trendActualValue(frame)!==null?formatEngineering('force',trendActualValue(frame),3):''}</td>}<td><span className="data-mini-meter" data-full={validation.completeCount===validation.total}><i style={{width:`${ratio}%`}}/></span>{validation.completeCount} / {validation.total}</td><td><button aria-label={`查看第 ${index+1} 条记录`} onClick={() => openFrame(index)}>查看<ArrowRight size={12}/></button></td></tr>; })}{!stream.frames.length && <tr><td colSpan={actualSeries.available?7:6} className="data-access-empty">导入时序 CSV 或运行工业数据流后，记录会显示在这里。</td></tr>}</tbody></table></div>
       </>}
-      {tab === 'saved' && <HistoryWorkspace cases={cases} caseData={caseData} resultCase={modelProps.resultCase} result={result} dirty={modelProps.dirty} onSave={onSave} onLoad={onLoad} onDelete={onDelete}/>}
+      {tab === 'saved' && <HistoryWorkspace cases={cases} caseData={caseData} resultCase={modelProps.resultCase} result={result} dirty={modelProps.dirty} onSave={onSave} onLoad={onLoad} onDelete={onDelete} onBack={() => onTabChange('current')}/>}
     </div>
     <footer className="data-access-foot"><FileText size={14}/><span>模板单位：轧制力 t · 总张力 t；弯辊力 kN · 厚度与宽度 mm。保留模板中的单位标识列，导入时自动换算。</span></footer>
   </div></div></section>;

@@ -8,24 +8,25 @@
 .assistant-pet-caption i{width:4px;height:4px;border-radius:50%;background:#80b5aa}
 .assistant-pet-caption i.is-busy{background:#e5bc74}
 .assistant-pet-loading,.assistant-pet-render-fallback{font-size:12px;line-height:18px;color:#bed1df;align-self:center;text-align:center}
-.assistant-pet-launcher:focus-visible,.assistant-pet-options:focus-visible{outline:2px solid #b2d9e8}
-.assistant-pet-options{position:absolute;right:0;bottom:16px;width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:4px;background:#24323de6;color:#d4e0e8;opacity:0;pointer-events:none;cursor:pointer}
-.assistant-pet:hover .assistant-pet-options,.assistant-pet:focus-within .assistant-pet-options{opacity:1;pointer-events:auto}
+.assistant-pet-launcher:focus-visible{outline:2px solid #b2d9e8}
 .assistant-pet-voice{position:absolute;bottom:0;left:0;right:0;pointer-events:auto}
 .assistant-pet-voice .voice-ambient-status{min-height:10px}
 .assistant-pet-voice .voice-ambient-status>span{display:none}
 .assistant-pet-voice .voice-ambient-status i{box-shadow:none}
-.assistant-pet-menu{position:absolute;bottom:22px;width:158px;padding:8px;display:flex;flex-direction:column;gap:3px;pointer-events:auto;border:1px solid #52606b;border-radius:8px;background:#23303a;color:#dfebf3;box-shadow:0 7px 20px #050b1266}
-.assistant-pet-menu.opens-right{left:78px}.assistant-pet-menu.opens-left{right:78px}.assistant-pet-menu.opens-down{top:12px;bottom:auto}
-.assistant-pet-menu strong{font-size:12px;font-weight:500;padding:4px 6px 7px;color:#b0c7d7}
-.assistant-pet-menu button{min-height:30px;padding:5px 7px;border:0;border-radius:4px;background:transparent;color:inherit;text-align:left;font:inherit;font-size:12px;cursor:pointer}
-.assistant-pet-menu button:hover,.assistant-pet-menu button[aria-pressed=true]{background:#3b505e}
 .assistant-pet-notice{position:absolute;bottom:150px;display:flex;align-items:flex-start;width:210px;max-width:calc(100vw - 105px);padding:9px 8px 9px 11px;border:1px solid #4d6475;border-radius:8px;background:#1e303deb;color:#e1edf6;box-shadow:0 6px 18px #06101a55;pointer-events:auto}
 .assistant-pet-notice.opens-right{left:75px}.assistant-pet-notice.opens-left{right:75px}
 .assistant-pet-notice.opens-down{top:12px;bottom:auto}
 .assistant-pet-notice-main{flex:1;display:flex;flex-direction:column;gap:5px;padding:0;border:0;background:transparent;color:inherit;text-align:left;font:inherit;font-size:12px;line-height:18px;cursor:pointer}
 .assistant-pet-notice-main span{color:#aac8dc}
 .assistant-pet-notice-dismiss{flex:none;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;background:transparent;color:#b0c5d4;cursor:pointer}
+/* 桌宠主动开口：和副驾驶说话一致的形式——一句结论 + 一个动作，带指向桌宠的小尾巴。 */
+.assistant-pet-speech{width:252px;padding:10px 8px 10px 12px;border-color:#6f93a9;background:#223646f2;box-shadow:0 8px 22px #06101a66}
+.assistant-pet-speech .assistant-pet-notice-main{font-size:12.5px;line-height:19px;gap:4px;color:#e8f2f8}
+.assistant-pet-speech .assistant-pet-notice-main span{color:#8fb6cd;font-size:11.5px}
+.assistant-pet-speech::after{content:'';position:absolute;bottom:-6px;width:10px;height:10px;border-right:1px solid #6f93a9;border-bottom:1px solid #6f93a9;background:#223646;transform:rotate(45deg)}
+.assistant-pet-speech.opens-right::after{left:24px}
+.assistant-pet-speech.opens-left::after{right:24px}
+.assistant-pet-speech.opens-down::after{bottom:auto;top:-6px;transform:rotate(-135deg)}
 body:has(.live-expanded) .assistant-pet,body:has(.ai-floating-window[data-state=MAXIMIZED]:not([hidden])) .assistant-pet{visibility:hidden;pointer-events:none}
 .assistant-task-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px 0;color:#d5e2ec}
 .assistant-task-heading>strong{font-size:13px;font-weight:500}

@@ -17,8 +17,7 @@ import { createIndustrialStage } from './factoryStage';
 import { buildFixtures } from './factoryLine.js';
 import { loadPulpits } from './factoryPulpits.js';
 import { loadLineAssets } from './factoryAssets.js';
-import { Character, FLOOR_Y, ENGINEER_AISLE_Z } from './factoryCharacter.js';
-import { ENGINEER_MODEL_URL } from './engineerWebAsset.js';
+import { FLOOR_Y, ENGINEER_AISLE_Z } from './factoryCharacter.js';
 import { loadFactoryHall } from './factoryHall.js';
 import { buildFactoryPlant } from './factoryPlant.js';
 import { buildMillDetails } from './millDetails.js';
@@ -34,36 +33,6 @@ import { annotationViewport, fitProjectedBounds, isProcessGroupVisible, isRollin
 
 const STANDS = ['S1', 'S2', 'S3', 'S4', 'S5'];
 const baseButton = { border: '1px solid #42617480', background: '#11232cc9', color: '#b9cad4', borderRadius: 7, padding: '6px 9px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' };
-
-function createAssistantLabel() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 320; canvas.height = 80;
-  const ctx = canvas.getContext('2d');
-  const round = (x, y, w, h, r) => {
-    ctx.beginPath(); ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-  };
-  ctx.clearRect(0, 0, 320, 80);
-  round(4, 8, 312, 64, 28);
-  ctx.fillStyle = 'rgba(5,32,39,.94)'; ctx.fill();
-  ctx.strokeStyle = '#67cfc0'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = '#4ce0bd';
-  ctx.beginPath(); ctx.arc(42, 40, 9, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#d7fff7';
-  ctx.font = '600 30px "Segoe UI","Microsoft YaHei",sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('AI 助手', 182, 41);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace; texture.needsUpdate = true;
-  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false, toneMapped: false });
-  const sprite = new THREE.Sprite(material);
-  sprite.scale.set(1.55, 0.39, 1);
-  sprite.position.set(0, 2.12, 0);
-  sprite.renderOrder = 20;
-  sprite.userData.assistantLabel = true;
-  return sprite;
-}
 
 export default function ThreeViewer({ selectedStand = 'S5', onSelectStand, view = 'perspective', showStrip = true,
   explode = false, compact = false, expanded = false, shellMode = 'solid',
@@ -463,7 +432,7 @@ export default function ThreeViewer({ selectedStand = 'S5', onSelectStand, view 
     }
     function openInteraction(descriptor) {
       if (!descriptor) return;
-      // 厂区里的技术员就是 AI 助手的实体入口：点他直接打开副驾驶面板。
+      // 厂区技术员是巡检/派工演出角色；点击仍可唤起副驾驶，但 AI 人格由页面桌宠承担（2026-11-15 起）。
       if (descriptor.kind === 'character') {
         window.dispatchEvent(new Event('dkqkar-assistant-open'));
         return;
@@ -1641,18 +1610,8 @@ export default function ThreeViewer({ selectedStand = 'S5', onSelectStand, view 
             // 2026-11-01 用户要求移除操作台柱子（pulpits_S*_mo.glb）；回滚：恢复 loadPulpits 调用
             Promise.resolve({ skipped: true }),
             loadLineAssets(factoryAssetGroup),
-            (async () => {
-              const actor = new Character({ mask: false, visor: false });
-              await actor.load(ENGINEER_MODEL_URL);
-              // 站在操作台前侧，避免被前景操作台挡住；巡检沿同一游线行走。
-              actor.group.position.set(0, FLOOR_Y, ENGINEER_AISLE_Z);
-              // 待命时面向操作侧/用户，派工后再转向目标设备。
-              actor.group.rotation.y = 0;
-              actor.group.userData.interaction = { kind: 'character', label: 'AI 工艺助手 · 现场技术员', page: 'overview', desc: '厂区技术员 · 点击打开 AI 副驾驶；可派工 / 巡检 / 语音播报' };
-              actor.group.add(createAssistantLabel());
-              scene.add(actor.group);
-              return actor;
-            })(),
+            // 2026-11-16 操作者口径：移除厂区“巡检技术员”3D 人偶；角色形象统一由开屏/桌宠的大肥鱼承担。
+            Promise.resolve(null),
           ]);
           if (characterResult.status === 'fulfilled') factoryCharacter = characterResult.value;
           for (const result of [pulpitResult, lineResult, characterResult]) {

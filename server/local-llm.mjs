@@ -1,7 +1,5 @@
 import { StateError } from './local-state.mjs';
 import { createLocalAiHealth } from './local-ai-health.mjs';
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
 
 export const LOCAL_LLM_DEFAULTS = Object.freeze({ model: 'qwen3.5:4b', endpoint: 'http://127.0.0.1:11434', provider: 'ollama' });
 // Must stay >= the desktop runtime's OLLAMA_KEEP_ALIVE so an idle gap never
@@ -61,11 +59,10 @@ export function createLocalLlm({ settings = async () => ({}), fetchImpl = fetch,
       body: JSON.stringify({ model: config.model, messages, stream, think: false, keep_alive: KEEP_ALIVE, ...(tools ? { tools } : {}), ...(format ? { format } : {}),
         options: { num_ctx: LOCAL_CONTEXT_TOKENS, num_predict: outputBudget(messages, maxTokens), temperature: 0 } }) });
   }
-  const launch=ensureService??null; const _discardedLaunchFactory=(fetchImpl===fetch&&process.platform==='win32'?async config=>{
-    if(config.endpoint!==LOCAL_LLM_DEFAULTS.endpoint)return {online:false,reason:'external_endpoint_not_owned'};
-    const {ensureLocalLlm}=createRequire(import.meta.url)('../desktop/local-llm.cjs');
-    return ensureLocalLlm({appPath:fileURLToPath(new URL('..',import.meta.url)),dataRoot:process.env.DKQKAR_LOCAL_LLM_ROOT});
-  }:null); void _discardedLaunchFactory;
+  // Web 部署没有桌面壳，不存在可自动拉起的 Ollama 进程 —— 这里只接受宿主显式
+  // 注入的 ensureService（桌面端专用）。没有注入时不做任何拉起尝试，直接按
+  // 探测结果报告 SERVICE_OFFLINE，由前端回落到确定性回答。
+  const launch = ensureService ?? null;
   const health=createLocalAiHealth({configuration,ensureService:launch,...healthOptions,
     jsonRequest:async(config,path)=>boundedJson(await fetchImpl(config.endpoint+path,{signal:AbortSignal.timeout(2500),redirect:'error'})),
     infer:async config=>boundedJson(await chatRequest(config,[{role:'user',content:'只返回 READY'}],{maxTokens:8}))});

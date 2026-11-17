@@ -12,13 +12,31 @@ const credentialVersion = account => hash(account.username + ':' + account.salt 
 const publicUser = account => ({ id:account.id, name:account.displayName || '本机管理员', username:account.username,
   role:account.role, display_role:'本机管理员' });
 
+const ACCOUNT_READ_DELAYS = [20, 40, 80];
+const ACCOUNT_GRACE_MS = 30000;
+
 export function createUserAuth(state, { enabled = true } = {}) {
   const attempts = new Map();
-  async function readAccount() {
+  let lastGoodAccount = null, lastGoodAt = 0;
+  async function readAccountOnce() {
     const users = await state.read('auth-users.json', []);
     if (!Array.isArray(users) || users.length > 1 || users.length === 1 && !validAccount(users[0]))
       throw new StateError('本机账户文件无法验证，请保留数据目录并联系维护人员。', 503, 'AUTH_STATE_INVALID');
     return users[0] || null;
+  }
+  async function readAccount() {
+    let account = await readAccountOnce();
+    if (account) { lastGoodAccount = account; lastGoodAt = Date.now(); return account; }
+    // Windows 上重命名/杀软扫描的瞬间可能把账户文件读空。短暂重试，
+    // 避免把一次瞬时读空误判成“尚未创建账号”——登录页会翻成创建账号卡。
+    for (const delay of ACCOUNT_READ_DELAYS) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      account = await readAccountOnce();
+      if (account) { lastGoodAccount = account; lastGoodAt = Date.now(); return account; }
+    }
+    // 刚成功读过就沿用，挡住比重试窗口更长的瞬时不可读。
+    if (lastGoodAccount && Date.now() - lastGoodAt < ACCOUNT_GRACE_MS) return lastGoodAccount;
+    return null;
   }
   async function initialize() { if(enabled)await readAccount(); }
   function tokenFrom(req) {
@@ -29,18 +47,21 @@ export function createUserAuth(state, { enabled = true } = {}) {
     return account && session?.userId === account.id && session.credentialVersion === credentialVersion(account)
       && Number.isFinite(session.expiresAt) && session.expiresAt > Date.now();
   }
-  async function principal(req) {
+  async function principalWith(account, req) {
     if (!enabled) return { id:'local-test', name:'本机测试', role:'admin', username:'local-test' };
-    const account = await readAccount();
     if(!account)return null;
     const token = tokenFrom(req);
     if (!/^[a-f0-9]{64}$/.test(token)) return null;
     const sessions = await state.read('auth-sessions.json', []);
     return Array.isArray(sessions) && sessions.some(s => validSession(s,account) && s.tokenHash === hash(token)) ? publicUser(account) : null;
   }
+  async function principal(req) { return principalWith(await readAccount(), req); }
   async function session(req) {
-    const user = await principal(req);
-    return { ok:true, authenticated:Boolean(user), setupRequired:enabled && !await readAccount(), user };
+    // 一次请求只读一次账户：principal 与 setupRequired 必须来自同一份快照，
+    // 否则两次读取之间一旦读空，会出现 authenticated=true 与 setupRequired=true 并存。
+    const account = enabled ? await readAccount() : null;
+    const user = await principalWith(account, req);
+    return { ok:true, authenticated:Boolean(user), setupRequired:enabled && !account, user };
   }
   async function establish(account, res, remember) {
     const token = randomBytes(32).toString('hex'), seconds = remember ? 30 * 86400 : 12 * 3600;

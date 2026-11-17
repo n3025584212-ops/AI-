@@ -51,7 +51,8 @@ function Panel({kind,title,state,children}){
 function Fact({label,children,title,tone}){
  return <div className="maint-fact"><dt>{label}</dt><dd title={title} className={tone?'maint-value-'+tone:undefined}>{children??READING}</dd></div>;
 }
-const predictionLabels={STALE:'正在准备重新预测',PREDICTING:'正在计算',READY:'已更新',FAILED:'暂未完成'};
+// 2026-11-17："已更新"看不出更新了什么，改成说清结论
+const predictionLabels={STALE:'工况变了，准备重算',PREDICTING:'正在计算',READY:'已按当前工况算出',FAILED:'当前工况没算出来'};
 export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolutions,user,caseData,stream,modelStatus,
  assistantStatus,searchState,mostRecentCompletedSearch,predictionState,onRefreshModel,onRefreshAssistant,
  currentPrediction,predictionBound,dirty,industrialStatus,predictionUpdatedAt}){
@@ -112,6 +113,11 @@ export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolu
  const checkState=caseData?check:{label:READING,tone:'idle'};
  const dataCardState=caseData&&stream?{label:'已载入',tone:'good'}:{label:READING,tone:'idle'};
  const inputCheckCardState={...checkState,label:checkState.status==='NORMAL'?'检查通过':checkState.label};
+ // 数据回放每推进一帧都会把预测打成 STALE→PREDICTING→READY，直接显示会每 0.4 秒闪一次字。
+ // 这里只记落定态（READY/FAILED），瞬时态不参与展示，卡片文字才稳。
+ const settledPrediction=useRef(predictionState);
+ if(predictionState==='READY'||predictionState==='FAILED')settledPrediction.current=predictionState;
+ const shownPredictionState=settledPrediction.current;
  return <section className="maintenance-workspace competition-system-status" aria-label="系统状态与维护">
   <header className="maint-page-heading"><div><h2>系统状态与维护</h2><p>设备健康、模型与数据服务；异常会同步到全局状态与通知</p></div>
    <div><button type="button" className="maint-button" disabled={busy} onClick={()=>refresh(true)}><RefreshCw size={14}/>刷新状态</button></div>
@@ -138,7 +144,7 @@ export default function MaintenanceWorkspace({api,onNotify,onNavigate,onOpenSolu
    <div className="maint-panel-actions"><button className="maint-button" disabled={!modelStatus?.model_version} onClick={()=>setDialog('model')}>模型信息</button><button className="maint-button" disabled={busy} onClick={()=>refresh(true)}>检查服务</button></div></Panel>
    <Panel kind="rules" title="当前工况检查" state={inputCheckCardState}><dl>
     <Fact label="输入完整性" tone={inputSummary?.valid?'good':'notice'}>{inputSummary?completeText+'项完整':READING}</Fact>
-    <Fact label="数据检查" tone={checkState.tone}>{checkState.label}</Fact><Fact label="当前预测" tone={predictionState==='READY'?'good':predictionState==='FAILED'?'error':'idle'}>{predictionLabels[predictionState]||READING}</Fact>
+    <Fact label="数据检查" tone={checkState.tone}>{checkState.label}</Fact><Fact label="当前预测" tone={shownPredictionState==='READY'?'good':shownPredictionState==='FAILED'?'error':'idle'}>{predictionLabels[shownPredictionState]||READING}</Fact>
    </dl><div className="maint-panel-actions"><button className="maint-button" disabled={!historical.checked?.rows?.length} onClick={()=>setDialog('check')}>查看检查详情</button></div></Panel>
    </div>
    <div className="maint-col maint-col-right">

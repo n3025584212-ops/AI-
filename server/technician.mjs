@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { StateError, now } from './local-state.mjs';
 import { retrieveKnowledge, knowledgeTokens } from './knowledge.mjs';
+import { unitFor } from '../src/engineeringUnits.js';
 
 // 值守技术员：岗位化 agent。人格、职责、权限、记忆、检索、交接都在这一层，
 // 不把"技术员"退化成无职责的聊天入口。
@@ -118,15 +119,15 @@ function contextFacts(context = {}) {
   const s5 = stands.find(stand => stand?.id === 'S5') || {};
   const rows = [];
   const push = (label, key, value, unit) => { if (finite(value)) rows.push({ label, key, value: Number(value.toFixed(4)), unit }); };
-  push('S5 后张力', 'S5.tension', s5.tension, 'kN');
-  push('S5 前张力', 'S5.frontTension', s5.frontTension, 'kN');
+  push('S5 后张力', 'S5.tension', s5.tension, unitFor('tension'));
+  push('S5 前张力', 'S5.frontTension', s5.frontTension, unitFor('frontTension'));
   push('S5 轧制速度', 'S5.speed', s5.speed, 'm/min');
   push('S5 弯辊力', 'S5.bendingForce', s5.bendingForce, 'kN');
   push('带钢宽度', 'width', input.width, 'mm');
   push('入口设定厚度', 'entrySetThickness', input.entrySetThickness, 'mm');
-  for (const stand of stands.slice(0, 4)) push(`${stand.id} 轧制力`, `${stand.id}.force`, stand.force, 'kN');
+  for (const stand of stands.slice(0, 4)) push(`${stand.id} 轧制力`, `${stand.id}.force`, stand.force, unitFor('force'));
   const prediction = context.prediction;
-  if (prediction && finite(prediction.predicted_value ?? prediction.prediction)) rows.push({ label: '当前预测值', key: 'prediction', value: Number((prediction.predicted_value ?? prediction.prediction).toFixed(4)), unit: prediction.unit || 'kN' });
+  if (prediction && finite(prediction.predicted_value ?? prediction.prediction)) rows.push({ label: '当前预测值', key: 'prediction', value: Number((prediction.predicted_value ?? prediction.prediction).toFixed(4)), unit: prediction.unit || unitFor('force') });
   const source = typeof context.dataSource === 'string' ? context.dataSource : null;
   const sampleTime = typeof context.sampleTime === 'string' ? context.sampleTime : null;
   return { rows, source, sampleTime, hasInput: Object.keys(input).length > 0 };
@@ -331,10 +332,10 @@ export function createTechnician({ state, llm, knowledge, maintenance, cases, mo
     catch { return []; }
   }
 
-  let indexCache = { key: '', index: null };
+  let indexCache = { key: null, index: null };
   function indexFor(docs) {
     const key = docs.map(doc => `${doc.id}:${doc.chunks?.length || 0}`).join('|');
-    if (indexCache.key !== key) indexCache = { key, index: buildVectorIndex(docs) };
+    if (indexCache.key !== key || !indexCache.index) indexCache = { key, index: buildVectorIndex(docs) };
     return indexCache.index;
   }
   async function search(query, limit = 4) {
@@ -342,7 +343,9 @@ export function createTechnician({ state, llm, knowledge, maintenance, cases, mo
     if (!text) return [];
     const docs = await docsOf(knowledge);
     const lexical = retrieveKnowledge(docs, text, { limit });
-    const index = indexFor(docs), qv = queryVector(text, index);
+    const index = indexFor(docs);
+    if (!index?.vectors?.length) return lexical.slice(0, Math.max(1, limit)).map((ref, position) => ({ ...ref, id: `R${position + 1}` }));
+    const qv = queryVector(text, index);
     const vectorHits = index.vectors.map(row => ({ row, score: scoreVector(qv, row.vector) }))
       .filter(hit => hit.score >= 0.08).sort((a, b) => b.score - a.score);
     const merged = [...lexical];

@@ -55,7 +55,20 @@ export function createTaskCapabilityRegistry({ processAgent, maintenance, cases,
   }
   async function saved(id) { const item = (await cases()).find(row => row.id === id); if (!item) needed('没有找到指定的已保存工况。'); return item; }
   async function binding(ctx, args = {}) {
-    if (args.case_id) { const item = await saved(args.case_id); if (!item.input) needed('该记录没有完整工况输入。'); return freezeContext({ caseData: item.input, ...(item.identity_status === 'VERIFIED' && item.prediction ? { prediction: item.prediction, input_snapshot: item.prediction.input_snapshot, observation: item.observation } : {}) }); }
+    if (args.case_id) {
+      // 2026-11-14 修复"检查工况风险"死胡同：case_id 允许是保存记录的 ID 或可读名；
+      // 也允许指向任务绑定的当前工况（其 caseData.id 本身就是可读名，如 工况-32）。
+      // 三处都未命中才报"没有找到"；若规划器同时给了 result_ref，降级走核验步骤引用。
+      const rows = await cases();
+      const item = rows.find(row => row.id === args.case_id || row.name === args.case_id);
+      if (item) { if (!item.input) needed('该记录没有完整工况输入。'); return freezeContext({ caseData: item.input, ...(item.identity_status === 'VERIFIED' && item.prediction ? { prediction: item.prediction, input_snapshot: item.prediction.input_snapshot, observation: item.observation } : {}) }); }
+      if (ctx.context?.caseData && (ctx.context.caseData.id === args.case_id || args.case_id === '当前工况' || ctx.context.caseId === args.case_id || ctx.context.case_id === args.case_id)) return freezeContext(ctx.context);
+      if (args.result_ref) {
+        const source = trustedStep(args.result_ref, ctx), input = source.candidate?.input || source.input || source.record?.input;
+        if (input) return freezeContext({ caseData: input, ...(source.prediction ? { prediction: source.prediction, input_snapshot: source.prediction.input_snapshot, observation: source.observation || source.prediction.observation } : {}) });
+      }
+      needed('没有找到指定的已保存工况。');
+    }
     if (args.result_ref) {
       const source = trustedStep(args.result_ref, ctx), input = source.candidate?.input || source.input || source.record?.input;
       if (!input) needed('引用结果不含可用工况。');

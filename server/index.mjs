@@ -20,6 +20,11 @@ import { createTechnician } from './technician.mjs';
 import { createCaseLibrary } from './case-library.mjs';
 import { createTaskCapabilityRegistry } from './capability-registry.mjs';
 import { createTaskOrchestrator } from './task-orchestrator.mjs';
+import { createAiMemory } from './ai-memory.mjs';
+import { createExperienceMemory } from './ai-experience.mjs';
+import { createEmbeddingService } from './embedding-service.mjs';
+import { createAiCopilot } from './ai-copilot.mjs';
+import { createAiIncidentService } from './ai-incidents.mjs';
 import { createEvidenceStore, evidenceOrUnavailable } from './evidence-store.mjs';
 import http from 'node:http';
 import { createVoiceService, VoiceError } from './voice.mjs';
@@ -300,10 +305,18 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
   });
   const readLlmSettings = () => readSettingsJson({});
   const startupSettings = await readLlmSettings().catch(() => ({}));
-  const llmProvider = String(process.env.DKQKAR_LLM_PROVIDER || startupSettings?.localLlm?.provider || 'ollama').toLowerCase();
+  // Web 部署默认走云端 OpenAI 兼容端点：本地 Ollama 需要单独安装、拉模型、
+  // 常驻进程，浏览器侧无法自救，评审/演示机上装不上就等于 AI 全废。
+  // 只有显式配 provider=ollama（环境变量或 settings.json）时才启用本地适配器。
+  const DEFAULT_LLM_PROVIDER = 'modelscope';
+  const llmProvider = String(
+    process.env.DKQKAR_LLM_PROVIDER || startupSettings?.localLlm?.provider || DEFAULT_LLM_PROVIDER,
+  ).toLowerCase();
   const llm = localLlm || (llmProvider === 'ollama'
     ? createLocalLlm({ settings: readLlmSettings, timeoutMs: aiTimeoutMs })
-    : createCloudLlm({ settings: readLlmSettings, timeoutMs: aiTimeoutMs }));
+    // 本地冷启动需要长超时，云端不需要：网关不应答就是异常，别让前端空转。
+    : createCloudLlm({ settings: readLlmSettings, timeoutMs: Math.min(aiTimeoutMs, 75000) }));
+  console.log(`[llm] provider=${llmProvider} mode=${llmProvider === 'ollama' ? 'local' : 'cloud'}`);
   let blueprintAgent;
   const maintenance = createMaintenance({ state, dataDir, cases, modelStatus: () => predictionService.status(), llm, getQueue: () => blueprintAgent?.queue() || {}, getLatency: () => lastPredictionLatency });
   industrialCommunication=await createIndustrialCommunication({dataDir,rangeTable:searchRangeTable,log:maintenance.log,templateSource:path.join(ROOT,'server','communication','DKQKAR_PLC_POINT_MAP_TEMPLATE.xlsx')});
@@ -342,8 +355,14 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
     candidateSearch:{start:startCandidateSearch,get:(id,actor)=>smartSearch.get(id,actor),cancel:(id,actor)=>smartSearch.cancel(id,actor)},
   });
   const taskRuntime = await createTaskOrchestrator({state,llm,registry:taskRegistry,freezeContext,isCurrent:taskContextIsCurrent});
+  const aiMemory = createAiMemory({ state });
+  const embedding = createEmbeddingService();
+  const aiExperience = createExperienceMemory({ state, embedding });
+  const aiCopilot = createAiCopilot({ memory: aiMemory, experiences: aiExperience, knowledge, freezeContext, llm, taskRegistry });
+  const aiIncidents = createAiIncidentService({ state, modelStatus: () => predictionService.status(), llm, embedding, taskRuntime, maintenance });
   await maintenance.log('system', 'info', '本地服务已启动。');
   logRetention.start();
+  aiIncidents.start();
   // Bounded process-local diagnostics, readable only by the trusted startup host.
   const predictionTrace = [];
   const server = http.createServer(async (req, res) => {
@@ -362,7 +381,7 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       res.once('close', () => { if (!res.writableFinished) res.predictTrace('response_connection_closed', { write_completed: false }); });
       res.once('error', error => res.predictTrace('response_write_failed', { error_type: error.name, error_code: error.code, message: error.message }));
     }
-    if (/^\/api\/(?:assistant\/status|agent\/|tasks(?:$|[/?])|chat(?:$|\?))/.test(req.url || '')) {
+    if (/^\/api\/(?:assistant\/status|agent\/|copilot(?:$|[/?])|tasks(?:$|[/?])|chat(?:$|\?))/.test(req.url || '')) {
       const supplied = req.headers['x-dkqkar-request-id'];
       res.aiRequestId = typeof supplied === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(supplied) ? supplied : randomUUID();
       res.setHeader('X-DKQKAR-Request-Id', res.aiRequestId);
@@ -396,9 +415,66 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
       const actor = pathname.startsWith('/api/') && pathname !== '/api/health' ? await userAuth.require(req) : null;
       if(await industrialCommunication.route({pathname,req,res,actor,json,body:req=>body(req,4*1024*1024)}))return;
       const query = Object.fromEntries(new URL(req.url, `http://${req.headers.host}`).searchParams);
+      if (pathname === '/api/copilot/status' && req.method === 'GET') {
+        json(res, 200, { llm: await llm.status(), embedding: await embedding.status() }); return;
+      }
+      if (pathname === '/api/copilot/incidents') {
+        if (req.method === 'GET') { json(res, 200, { items: await aiIncidents.list(actor) }); return; }
+        if (req.method === 'POST') { json(res, 200, await aiIncidents.reconcile(actor)); return; }
+      }
+      if (pathname === '/api/copilot/incidents/handover' && req.method === 'GET') { json(res, 200, await aiIncidents.handover(actor)); return; }
+      const incidentAck = pathname.match(/^\/api\/copilot\/incidents\/([^/]+)\/ack$/);
+      if (incidentAck && req.method === 'POST') { json(res, 200, { incident: await aiIncidents.acknowledge(actor, decodeURIComponent(incidentAck[1])) }); return; }
+      if (pathname === '/api/copilot/sessions' && req.method === 'GET') { json(res, 200, { items: await aiCopilot.list(actor) }); return; }
+      if (pathname === '/api/copilot/session') {
+        if (req.method === 'GET') { json(res, 200, { session: await aiCopilot.open(actor, query.id || null) }); return; }
+        if (req.method === 'POST') { json(res, 201, { session: await aiCopilot.create(actor) }); return; }
+      }
+      if (pathname === '/api/copilot/chat' && req.method === 'POST') {
+        const input = await body(req, 2 * 1024 * 1024);
+        const controller = new AbortController(), disconnect = () => controller.abort();
+        res.once('close', disconnect); req.once('aborted', disconnect);
+        try {
+          json(res, 200, await aiCopilot.chat({ actor, sessionId: input.sessionId || null, message: input.message, context: isRecord(input.context) ? input.context : {}, accessMode: input.accessMode || 'READ_ONLY', clientRequestId: input.clientRequestId || null, signal: controller.signal }));
+        } finally { res.removeListener('close', disconnect); req.removeListener('aborted', disconnect); }
+        return;
+      }
+      if (pathname === '/api/copilot/experience/search' && req.method === 'GET') {
+        const searchQuery = String(query.q || '').trim().slice(0, 4000);
+        if (!searchQuery) throw new ApiError(400, '请提供经验检索问题。');
+        json(res, 200, await aiCopilot.search(actor, searchQuery)); return;
+      }
+      if (pathname === '/api/copilot/experience/publish' && req.method === 'POST') {
+        const input = await body(req);
+        json(res, 201, { experience: await aiCopilot.publishExperience({ actor, sessionId: input.sessionId, outcome: input.outcome, confirmed: input.confirmed === true }) }); return;
+      }
+      if (pathname === '/api/copilot/experience/supersede' && req.method === 'POST') {
+        const input = await body(req);
+        json(res, 200, { experience: await aiExperience.supersede({ actor, id: input.id, replacementId: input.replacementId || null }) }); return;
+      }
       if (pathname === '/api/tasks/capabilities' && req.method === 'GET') { json(res, 200, {items:taskRegistry.list()}); return; }
       if (pathname === '/api/tasks') {
-        if (req.method === 'GET') { json(res, 200, {items:taskRuntime.list(actor)}); return; }
+        if (req.method === 'GET') {
+          if (query.summary === '1') {
+            // 轮询用摘要：不返回步骤全文/事实/产物，避免每 3 秒搬几百 KB。
+            const items = taskRuntime.list(actor).map(task => ({
+              taskId: task.taskId || task.id,
+              id: task.id || task.taskId,
+              status: task.status,
+              goal: task.goal,
+              accessMode: task.accessMode,
+              createdAt: task.createdAt,
+              updatedAt: task.updatedAt,
+              finishedAt: task.finishedAt,
+              stepCount: Array.isArray(task.steps) ? task.steps.length : 0,
+              pendingType: task.pending?.type || null,
+              pendingStepId: task.pending?.stepId || null,
+              terminalCode: task.terminalReason?.code || null,
+            }));
+            json(res, 200, { items, summary: true }); return;
+          }
+          json(res, 200, {items:taskRuntime.list(actor)}); return;
+        }
         if (req.method === 'POST') { json(res, 202, await taskRuntime.create(await body(req, 8 * 1024 * 1024),actor)); return; }
       }
       const taskPath = pathname.match(/^\/api\/tasks\/([a-zA-Z0-9_-]+)(?:\/(cancel|resume)|\/actions\/([a-zA-Z0-9_-]+)\/ack)?$/);
@@ -600,7 +676,10 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
         }
       }
       if (pathname === '/api/assistant/status' && req.method === 'GET') {
-        json(res, 200, await llm.status({force:query.check==='1'})); return;
+        // 只有用户在界面上显式点「重新检测」(?check=1) 才允许打真实推理；
+        // 页面心跳与后台轮询一律只做免费可达性检查，避免把云端额度耗在探针上。
+        const explicit = query.check === '1';
+        json(res, 200, await llm.status({ force: explicit, inference: explicit })); return;
       }
       if (pathname === '/api/agent/status' && req.method === 'GET') {
         json(res, 200, { ...await llm.status(), agent: 'DK工艺Agent', tools: AGENT_TOOLS, skills: blueprintAgent.skills(), queue: blueprintAgent.queue() }); return;
@@ -718,7 +797,7 @@ export async function startServer({ port = 5188, dataDir = path.join(ROOT, 'data
   server.prepareModel = () => predictionService.status();
   server.predictionTrace = () => structuredClone(predictionTrace);
   let resourcesClosed;
-  server.closeResources = () => resourcesClosed ||= (async () => { await taskRuntime.close(); industrialCommunication.close(); await logRetention.close(); await aiAnalysis.close(); smartSearch.close(); await evidenceStore.close(); await blueprintAgent.close(); voice.close(); predictionService.close(); })();
+  server.closeResources = () => resourcesClosed ||= (async () => { aiIncidents.close(); await taskRuntime.close(); industrialCommunication.close(); await logRetention.close(); await aiAnalysis.close(); smartSearch.close(); await evidenceStore.close(); await blueprintAgent.close(); await embedding.close(); voice.close(); predictionService.close(); })();
   const closeHttp = server.close.bind(server);
   server.close = callback => {
     void evidenceStore.close();

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, BadgeCheck, BookOpen, ClipboardCheck, Loader2, RefreshCw, Send, ShieldAlert, X } from 'lucide-react';
 import './technician.css';
+import { technicianActionAvailability } from './technicianActions.js';
 
 const CONFIDENCE_LABEL = { HIGH: '高置信', MEDIUM: '中置信', LOW: '低置信' };
 const TYPE_LABEL = { answer: '答复', diagnosis: '诊断单', action: '执行回执', report: '报告', watch: '值守解释', handover: '交接摘要' };
@@ -88,7 +89,8 @@ export default function TechnicianPanel({ context = {}, notify }) {
   };
 
   const runAction = async action => {
-    if (action.risk_level === 'L3') { notify?.('高危动作不代执行，请按 SOP 人工处理。', 'WARNING'); return; }
+    const availability = technicianActionAvailability(action);
+    if (!availability.executable) { notify?.(availability.reason, 'WARNING'); return; }
     if (action.needs_confirm && !window.confirm(`${action.label}\n风险等级 ${action.risk_level}，确认执行？`)) return;
     window.dispatchEvent(new CustomEvent('qcdkr:technician-action', { detail: action }));
     notify?.(`已下发：${action.label}`, 'INFO');

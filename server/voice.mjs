@@ -69,7 +69,14 @@ export function createVoiceService({ dataDir, helperPath = DEFAULT_HELPER, runne
   async function nativeRun(request) {
     return new Promise((resolve, reject) => {
       const executable = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
-      const child = spawn(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', helper], { windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
+      // 2026-11-14 修复：项目启动壳会把 APPDATA/LOCALAPPDATA 重定向到沙箱 profile，
+      // 继承后 SAPI 识别引擎在假 AppData 下解析失败（找不到识别器 / E_ACCESSDENIED）。
+      // 语音引擎是系统组件，固定使用真实用户 AppData（USERPROFILE 不被沙箱改写）。
+      const userHome = process.env.USERPROFILE || '';
+      const childEnv = { ...process.env,
+        APPDATA: path.join(userHome, 'AppData', 'Roaming'),
+        LOCALAPPDATA: path.join(userHome, 'AppData', 'Local') };
+      const child = spawn(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', helper], { windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe'], env: childEnv });
       children.add(child);
       let output = ''; let outputBytes = 0; let done = false;
       const finish = (error, value) => {

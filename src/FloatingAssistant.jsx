@@ -1,10 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Maximize2, Minimize2, Minus, X, HardHat } from 'lucide-react';
-import {
-  ASSISTANT_WINDOW_STORAGE, clampWindowRect, defaultWindowState, keyboardWindowDelta,
-  maximizedWindowRect, minimizedWindowRect, moveWindowRect, resizeWindowRect, restoreWindowState,
-} from './assistantWindowGeometry.js';
+import { ASSISTANT_WINDOW_STORAGE, clampWindowRect, defaultWindowState, keyboardWindowDelta,
+  maximizedWindowRect, minimizedWindowRect, petAnchoredMinimizedRect, petAnchoredWindowRect,
+  resizeWindowRect, restoreWindowState } from './assistantWindowGeometry.js';
 import './floating-assistant.css';
 
 const directions = [['n', '上'], ['ne', '右上'], ['e', '右'], ['se', '右下'],
@@ -17,6 +16,13 @@ const viewportNow = () => {
 const upperEscapeLayer = () => [...document.querySelectorAll(
   '.modal-backdrop, .voice-popover, [data-escape-layer="modal"], [data-escape-layer="popover"]',
 )].some(node => node.getClientRects().length > 0);
+// 桌宠在 DOM 里是 fixed 元素，读它的矩形就等于读气泡锚点。
+const petGeometry = () => {
+  const node = document.querySelector('.assistant-pet');
+  if (!node || !node.getClientRects().length) return null;
+  const box = node.getBoundingClientRect();
+  return { x: box.x, y: box.y, width: box.width, height: box.height };
+};
 
 export function AssistantDock({ children }) {
   return createPortal(<div className="ai-floating-dock">{children}</div>, document.body);
@@ -26,15 +32,19 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
   const [viewport, setViewport] = useState(viewportNow);
   const [saved, setSaved] = useState(() => defaultWindowState(viewport));
   const [host, setHost] = useState(null);
+  const [pet, setPet] = useState(null);
   const [dragging, setDragging] = useState(false);
-  const panel = useRef(null), dragHandle = useRef(null), gesture = useRef(null);
+  const panel = useRef(null), dragHandle = useRef(null), gesture = useRef(null), rectRef = useRef(null);
   const opener = useRef(null), previousOpen = useRef(false), hydrated = useRef(null);
   const interacted = useRef(false), restoringVisibility = useRef(false), latest = useRef(null);
   if (open && hydrated.current === null) interacted.current = true;
-  latest.current = { saved, viewport, open, onOpenChange };
+  latest.current = { saved, viewport, open, onOpenChange, pet };
   const minimized = saved.mode === 'minimized', maximized = saved.mode === 'maximized';
-  const rect = minimized ? minimizedWindowRect(saved.minimizedPosition, viewport)
-    : maximized ? maximizedWindowRect(viewport) : clampWindowRect(saved.rect, viewport);
+  // 气泡模式：位置由桌宠决定，尺寸仍由用户的拖动决定。
+  const anchored = pet && !maximized ? (minimized ? petAnchoredMinimizedRect(pet, viewport) : petAnchoredWindowRect(pet, saved.rect, viewport)) : null;
+  const rect = anchored || (minimized ? minimizedWindowRect(saved.minimizedPosition, viewport)
+    : maximized ? maximizedWindowRect(viewport) : clampWindowRect(saved.rect, viewport));
+  rectRef.current = rect;
   const state = !open ? 'CLOSED' : saved.mode.toUpperCase();
 
   function commit(update) {
@@ -75,8 +85,8 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
     event.preventDefault();
     finishGesture();
     const compact = latest.current.saved.mode === 'minimized';
-    const current = compact ? minimizedWindowRect(latest.current.saved.minimizedPosition, latest.current.viewport)
-      : clampWindowRect(latest.current.saved.rect, latest.current.viewport);
+    const current = rectRef.current || (compact ? minimizedWindowRect(latest.current.saved.minimizedPosition, latest.current.viewport)
+      : clampWindowRect(latest.current.saved.rect, latest.current.viewport));
     gesture.current = { id: event.pointerId, startX: event.clientX, startY: event.clientY,
       rect: current, kind, direction, compact, target: event.currentTarget };
     interacted.current = true;
@@ -94,6 +104,7 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
     const delta = keyboardWindowDelta(event.key, event.shiftKey);
     if (!delta || latest.current.saved.mode === 'maximized') return;
     event.preventDefault(); event.stopPropagation();
+    if (latest.current.pet) { window.dispatchEvent(new CustomEvent('dkqkar-pet-nudge', { detail: delta })); return; }
     const compact = latest.current.saved.mode === 'minimized';
     const value = compact ? latest.current.saved.minimizedPosition : latest.current.saved.rect;
     const moved = moveWindowRect(value, delta.dx, delta.dy, latest.current.viewport, compact);
@@ -118,9 +129,13 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
       setSaved(previous => ({ ...previous, sessionId }));
     } else {
       finishGesture();
-      setSaved(restored);
-      restoringVisibility.current = restored.open !== latest.current.open;
-      latest.current.onOpenChange(restored.open);
+      // 2026-11-14 修复：restoreWindowState 对非本会话存储返回 open:false 的 fallback，
+      // 工作台会话刷新（新 app_session_id）会把开着的浮窗强制关掉。窗口已打开时保持打开，
+      // 只接受恢复的几何；仅在恢复态确实声明 open（或当前就是关闭）时才改变可见性。
+      const merged = latest.current.open ? { ...restored, open: true } : restored;
+      setSaved(merged);
+      restoringVisibility.current = merged.open !== latest.current.open;
+      latest.current.onOpenChange(merged.open);
     }
   }, [sessionId]);
   useEffect(() => {
@@ -141,7 +156,9 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
       requestAnimationFrame(() => {
         if (!latest.current.open) return;
         if (latest.current.saved.mode === 'minimized') panel.current?.querySelector('[aria-label="还原 AI 聊天窗"]')?.focus({ preventScroll: true });
-        else dragHandle.current?.focus({ preventScroll: true });
+        // 打开时把焦点放在窗口容器上：聚焦拖拽手柄会在标题栏里画出一圈焦点框，
+        // 看起来像标题被套了个内框；容器 tabIndex=-1 同样满足对话框焦点要求。
+        else panel.current?.focus({ preventScroll: true });
       });
     } else if (!open && previousOpen.current) {
       finishGesture();
@@ -155,6 +172,15 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
     restoringVisibility.current = false;
   }, [open, host]);
 
+  useEffect(() => {
+    const sync = event => {
+      const detail = event.detail;
+      setPet(detail ? { x: detail.x, y: detail.y, width: detail.width, height: detail.height } : petGeometry());
+    };
+    window.addEventListener('dkqkar-pet-geometry', sync);
+    const frame = requestAnimationFrame(() => setPet(petGeometry()));
+    return () => { window.removeEventListener('dkqkar-pet-geometry', sync); cancelAnimationFrame(frame); };
+  }, []);
   useEffect(() => {
     const resize = () => {
       finishGesture();
@@ -180,10 +206,19 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
       if (event.pointerType === 'mouse' && event.buttons === 0) { finishGesture(event); return; }
       event.preventDefault();
       const dx = event.clientX - active.startX, dy = event.clientY - active.startY;
-      const next = active.kind === 'resize'
-        ? resizeWindowRect(active.rect, active.direction, dx, dy, latest.current.viewport)
-        : moveWindowRect(active.rect, dx, dy, latest.current.viewport, active.compact);
-      commit(active.compact ? { minimizedPosition: next } : { rect: next });
+      if (active.kind === 'resize') {
+        const next = resizeWindowRect(active.rect, active.direction, dx, dy, latest.current.viewport);
+        // 位置由桌宠决定，缩放只改气泡尺寸。
+        commit({ rect: { ...latest.current.saved.rect, width: next.width, height: next.height } });
+        return;
+      }
+      if (latest.current.pet) {
+        // 气泡贴在桌宠上：拖标题栏就是拖桌宠，两者不会被拆散。
+        window.dispatchEvent(new CustomEvent('dkqkar-pet-nudge', { detail: { dx, dy } }));
+        active.startX = event.clientX; active.startY = event.clientY;
+        return;
+      }
+      commit({ rect: moveWindowRect(active.rect, dx, dy, latest.current.viewport, active.compact) });
     };
     const finish = event => finishGesture(event);
     window.addEventListener('pointermove', move, { capture: true, passive: false });
@@ -223,10 +258,10 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
   return createPortal(<aside ref={panel} id="assistant-floating-window"
     className={'assistant-panel ai-floating-window' + (dragging ? ' is-dragging' : '')}
     style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height, zIndex: maximized ? 141 : 140 }}
-    role="dialog" aria-modal="false" aria-label="DK 工艺 Agent" data-state={state} hidden={!open}>
+    role="dialog" aria-modal="false" aria-label="DK 工艺 Agent" data-state={state} hidden={!open} tabIndex={-1}>
     <header className="ai-window-titlebar">
       <div ref={dragHandle} className="ai-window-drag-handle" role="button" tabIndex={0}
-        aria-label="移动 AI 聊天窗" title={minimized ? '拖动移动 · Enter 还原' : '拖动移动 · 方向键微调 · 双击或 Enter 最大化'}
+        aria-label="移动 AI 聊天窗" title={minimized ? '拖动移动桌宠 · Enter 还原' : '拖动移动桌宠 · 方向键微调 · 双击或 Enter 最大化'}
         onPointerDown={event => startGesture(event, 'move')} onKeyDown={keyMove}
         onDoubleClick={() => minimized ? restore() : toggleMaximize()}>
         <HardHat className="ai-window-persona" size={20} aria-hidden="true"/><span className="ai-window-title"><b>DK AI</b></span>
@@ -238,7 +273,9 @@ export default function FloatingAssistant({ open, onOpenChange, sessionId, mode 
       </div>
     </header>
     <div className="ai-floating-body" hidden={minimized}>{children}</div>
-    {!minimized && !maximized && directions.map(([direction, label]) => <div key={direction}
+    {!minimized && !maximized && anchored && <i className={'ai-window-tail is-' + rect.side}
+      style={rect.side === 'above' || rect.side === 'below' ? { left: rect.tailX } : { top: rect.tailY }} aria-hidden="true"/>}
+    {!minimized && !maximized && directions.filter(([direction]) => !anchored || ['e', 's', 'se'].includes(direction)).map(([direction, label]) => <div key={direction}
       className={'ai-window-resize ai-resize-' + direction} data-resize-direction={direction}
       role="button" tabIndex={0} aria-label={'向' + label + '调整 AI 聊天窗大小'}
       title={'拖动调整大小 · 方向键微调 · Shift 加速'}

@@ -1733,3 +1733,597 @@ body:has(.twin-stage.stage-docked) .holo-hud .ruler-l{opacity:.18 !important}
 body:has(.twin-stage[data-stage-page="maintenance"]) #root .sidebar{top:108px !important}
 body:has(.twin-stage[data-stage-page="communication"]) #root .sidebar{top:108px !important}
 body:has(.twin-stage[data-stage-page="logs"]) #root .sidebar{top:118px !important}
+
+/* ==========================================================================
+   2026-11-14 交互层修复（不改布局几何）
+   dock 页整体 pointer-events:none 让 3D 收鼠标，但两个子区没有显式恢复：
+   1) 数据页右上 导入数据 / 预测工作台 整条标题行 → 点了没反应；
+   2) 工业连接页 连接设置 弹窗（maint-dialog-backdrop）→ 内部按钮全部点不动。
+   ========================================================================== */
+.twin-stage.stage-docked[data-stage-page="data"] .data-access-heading{
+  pointer-events:auto !important;
+}
+.twin-stage.stage-docked[data-stage-page="communication"] .maint-dialog-backdrop{
+  pointer-events:auto !important;
+}
+
+/* ==========================================================================
+   2026-11-14 D4 · 日志流内容列被压成单字竖排
+   .logs-table 继承 min-width:880 + col 72/auto/326/46，窄栏时 auto 列只剩几十像素。
+   这里改成：表格跟容器走、内容列吃剩余宽度、指标列按比例收窄、正文允许换行。
+   ========================================================================== */
+#root .logs-table{
+  min-width:0 !important; width:100% !important; table-layout:fixed !important;
+}
+#root .logs-table col.col-time{width:64px !important}
+#root .logs-table col.col-content{width:auto !important}
+#root .logs-table col.col-metrics{width:min(320px,36%) !important}
+#root .logs-table col.col-action{width:42px !important}
+#root .logs-table th:nth-child(2),
+#root .logs-table td:nth-child(2){white-space:normal !important; overflow-wrap:anywhere}
+#root .logs-table .logs-main{flex-wrap:wrap; row-gap:2px}
+
+/* ==========================================================================
+   2026-11-14 D6 · 1280 宽：右栏压在 3D 主视区上
+   双栏改为“让出空间”而不是浮在场景上：栏宽收窄，3D 画布按栏宽内缩。
+   ========================================================================== */
+@media (max-width:1400px){
+  #root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+    left:8px !important; width:272px !important; min-width:272px !important; max-width:272px !important;
+    bottom:196px !important;
+  }
+  #root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+    right:8px !important; width:364px !important; min-width:364px !important; max-width:364px !important;
+    bottom:196px !important;
+  }
+  /* 3D 画布保持全幅铺底（inset 会破坏 three 画布的定位上下文）；
+     1280 只收窄两栏，把中间 636px 留给场景与 S5 读数。 */
+}
+
+
+/* ==========================================================================
+   2026-11-14 V22 · 导航并入标题行 + 舞台面板全息统一（青色单强调色）
+   用户判定：胶囊导航与页面不和谐、大小不一、压右栏；面板没有全息屏感。
+   A. 四页签固定在标题行带（top:60，所有页面同一位置），扁平页签 + 单色
+      图标；杀掉 V21 的四色立体图标板与逐页 y 偏移；
+   B. 八块栏容器 + 底部监控条统一「全息屏」配方：青描边 + 顶部高光 +
+      对角 L 角标 + 细扫描线；绿色只留给活动态与实时点；
+   C. 数据页左栏：机架快照 flex:1 吃掉剩余高度，消灭底部空洞；
+   D. 底部监控条三块统一高度对齐（--monitor-height:198，底距 12），
+      列底距 = 监控条高 + 24，稳定留 12px 间隙。
+   ========================================================================== */
+
+/* ---- A. 导航页签 ---- */
+#root .sidebar{
+  position:fixed !important; top:60px !important; left:0 !important; right:0 !important;
+  transform:none !important;
+  width:auto !important; height:40px !important; min-height:40px !important;
+  display:flex !important; justify-content:center !important; align-items:center !important;
+  padding:0 !important; margin:0 !important;
+  background:none !important; border:0 !important; box-shadow:none !important;
+  z-index:135 !important; pointer-events:none !important;
+}
+body:has(.twin-stage[data-stage-page="maintenance"]) #root .sidebar,
+body:has(.twin-stage[data-stage-page="communication"]) #root .sidebar,
+body:has(.twin-stage[data-stage-page="logs"]) #root .sidebar{top:60px !important}
+#root .sidebar .brand,
+#root .sidebar-bottom,
+#root .sidebar-process{display:none !important}
+#root .sidebar nav{
+  display:flex !important; flex-direction:row !important; align-items:stretch !important;
+  gap:0 !important; height:32px !important; width:auto !important;
+  margin:0 !important; padding:0 !important;
+  pointer-events:auto !important;
+}
+#root .sidebar nav button{
+  position:relative !important; display:inline-flex !important; align-items:center !important;
+  flex:0 0 auto !important; width:auto !important; height:32px !important; min-width:0 !important;
+  padding:0 16px !important; flex-direction:row !important; gap:8px !important;
+  border:0 !important; border-radius:0 !important;
+  background:transparent !important; color:#7d9fb2 !important;
+  font-size:11.5px !important; letter-spacing:.6px !important; box-shadow:none !important;
+}
+#root .sidebar nav button + button::before{
+  content:'' !important; position:absolute !important; left:0 !important; top:9px !important; bottom:9px !important;
+  width:1px !important; height:auto !important; border-radius:0 !important; transform:none !important;
+  background:rgba(127,227,255,.16) !important; box-shadow:none !important; z-index:auto !important;
+}
+#root .sidebar nav button>span{
+  display:inline !important; position:static !important; left:auto !important; top:auto !important;
+  opacity:1 !important; visibility:visible !important; transform:none !important;
+  padding:0 !important; margin:0 !important; border:0 !important;
+  background:none !important; box-shadow:none !important;
+  font-size:11.5px !important; line-height:1 !important; white-space:nowrap !important; font-weight:400 !important;
+  color:inherit !important;
+}
+#root .sidebar nav button:hover{color:#d9f2ea !important;background:rgba(127,227,255,.07) !important}
+#root .sidebar nav button.active{
+  color:#e8fbff !important;
+  background:linear-gradient(180deg,rgba(127,227,255,.15),rgba(127,227,255,.04)) !important;
+  box-shadow:inset 0 0 0 1px rgba(127,227,255,.32),inset 0 1px 0 rgba(226,255,255,.20),0 0 20px -10px rgba(127,227,255,.65) !important;
+}
+#root .sidebar nav button.active::after{
+  content:'' !important; position:absolute !important; left:12px !important; right:12px !important;
+  bottom:-1px !important; height:2px !important; width:auto !important; border-radius:0 !important;
+  transform:none !important; filter:none !important;
+  background:linear-gradient(90deg,rgba(127,227,255,0),#7fe3ff 30%,#7fe3ff 70%,rgba(127,227,255,0)) !important;
+  box-shadow:0 0 10px rgba(127,227,255,.75) !important;
+}
+/* V21 四色立体图标板 → 单色线性图标 */
+#root .shell-nav-glyph{
+  position:static !important; isolation:auto !important;
+  flex:0 0 15px !important; width:15px !important; height:15px !important;
+  display:inline-flex !important; align-items:center !important; justify-content:center !important;
+  background:none !important; border:0 !important; border-radius:0 !important; box-shadow:none !important;
+  opacity:.88 !important; transform:none !important;
+}
+#root .shell-nav-glyph::before,
+#root .shell-nav-glyph::after{content:none !important}
+#root .shell-nav-glyph svg{width:15px !important; height:15px !important; color:inherit !important; filter:none !important}
+#root .sidebar nav button.active .shell-nav-glyph{opacity:1 !important; color:#aef1ff !important}
+/* 窄屏：页签收拢让出标题行两端的标题与按钮 */
+@media (max-width:1180px){
+  #root .sidebar nav button{padding:0 9px !important; gap:6px !important}
+  #root .sidebar nav button>span{font-size:10.5px !important}
+}
+
+/* ---- B. 舞台面板全息统一 ---- */
+#root .twin-stage.stage-docked .data-col-left,
+#root .twin-stage.stage-docked .data-col-right,
+#root .twin-stage.stage-docked .maint-col-left,
+#root .twin-stage.stage-docked .maint-col-right,
+#root .twin-stage.stage-docked .comm-col-left,
+#root .twin-stage.stage-docked .comm-col-right,
+#root .twin-stage.stage-docked .logs-col-left,
+#root .twin-stage.stage-docked .logs-col-right{
+  background:
+    linear-gradient(rgba(159,240,255,.85),rgba(159,240,255,.85)) no-repeat 0 0 / 16px 2px,
+    linear-gradient(rgba(159,240,255,.85),rgba(159,240,255,.85)) no-repeat 0 0 / 2px 16px,
+    linear-gradient(rgba(159,240,255,.85),rgba(159,240,255,.85)) no-repeat 100% 100% / 16px 2px,
+    linear-gradient(rgba(159,240,255,.85),rgba(159,240,255,.85)) no-repeat 100% 100% / 2px 16px,
+    repeating-linear-gradient(0deg, rgba(127,227,255,.030) 0 1px, rgba(0,0,0,0) 1px 3px),
+    linear-gradient(180deg, rgba(10,26,32,.60), rgba(5,13,17,.42)) !important;
+  border:1px solid rgba(127,227,255,.26) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(226,255,255,.16),
+    inset 0 0 46px -30px rgba(127,227,255,.42),
+    0 0 30px -16px rgba(127,227,255,.45) !important;
+}
+/* 列底距 = 监控条高 + 24（下方稳定留 12px 间隙）。
+   带 [data-stage-page] 提到 (1,4,1)，压过老 V 段的同名规则；
+   --monitor-height 必须覆盖到 .live-workspace（基础样式在它身上定义 210px，
+   比 .twin-stage 离面板更近，只在 stage 上改变量传不进去）。 */
+#root .twin-stage.stage-docked .live-workspace{--monitor-height:198px}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right,
+#root .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-left,
+#root .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right,
+#root .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left,
+#root .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right,
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left,
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right{
+  bottom:calc(var(--monitor-height, 198px) + 24px) !important;
+}
+/* 数据页内卡：青色系 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-snap{
+  border:1px solid rgba(127,227,255,.18) !important;
+  background:rgba(7,19,25,.46) !important;
+  box-shadow:inset 0 1px 0 rgba(226,255,255,.10) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .data-access-body{
+  border:1px solid rgba(127,227,255,.28) !important;
+  background:
+    repeating-linear-gradient(0deg, rgba(127,227,255,.022) 0 1px, rgba(0,0,0,0) 1px 4px),
+    linear-gradient(180deg, rgba(9,24,30,.55), rgba(5,13,17,.40)) !important;
+  box-shadow:inset 0 1px 0 rgba(226,255,255,.14), 0 0 26px -14px rgba(127,227,255,.40) !important;
+}
+/* ---- C. 数据页左栏吃满：机架快照分摊剩余高度 ---- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-snap{
+  flex:1 1 auto !important; min-height:0 !important;
+  display:flex !important; flex-direction:column !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row{
+  flex:1 1 0 !important; min-height:0 !important; align-items:center !important;
+}
+/* ---- D. 底部监控条：三块同高同底、同一配方 ---- */
+#root .twin-stage.stage-docked{--monitor-height:198px}
+#root .twin-stage.stage-docked .s5-trend,
+#root .twin-stage.stage-docked .dc-comparisons,
+#root .twin-stage.stage-docked .key-parameter-panel{
+  bottom:12px !important;
+  height:var(--monitor-height, 198px) !important;
+  min-height:0 !important;
+  background:
+    linear-gradient(rgba(159,240,255,.85),rgba(159,240,255,.85)) no-repeat 0 0 / 16px 2px,
+    linear-gradient(rgba(159,240,255,.85),rgba(159,240,255,.85)) no-repeat 0 0 / 2px 16px,
+    repeating-linear-gradient(0deg, rgba(127,227,255,.026) 0 1px, rgba(0,0,0,0) 1px 4px),
+    linear-gradient(180deg, rgba(9,24,30,.66), rgba(4,11,15,.60)) !important;
+  border:1px solid rgba(127,227,255,.24) !important;
+  border-radius:0 !important;
+  box-shadow:inset 0 1px 0 rgba(226,255,255,.14), 0 0 26px -14px rgba(127,227,255,.40) !important;
+}
+
+/* ==========================================================================
+   2026-11-14 V23 · 左小右大 + 信息块二级设计 + 全息立体感
+   用户判定：布局偏了；框要左小右大；信息排布与块状设计不行；缺全息立体感。
+   A. 几何：左栏 308→280，右栏 数据630→680 / 维护396→440 / 连接430→460，
+      右缘统一贴 12px；保持列 top:108 / 底=监控条高+24。
+   B. 立体感：栏面板 = 浮起玻璃（顶部亮边 + 底部深投影离地 + 外青光 +
+      内部辉光 + 扫描线 + 角标加亮），监控条同一配方。
+   C. 信息块二级设计：栏 = 面板（左栏加「运行总览」标题条）；块 = 无框
+      色块（左侧 2px 光条 + 内发丝线），数值 20px 大字、标签 10px 小字、
+      备注单行；快照行加机架号章与发光进度线；右栏 pm 标题改同种标题条，
+      提交行 / 结果行加发丝分隔。
+   ========================================================================== */
+
+/* ---- A. 左小右大（宽屏定稿；≤1400 交还 D6 的收窄规则） ---- */
+@media (min-width:1401px){
+  #root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left{
+    left:12px !important; width:280px !important; min-width:280px !important; max-width:280px !important;
+  }
+  #root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+    right:12px !important; width:520px !important; min-width:520px !important; max-width:520px !important;
+  }
+  #root .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right{
+    right:12px !important; width:400px !important; min-width:400px !important; max-width:400px !important;
+  }
+  #root .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right{
+    right:12px !important; width:420px !important; min-width:420px !important; max-width:420px !important;
+  }
+  #root .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left{
+    left:12px !important; width:280px !important; min-width:280px !important; max-width:280px !important;
+  }
+  #root .twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right{
+    right:12px !important; width:460px !important; min-width:460px !important; max-width:460px !important;
+  }
+  #root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left{
+    left:12px !important; width:280px !important; min-width:280px !important; max-width:280px !important;
+  }
+}
+
+/* ---- B. 栏面板立体感（浮起玻璃，替换 V22 容器配方） ---- */
+#root .twin-stage.stage-docked .data-col-left,
+#root .twin-stage.stage-docked .data-col-right,
+#root .twin-stage.stage-docked .maint-col-left,
+#root .twin-stage.stage-docked .maint-col-right,
+#root .twin-stage.stage-docked .comm-col-left,
+#root .twin-stage.stage-docked .comm-col-right,
+#root .twin-stage.stage-docked .logs-col-left,
+#root .twin-stage.stage-docked .logs-col-right{
+  background:
+    linear-gradient(rgba(190,247,255,.95),rgba(190,247,255,.95)) no-repeat 0 0 / 18px 2px,
+    linear-gradient(rgba(190,247,255,.95),rgba(190,247,255,.95)) no-repeat 0 0 / 2px 18px,
+    linear-gradient(rgba(190,247,255,.95),rgba(190,247,255,.95)) no-repeat 100% 100% / 18px 2px,
+    linear-gradient(rgba(190,247,255,.95),rgba(190,247,255,.95)) no-repeat 100% 100% / 2px 18px,
+    repeating-linear-gradient(0deg, rgba(127,227,255,.026) 0 1px, rgba(0,0,0,0) 1px 3px),
+    linear-gradient(180deg, rgba(14,34,42,.74), rgba(6,14,18,.58)) !important;
+  border:1px solid rgba(127,227,255,.24) !important;
+  border-top-color:rgba(170,238,255,.52) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(228,255,255,.24),
+    inset 0 0 62px -42px rgba(127,227,255,.55),
+    0 26px 52px -26px rgba(0,0,0,.92),
+    0 0 36px -18px rgba(127,227,255,.5) !important;
+}
+#root .twin-stage.stage-docked .s5-trend,
+#root .twin-stage.stage-docked .dc-comparisons,
+#root .twin-stage.stage-docked .key-parameter-panel{
+  box-shadow:
+    inset 0 1px 0 rgba(228,255,255,.20),
+    0 22px 44px -24px rgba(0,0,0,.92),
+    0 0 30px -16px rgba(127,227,255,.45) !important;
+}
+
+/* ---- C1. 左栏标题条（排布分区） ---- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left::before{
+  content:'运行总览 · LIVE OVERVIEW';
+  display:block !important; flex:0 0 auto !important;
+  height:30px !important; line-height:30px !important; margin:0 !important;
+  padding:0 12px !important; box-sizing:border-box !important;
+  font-size:10px !important; font-weight:600 !important; letter-spacing:2px !important;
+  color:#a8dcec !important; text-shadow:0 0 12px rgba(127,227,255,.45);
+  background:linear-gradient(90deg, rgba(127,227,255,.15), rgba(127,227,255,.03) 55%, rgba(0,0,0,0)) !important;
+  border-bottom:1px solid rgba(127,227,255,.22) !important;
+}
+
+/* ---- C2. KPI 信息块：无框色块 + 发光左条 + 大数值 ---- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi{
+  border:0 !important; border-radius:0 !important;
+  background:
+    linear-gradient(90deg, rgba(127,227,255,.6), rgba(127,227,255,.08)) no-repeat 0 0 / 2px 100%,
+    linear-gradient(180deg, rgba(127,227,255,.065), rgba(127,227,255,.015) 58%, rgba(0,0,0,0)),
+    rgba(10,24,30,.42) !important;
+  box-shadow:inset 0 0 0 1px rgba(127,227,255,.12), inset 0 1px 0 rgba(228,255,255,.10) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-label{
+  font-size:10px !important; letter-spacing:1.2px !important; color:#7d9fb2 !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value.is-number{
+  font-size:18px !important; line-height:22px !important; height:auto !important;
+  color:#eaffff !important; text-shadow:0 0 14px rgba(127,227,255,.35);
+}
+/* 复合长值（如 2.873 → 0.330 mm，后面跟走势/链条图）单独缩号防截断 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value.is-number:has(~ .data-chain),
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-value.is-number:has(~ .data-spark){
+  font-size:14px !important; letter-spacing:0 !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi-note{
+  height:12px !important; min-height:12px !important; max-height:12px !important;
+  -webkit-line-clamp:1 !important;
+  font-size:9.5px !important; line-height:12px !important; color:#5f8296 !important;
+}
+
+/* ---- C3. 操作条退成发丝工具带 ---- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-bar{
+  border:0 !important; border-radius:0 !important;
+  border-top:1px solid rgba(127,227,255,.10) !important;
+  border-bottom:1px solid rgba(127,227,255,.10) !important;
+  background:none !important; box-shadow:none !important;
+}
+
+/* ---- C4. 机架快照：章号 + 发丝行 + 发光进度线 ---- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-snap{
+  border:1px solid rgba(127,227,255,.14) !important;
+  background:rgba(9,22,28,.30) !important;
+  box-shadow:inset 0 1px 0 rgba(228,255,255,.08) !important;
+  padding:0 0 2px 0 !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-head{
+  padding:6px 10px 5px !important;
+  border-bottom:1px solid rgba(127,227,255,.14) !important;
+  background:linear-gradient(90deg, rgba(127,227,255,.10), rgba(0,0,0,0) 70%) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-head span{
+  font-size:10px !important; letter-spacing:1.6px !important; color:#a8dcec !important; font-weight:600 !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-head small{
+  font-size:9px !important; color:#5f8296 !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row{
+  padding:0 10px !important; margin:0 !important;
+  border-bottom:1px solid rgba(127,227,255,.09) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row:last-child{border-bottom:0 !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row b{
+  font-size:9.5px !important; color:#8fd8ea !important;
+  text-shadow:0 0 8px rgba(127,227,255,.4);
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row span{
+  font-size:10px !important; color:#9db9c8 !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row em{
+  font-size:12px !important; color:#eaffff !important; font-style:normal !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-row i{
+  height:2px !important;
+  background:linear-gradient(90deg, rgba(57,199,239,.9), rgba(127,227,255,.95)) !important;
+  box-shadow:0 0 7px rgba(127,227,255,.65) !important;
+}
+
+/* ---- C5. 右栏：pm 标题条同种化 + 提交/结果行发丝分隔 ---- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .data-access-body{
+  border:1px solid rgba(127,227,255,.30) !important;
+  border-top-color:rgba(170,238,255,.55) !important;
+  background:
+    repeating-linear-gradient(0deg, rgba(127,227,255,.020) 0 1px, rgba(0,0,0,0) 1px 4px),
+    linear-gradient(180deg, rgba(11,28,35,.60), rgba(5,13,17,.45)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(228,255,255,.18),
+    0 26px 52px -26px rgba(0,0,0,.92),
+    0 0 36px -18px rgba(127,227,255,.5) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-heading{
+  background:linear-gradient(90deg, rgba(127,227,255,.14), rgba(127,227,255,.02) 60%, rgba(0,0,0,0)) !important;
+  border-bottom:1px solid rgba(127,227,255,.22) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .parameter-commit-actions{
+  border-top:1px solid rgba(127,227,255,.12) !important;
+  background:rgba(6,15,19,.36) !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .data-access-current-result{
+  border-top:1px solid rgba(127,227,255,.12) !important;
+}
+
+/* ==========================================================================
+   2026-11-14 V24 · 左右对称框 + 底部等距网格（用户判定：左右不对称、信息分布不好）
+   1. 右栏回全高（与左栏同顶 108 同底 625），宽 520 —— 框架对称、左小右大；
+      右栏加与左栏同种的标题条，两栏读起来是同一物种。
+   2. 底部三块监控改等距网格：间距统一 12px，右缘贴 12 ——
+      趋势 left:12 right:836；对比 right:424 宽 400；关键参数 right:12 宽 400。
+      （原间距 24/9/12 参差，是"分布不好"的主要来源）
+   ========================================================================== */
+
+/* ---- 1. 右栏标题条（与左栏同种） ---- */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right::before{
+  content:'参数工作区 · S1–S5';
+  display:block !important; flex:0 0 auto !important;
+  height:30px !important; line-height:30px !important; margin:0 !important;
+  padding:0 12px !important; box-sizing:border-box !important;
+  font-size:10px !important; font-weight:600 !important; letter-spacing:2px !important;
+  color:#a8dcec !important; text-shadow:0 0 12px rgba(127,227,255,.45);
+  background:linear-gradient(90deg, rgba(127,227,255,.15), rgba(127,227,255,.03) 55%, rgba(0,0,0,0)) !important;
+  border-bottom:1px solid rgba(127,227,255,.22) !important;
+}
+/* 内层 pm 标题降为次级（不再与左栏标题条争层级） */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-heading{
+  border-bottom:1px solid rgba(127,227,255,.14) !important;
+  background:linear-gradient(90deg, rgba(127,227,255,.06), rgba(0,0,0,0) 60%) !important;
+}
+
+/* ---- 2. 底部监控等距网格 ----
+   关键参数 = dc-comparisons 网格的第二格（dc-panel.key-parameter-panel），
+   只能从容器定位：趋势 [12, W-836]；对比+关键容器 right:12 宽 812，
+   内部两列各 400、列距 12 —— 三块间隙全部 12px。 */
+#root .twin-stage.stage-docked .s5-trend{
+  left:12px !important; right:836px !important; width:auto !important;
+}
+#root .twin-stage.stage-docked .dc-comparisons{
+  left:auto !important; right:12px !important; width:812px !important;
+  grid-template-columns:1fr 1fr !important; gap:12px !important;
+}
+
+/* ==========================================================================
+   2026-11-15 V25 · 日志页对称框 + 磨砂全息玻璃（用户判定：右栏还是太大、
+   左右不对称、纯平板感、3D 存在感≈0）
+   根因：V23/V24 只改了数据/维护/连接页，日志右栏还是 V3 的 720px。
+   1. 日志页对齐数据页 V24 标准：左 280 / 右 520，同顶 108、同底（监控条+24）。
+      表格列重排：时间 62 / 内容 auto / 指标 240 / 操作 40；单元格小标签全隐
+      （表头已有 预测/实际/偏差），数值右对齐 11px —— 内容列留足不截字。
+   2. 磨砂全息玻璃：8 列容器背景 alpha .74/.58 → .38/.22 + backdrop blur，
+      3D 从玻璃后透出来 —— 这是"平板→全息"的主杠杆；底部三块只降 alpha
+      不加 blur（图表密集保可读，key-parameter 是 dc-comparisons 内格避免双层）。
+   3. 日志右栏加数据页同种标题条「日志流 · EVENT STREAM」，内层卡片随之透明化。
+   ========================================================================== */
+
+/* ---- 1. 日志页几何对称（≥1401；≤1400 交还原收窄规则） ---- */
+@media (min-width:1401px){
+  #root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left{
+    left:12px !important; width:280px !important; min-width:280px !important; max-width:280px !important;
+  }
+  #root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right{
+    right:12px !important; width:520px !important; min-width:520px !important; max-width:520px !important;
+  }
+}
+/* 表格列宽适配 520 */
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table col.col-time{width:62px !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table col.col-metrics{width:240px !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table col.col-action{width:40px !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table .logs-metrics{grid-template-columns:56px 56px 58px 44px !important;gap:5px !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table .prediction-record-inline>span{font-size:11px !important;justify-content:flex-end !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table .prediction-record-inline>span:nth-child(4){justify-content:center !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table .prediction-record-inline>span em{display:none !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table .logs-title{font-size:10.5px !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table td{height:30px !important}
+
+/* ---- 2. 磨砂全息玻璃：8 列容器（角标+扫描线保留，底色大幅变透明 + 背景模糊） ---- */
+#root .twin-stage.stage-docked .data-col-left,
+#root .twin-stage.stage-docked .data-col-right,
+#root .twin-stage.stage-docked .maint-col-left,
+#root .twin-stage.stage-docked .maint-col-right,
+#root .twin-stage.stage-docked .comm-col-left,
+#root .twin-stage.stage-docked .comm-col-right,
+#root .twin-stage.stage-docked .logs-col-left,
+#root .twin-stage.stage-docked .logs-col-right{
+  background:
+    linear-gradient(rgba(190,247,255,.95),rgba(190,247,255,.95)) no-repeat 0 0 / 18px 2px,
+    linear-gradient(rgba(190,247,255,.95),rgba(190,247,255,.95)) no-repeat 0 0 / 2px 18px,
+    linear-gradient(rgba(190,247,255,.95),rgba(190,247,255,.95)) no-repeat 100% 100% / 18px 2px,
+    linear-gradient(rgba(190,247,255,.95),rgba(190,247,255,.95)) no-repeat 100% 100% / 2px 18px,
+    repeating-linear-gradient(0deg, rgba(127,227,255,.020) 0 1px, rgba(0,0,0,0) 1px 3px),
+    linear-gradient(180deg, rgba(12,30,38,.38), rgba(5,13,17,.22)) !important;
+  -webkit-backdrop-filter:blur(7px) saturate(1.18) brightness(1.05) !important;
+  backdrop-filter:blur(7px) saturate(1.18) brightness(1.05) !important;
+}
+/* 底部三块：只降 alpha（不加 blur：图表密集 + key-parameter 是 dc-comparisons 内格） */
+#root .twin-stage.stage-docked .s5-trend,
+#root .twin-stage.stage-docked .dc-comparisons,
+#root .twin-stage.stage-docked .key-parameter-panel{
+  background:
+    linear-gradient(rgba(159,240,255,.85),rgba(159,240,255,.85)) no-repeat 0 0 / 16px 2px,
+    linear-gradient(rgba(159,240,255,.85),rgba(159,240,255,.85)) no-repeat 0 0 / 2px 16px,
+    repeating-linear-gradient(0deg, rgba(127,227,255,.022) 0 1px, rgba(0,0,0,0) 1px 4px),
+    linear-gradient(180deg, rgba(9,24,30,.44), rgba(4,11,15,.30)) !important;
+}
+/* 内层卡片透明化（列体玻璃已由容器承担） */
+#root .twin-stage.stage-docked .maint-panel,
+#root .twin-stage.stage-docked .comm-guide-panel,
+#root .twin-stage.stage-docked .logs-stream{
+  background:rgba(6,16,20,.20) !important;
+  border:1px solid rgba(127,227,255,.16) !important;
+  box-shadow:none !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-stream-head{background:rgba(8,26,32,.30) !important;border-bottom-color:rgba(127,227,255,.14) !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-table th{background:rgba(8,26,32,.40) !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left .logs-head{background:linear-gradient(180deg,rgba(4,14,16,.82),rgba(4,14,16,.66)) !important;border-bottom-color:rgba(127,227,255,.18) !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left .logs-kpi{background:rgba(8,28,32,.30) !important;border-color:rgba(127,227,255,.18) !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left .logs-chart{background:rgba(8,28,32,.24) !important;border-color:rgba(127,227,255,.16) !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-kpi{background:rgba(10,24,30,.30) !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-stand-snap{background:rgba(9,22,28,.24) !important}
+
+/* ---- 3. 日志右栏标题条（与数据页左右栏同物种） ---- */
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-right::before{
+  content:'日志流 · EVENT STREAM';
+  display:block !important; flex:0 0 auto !important;
+  height:30px !important; line-height:30px !important; margin:0 !important;
+  padding:0 12px !important; box-sizing:border-box !important;
+  font-size:10px !important; font-weight:600 !important; letter-spacing:2px !important;
+  color:#a8dcec !important; text-shadow:0 0 12px rgba(127,227,255,.45);
+  background:linear-gradient(90deg, rgba(127,227,255,.15), rgba(127,227,255,.03) 55%, rgba(0,0,0,0)) !important;
+  border-bottom:1px solid rgba(127,227,255,.22) !important;
+}
+
+/* ---- 2026-11-15 复原 11-14 登录页布局 ----
+   V25 移除了 main 全局重置（display:block/padding:0/margin:0/background:none），
+   导致 .login-screen 自带的 5vw 内边距与 display:grid 回潮：登录页整页内容内缩、卡片跑位（=「不是 11-14 布局」）。
+   此处用 .login-screen 作用域按 11-14 渲染原样复原，不波及工作台的其他 main 元素。 */
+.login-screen{display:block !important;background:none !important;border:0 !important;padding:0 !important;margin:0 !important}
+
+/* ==========================================================================
+   2026-11-16 参数工作区收一档（操作者："是不是可以再缩小点"）
+   520→460~480 宽，行高 36→30、表头 30→26、值框 27→24、工况输入 25→22；
+   同时把单元格左右内边距 9→6、表格容器 19→12，列宽实际没变小，
+   数值框宽度仍约 38px，不会挤掉 1074.0 这种四位小数。
+   ========================================================================== */
+/* 520→500；腾出的横向空间靠"机架列 12%→9%"补回来（S1..S5 只要 40px 就够），
+   数值列因此反而比原来宽，1074.0 这种四位小数不会被切（实测可用 29px、需要 24px）。 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
+  width:clamp(490px,26vw,500px) !important;
+  min-width:490px !important; max-width:500px !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table col.pm-col-stand{width:9% !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table col.pm-col-field{width:11.375% !important}
+/* 不要写死 .pm-heading 高度：里面是两行工况参数，写死会把表格顶上来 */
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table-scroll{padding:0 12px 4px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table th,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table td{
+  height:30px !important; padding:0 3px !important;
+}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-table thead th{height:26px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-value{height:24px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-case-fields input,
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-case-fields select{height:22px !important}
+#root .twin-stage.stage-docked[data-stage-page="data"] .data-col-right .pm-case-fields{gap:6px !important}
+
+/* ==========================================================================
+   2026-11-16 通讯左栏不再上下滑（操作者："这个为什么还能上下滑动"）
+   根因：`.comm-col-left` 顶部有一条 ::before 标题条（48px），而
+   `@media(min-width:1281px)` 给 .comm-status-panel 写了 height:100%，
+   两者相加比列高多出 48px，于是整列出现滚动条。
+   1) 列改成 flex 纵向，面板 flex:1 吃掉"标题条之外的剩余高度"，height 回落 auto；
+   2) 删掉与「读取完整度/有效数据」重复的 .comm-read-legend 行；
+   3) 再收 4px 档的内边距，保证 1366×768 也不出现滚动。
+   ========================================================================== */
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left{
+  display:flex !important; flex-direction:column !important;
+}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left .comm-status-panel{
+  height:auto !important; flex:1 1 auto !important; min-height:0;
+}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-status-header{margin-bottom:6px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-connection-copy p{margin:3px 0 !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-main-actions{margin:6px 0 8px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-readouts{padding-top:5px !important}
+
+/* ==========================================================================
+   2026-11-16 日志左栏：走势卡吃掉剩余高度 + 标题行不再挤成两行
+   操作者："有空余空间为什么这么拥挤还有重叠"
+   ① `.logs-insight` 原来 flex:none + 图固定 96px，列底留一大片空；
+      改成 flex:1，图区随剩余高度重算（ResizeObserver 会重新画）。
+   ② 标题行三件套没有 nowrap/收缩规则，窄栏时 strong 和 span 互相挤、换行叠在一起。
+   ========================================================================== */
+#root .logs-col-left .logs-insight{flex:1 1 auto !important;min-height:0;display:flex !important;flex-direction:column !important}
+#root .logs-col-left .logs-insight.is-collapsed{flex:none !important}
+#root .logs-col-left .logs-chart{flex:1 1 auto !important;min-height:0}
+#root .logs-col-left .logs-chart>header{flex-wrap:nowrap !important;align-items:center !important}
+#root .logs-col-left .logs-chart>header>strong{flex:none;white-space:nowrap}
+#root .logs-col-left .logs-chart>header>span{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+#root .logs-col-left .logs-chart>header>.logs-chart-error{flex:none;max-width:45%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#root .logs-col-left .logs-chart>header>.logs-insight-toggle{flex:none;white-space:nowrap}
+#root .logs-col-left .logs-chart-plot{flex:1 1 auto !important;height:auto !important;min-height:88px}
+#root .logs-col-left .logs-chart svg{height:auto !important;min-height:0 !important}
+
+/* 2026-11-17：开屏登录阶段 .ob-main 是 pointer-events:none，面板必须自己收点击，
+   否则点击落到 .ob-tint 上，登录键没有任何反应（每次重建都会丢的补丁，写进打包 CSS 固化）。 */
+#boot.login-stage .ob-panel{pointer-events:auto}

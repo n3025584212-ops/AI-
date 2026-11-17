@@ -19,11 +19,19 @@ import './workspace-integration.css';
 import './twin-stage.css';
 import './digital-twin.css';
 import holoCSS from './holo-theme.css?inline';
+import aiConsoleCSS from './ai-console.css?inline';
 // 运行时注入到 head 末尾，确保优先级高于所有既有样式
 {
   const st = document.createElement('style');
   st.id = 'holo-theme-runtime';
   st.textContent = holoCSS;
+  document.head.appendChild(st);
+}
+// DK AI 控制台皮肤：必须排在 holo-theme 之后，才能覆盖同权重的浮窗样式
+{
+  const st = document.createElement('style');
+  st.id = 'ai-console-runtime';
+  st.textContent = aiConsoleCSS;
   document.head.appendChild(st);
 }
 // 全息 HUD 覆盖层：叠在 3D 场景上，不拦截交互
@@ -66,4 +74,17 @@ new MutationObserver(syncHudVisibility).observe(document.body, {childList:true, 
 if(window.dkqkarDesktop)document.documentElement.classList.add('desktop-title-overlay');
 document.title=PRODUCT_NAME;
 document.documentElement.style.setProperty('--product-name',JSON.stringify(PRODUCT_NAME));
-createRoot(document.getElementById('root')).render(<LoginGate>{session=><App {...session}/>}</LoginGate>);
+// 2026-11-14 设计复核：局部渲染异常不允许黑掉整个工作台；给出可恢复的降级页。
+class RootErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={error:null};}
+  static getDerivedStateFromError(error){return {error};}
+  render(){
+    if(!this.state.error)return this.props.children;
+    return <div role="alert" style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,background:'#040e14',color:'#d7e7ee',fontFamily:'"Segoe UI",system-ui,sans-serif'}}>
+      <strong style={{fontSize:15,letterSpacing:'.12em'}}>界面出现异常</strong>
+      <span style={{fontSize:12,color:'#7d9dae'}}>预测与数据服务不受影响；点击重载可恢复界面。</span>
+      <button onClick={()=>{this.setState({error:null});window.location.reload();}} style={{minHeight:32,padding:'0 18px',border:'1px solid rgba(182,255,60,.4)',borderRadius:2,background:'rgba(182,255,60,.1)',color:'#dcff9d',fontSize:12,cursor:'pointer'}}>重载工作台</button>
+    </div>;
+  }
+}
+createRoot(document.getElementById('root')).render(<RootErrorBoundary><LoginGate>{session=><App {...session}/>}</LoginGate></RootErrorBoundary>);

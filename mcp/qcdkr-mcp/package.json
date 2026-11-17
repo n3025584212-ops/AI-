@@ -1,0 +1,15 @@
+{
+  "name": "qcdkr-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "QCDKR 只读 MCP 服务（stdio）：把工况预测、工艺资料检索、事件中心开放给外部 AI 客户端",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test-client.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "^3.25.76"
+  }
+}

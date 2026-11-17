@@ -1,175 +1,251 @@
-/* QCDKR 启动页控制器（复刻 _run/2159-启动页.mp4）
-   满屏启动层：厂房底图 + 左上品牌 + 左下大标语 + 右侧「系统装载确认」卡。
-   卡内四行装载项按真实就绪信号点亮（传递中 → 已就绪），
-   进度线里的填充物就是 /assets/boot-loop.mp4 本身（mp4 画面即进度条）。
-   装载完成 → 整层淡出，最后一页 = React 渲染的登录页。
-   就绪信号：runtime / data(#root 有子节点) / scene(底图解码 + 登录页已渲染) / login(密码框可用)
-   最短 3.0s，兜底 22s，点击/按键跳过。 */
+/* QCDKR 开场 / 厂房加载层控制器
+   叙事：接收访问请求 → 运行时校验 → 工作台挂载 → 厂房场景载入 → 预测模型校验 → 校验通过 → WELCOME。
+   进度由真实就绪信号驱动（DOM / app-shell / __qcdkr3d / model status），
+   同时作为 3D 厂房与预测模型的加载缓冲；完成后整层淡出进入控制台。
+   不使用任何实体标识。开关：?boot=0 关闭；?boot=hold 定格。 */
 (function () {
   var boot = document.getElementById('boot');
   if (!boot) return;
+
   var qs = new URLSearchParams(location.search);
   if (qs.get('boot') === '0') { boot.remove(); return; }
   var hold = qs.get('boot') === 'hold';
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (sessionStorage.getItem('obSkipNext') === '1') { sessionStorage.removeItem('obSkipNext'); boot.remove(); return; }
+  var AUTHED = null; // null=还没问过服务端，false=确认未登录
+  fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { AUTHED = !!(j && j.authenticated); })
+    .catch(function () {});
 
-  var num = document.getElementById('boot-num'),
-      msg = document.getElementById('boot-msg'),
-      code = document.getElementById('boot-code'),
-      vid = document.getElementById('boot-video'),
-      track = document.getElementById('boot-track');
-
-  var t0 = performance.now();
-  var MIN = reduce ? 900 : 3000;
-  var MIN_AT = { runtime: 420, data: 980, scene: 1560, login: 2180 };
-  var CAP = 22000;
-  var state = { runtime: false, data: false, scene: false, login: false };
-  var done = false, left = false, aligned = false;
-
-  var PCT = { runtime: 14, data: 38, scene: 68, login: 94 };
-  var MSG = {
-    runtime: '运行时校验通过 → 挂载工作台',
-    data: '工作台已挂载 → 载入厂房场景',
-    scene: '厂房场景资源就绪 → 打开登录',
-    login: '装载完成，正在进入登录'
+  var el = {
+    steps: document.getElementById('ob-steps'),
+    num: document.getElementById('ob-num'),
+    msg: document.getElementById('ob-msg'),
+    ring: document.getElementById('ob-ring'),
+    pct: document.getElementById('ob-pct'),
+    vtitle: document.getElementById('ob-vtitle'),
+    vsub: document.getElementById('ob-vsub'),
+    status: document.getElementById('ob-status'),
+    welcome: document.getElementById('ob-welcome')
   };
 
-  var factory = new Image();
-  var factoryOk = false;
-  factory.onload = function () { factoryOk = true; };
-  factory.onerror = function () { factoryOk = true; };
-  factory.src = '/assets/factory-preview.png';
+  var state = { runtime: false, app: false, scene: false, model: false };
+  var TARGET = { runtime: 16, app: 44, scene: 70, model: 92 };
+  var MIN_AT = { runtime: 400, app: 1500, scene: 2600, model: 3800 };
+  var target = 0, shown = 0, done = false, startedAt = performance.now();
+  var appAt = 0, checkingModel = false, timer = 0;
+  var awaitingLogin = false, loginShown = false;
+  var loginEl = document.getElementById('ob-login-form');
+  var loginForm = document.getElementById('ob-login-form');
+  var loginUser = document.getElementById('ob-user');
+  var loginPass = document.getElementById('ob-pass');
+  var loginBtn = document.getElementById('ob-login-btn');
+  var loginErr = document.getElementById('ob-login-err');
+  var MIN = 5200;
+  var CAP = 10000;
 
-  var dur = 1.533, pendingSeek = null;
-  if (vid) {
-    vid.addEventListener('loadedmetadata', function () {
-      if (vid.duration && isFinite(vid.duration)) dur = vid.duration;
-      if (pendingSeek !== null) { seek(pendingSeek); pendingSeek = null; }
-    });
-    vid.addEventListener('error', function () {
-      if (track) track.classList.add('fallback');
-      vid.style.display = 'none';
-    });
+  function view(title, sub) {
+    if (el.vtitle) el.vtitle.textContent = title;
+    if (el.vsub) el.vsub.textContent = sub;
   }
-
-  function seek(p) {
-    if (!vid) return;
-    var t = Math.max(0, Math.min(dur - 0.034, (p / 100) * dur));
-    if (vid.readyState < 1) { pendingSeek = p; return; }
-    try { if (Math.abs(vid.currentTime - t) > 0.02) vid.currentTime = t; } catch (e) {}
+  function status(text) {
+    if (el.status) el.status.textContent = text;
+    if (el.msg) el.msg.textContent = text;
   }
-
-  function align() {
-    if (aligned) return;
-    aligned = true;
-    boot.classList.add('aligned');
+  function paint() {
+    var v = Math.max(0, Math.min(100, Math.round(shown)));
+    boot.style.setProperty('--p', v);
+    if (el.num) el.num.textContent = v;
+    if (el.pct) el.pct.textContent = v;
+    if (el.ring) el.ring.style.setProperty('--rp', v);
   }
-
-  function setProgress(p) {
-    boot.style.setProperty('--p', p);
-    if (num) num.textContent = p;
-    seek(p);
+  function tick() {
+    var d = target - shown;
+    if (Math.abs(d) < 0.2) shown = target;
+    else shown += d * 0.09;
+    paint();
+    if (done && shown >= 99.9) { clearInterval(timer); timer = 0; }
+  }
+  function aim(v) {
+    target = Math.max(target, v);
+    if (!timer) timer = setInterval(tick, 70);
   }
 
   function step(key) {
     if (state[key]) return;
     state[key] = true;
-    var li = boot.querySelector('li[data-k="' + key + '"]');
+    var li = el.steps && el.steps.querySelector('li[data-k="' + key + '"]');
     if (li) {
       li.classList.add('on');
       var b = li.querySelector('b');
       if (b) b.textContent = '已就绪';
     }
-    if (MSG[key] && msg) msg.textContent = MSG[key];
-    setProgress(PCT[key]);
+    aim(TARGET[key]);
+    if (key === 'runtime') { view('读取本地运行时', 'LOCAL RUNTIME CHECK'); status('正在校验本地运行时…'); }
+    if (key === 'app') { view('载入工作台', 'MOUNTING WORKSPACE'); status('正在载入工作台…'); }
+    if (key === 'scene') { view('载入厂房场景', 'LOADING FACTORY SCENE'); status('正在载入厂房数字孪生场景…'); }
+    if (key === 'model') { view('校验预测模型', 'VERIFYING MODEL'); status('正在校验预测模型…'); }
+  }
+  function allReady() { return state.runtime && state.app && state.scene && state.model; }
+
+  function checkModel() {
+    if (state.model || checkingModel) return;
+    checkingModel = true;
+    fetch('/api/model/status', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { if (j && j.available === true) step('model'); })
+      .catch(function () {})
+      .then(function () { checkingModel = false; });
   }
 
-  function removeAll() {
-    if (left) return;
-    left = true; done = true;
-    document.removeEventListener('click', skip, true);
-    document.removeEventListener('keydown', skip, true);
-    var b = document.getElementById('boot'); if (b) b.remove();
-    window.__qcdkrBootDone = true;
-  }
-
-  function inWorkspace() {
-    return !!(document.querySelector('.app-shell') || document.querySelector('.sidebar') || document.querySelector('.topbar'));
-  }
-
-  function loginReady() {
-    return !!(document.querySelector('input[type=password]') || document.querySelector('.login-screen'));
-  }
-
-  function probe() {
-    if (done) return;
-    var now = performance.now() - t0;
-    var root = document.getElementById('root');
-    var hasLogin = !!document.querySelector('.login-screen');
-
-    if (inWorkspace() && now > 1200) return removeAll();
-
-    align();
-    if (!state.runtime && document.readyState !== 'loading' && now >= MIN_AT.runtime) step('runtime');
-    if (state.runtime && !state.data && root && root.childElementCount > 0 && now >= MIN_AT.data) step('data');
-    if (state.data && !state.scene && factoryOk && hasLogin && now >= MIN_AT.scene) step('scene');
-    if (state.scene && !state.login && loginReady() && now >= MIN_AT.login) step('login');
-    if (state.runtime && state.data && state.scene && state.login && now >= MIN) return finish(false);
-    if (now > CAP) return finish(true);
-    setTimeout(probe, 120);
-  }
-
-  function finish(forced) {
+  function finish(reason) {
     if (done) return;
     done = true;
-    ['runtime', 'data', 'scene', 'login'].forEach(function (k) {
-      var li = boot.querySelector('li[data-k="' + k + '"]');
+    window.__obDebug = { reason: reason || 'unknown', at: Math.round(performance.now() - startedAt) };
+    ['runtime', 'app', 'scene', 'model'].forEach(function (k) {
+      var li = el.steps && el.steps.querySelector('li[data-k="' + k + '"]');
       if (li) {
         li.classList.add('on');
         var b = li.querySelector('b');
         if (b) b.textContent = '已就绪';
       }
     });
-    align();
-    setProgress(100);
-    if (msg) msg.textContent = '装载完成';
+    shown = 100; target = 100;
+    if (timer) { clearInterval(timer); timer = 0; }
+    paint();
+    view('读取完毕 · 校验通过', 'VERIFIED · ACCESS GRANTED');
+    status('读取完毕 · 校验通过，正在进入工作台…');
     setTimeout(function () {
       boot.classList.add('is-out');
-      setTimeout(function () { if (boot.parentNode) boot.remove(); }, 620);
-      window.__qcdkrBootDone = true;
-    }, reduce ? 120 : 620);
+      setTimeout(function () { if (boot.parentNode) boot.remove(); }, 820);
+    }, reduce ? 260 : 1150);
+  }
+
+  function markAllReady() {
+    ['runtime', 'app', 'scene', 'model'].forEach(function (k) {
+      var li = el.steps && el.steps.querySelector('li[data-k="' + k + '"]');
+      if (li) {
+        li.classList.add('on');
+        var b = li.querySelector('b');
+        if (b) b.textContent = '已就绪';
+      }
+    });
+  }
+
+  function enterLogin() {
+    if (loginShown || done) return;
+    loginShown = true;
+    awaitingLogin = true;
+    markAllReady();
+    shown = 100; target = 100;
+    if (timer) { clearInterval(timer); timer = 0; }
+    paint();
+    view('等待登录', 'AWAITING SIGN-IN');
+    status('校验通过，请使用本地账户登录。');
+    boot.classList.add('login-stage');
+    setTimeout(function () {
+      if (loginPass) { try { loginPass.focus(); loginPass.select(); } catch (e) {} }
+    }, 450);
+  }
+
+  function loginError(msg) {
+    if (loginErr) {
+      loginErr.textContent = msg;
+      loginErr.classList.add('show');
+    }
+    if (loginEl) {
+      loginEl.classList.remove('shake');
+      void loginEl.offsetWidth;
+      loginEl.classList.add('shake');
+    }
+  }
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      if (done) return;
+      var username = loginUser ? loginUser.value.replace(/^\s+|\s+$/g, '') : '';
+      var password = loginPass ? loginPass.value : '';
+      if (!username || !password) { loginError('请输入用户名和密码'); return; }
+      if (loginErr) { loginErr.classList.remove('show'); loginErr.textContent = ''; }
+      if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '验证中…'; }
+      fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password, remember: true })
+      }).then(function (r) {
+        if (!r.ok) {
+          loginError('用户名或密码错误，请重新输入。');
+          if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
+          return;
+        }
+        if (loginBtn) loginBtn.textContent = '已验证';
+        status('登录成功，正在进入工作台…');
+        sessionStorage.setItem('obSkipNext', '1');
+        setTimeout(function () { location.reload(); }, 320);
+      }).catch(function () {
+        loginError('本地登录服务暂不可用，请稍后重试。');
+        if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
+      });
+    });
+  }
+
+  function probe() {
+    if (done || awaitingLogin) return;
+    var now = performance.now() - startedAt;
+
+    if (!state.runtime && document.readyState !== 'loading' && now >= MIN_AT.runtime) step('runtime');
+    if (state.runtime && !state.app && document.querySelector('.app-shell') && now >= MIN_AT.app) { step('app'); appAt = now; }
+    var api3d = window.__qcdkr3d;
+    var sc3d = api3d && api3d.scene;
+    var factoryReady = false;
+    if (sc3d) {
+      factoryReady = sc3d.children.some(function (c) {
+        return /Factory_Blender_Assets|Factory_Hall_Blender|DKQKAR_5Stand_Web|Factory_Plant_Extension|EngineerB|Mill_Detail_Pass/.test(c.name || '');
+      });
+    }
+    if (state.app && !state.scene && api3d && document.querySelector('#root canvas') && factoryReady && now >= MIN_AT.scene) step('scene');
+    if (state.app && !state.scene && appAt && now - appAt > 15000) step('scene');
+    if (state.scene && !state.model && now >= MIN_AT.model) checkModel();
+    if (state.scene && !state.model && now > MIN + 2600) step('model');
+
+    if (AUTHED === false && now > MIN) return enterLogin(); // 确认未登录就直接进登录页，不等厂房/模型（原来卡在 16% 等满 10 秒）
+    if (allReady() && now > MIN) return AUTHED ? finish('authed') : enterLogin();
+    if (AUTHED && now > MIN && document.querySelector('.app-shell')) return finish('authed');
+    if (now > CAP) return enterLogin();
+    setTimeout(probe, 180);
   }
 
   function skip(e) {
-    if (left) return;
-    if (performance.now() - t0 < 180) return;
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    if (done) { removeAll(); return; }
-    finish(true);
+    if (done || awaitingLogin || AUTHED) return;
+    if (e && e.isTrusted === false) return;
+    if (performance.now() - startedAt < 320) return;
+    if (e) e.preventDefault();
+    enterLogin();
   }
 
-  // 进入工作台（.login-screen 消失）后把启动层撤掉
-  setInterval(function () {
-    if (left) return;
-    if (inWorkspace()) {
-      var b = document.getElementById('boot'); if (b) b.remove();
-      left = true; done = true; window.__qcdkrBootDone = true;
-    }
-  }, 400);
-
-  if (!hold) {
-    document.addEventListener('click', skip, true);
-    document.addEventListener('keydown', skip, true);
-    setTimeout(probe, 100);
-  } else {
-    align();
-    ['runtime', 'data', 'scene', 'login'].forEach(function (k, i) {
-      setTimeout(function () { step(k); }, 420 + i * 260);
+  if (hold) {
+    shown = 68; target = 68; paint();
+    ['runtime', 'app', 'scene'].forEach(function (k) {
+      state[k] = true;
+      var li = el.steps && el.steps.querySelector('li[data-k="' + k + '"]');
+      if (li) {
+        li.classList.add('on');
+        var b = li.querySelector('b');
+        if (b) b.textContent = '已就绪';
+      }
     });
-    setTimeout(function () { setProgress(100); if (msg) msg.textContent = '装载完成'; }, 2200);
+    view('校验预测模型', 'VERIFYING MODEL');
+    status('正在校验预测模型…');
+    return;
   }
 
-  setTimeout(function () {
-    if (code) code.textContent = 'BOOT 0x' + (0x2A + Math.floor(Math.random() * 6)).toString(16).toUpperCase();
-  }, 900);
+  if (qs.get('boot') === 'login') { setTimeout(enterLogin, 400); return; }
+
+  document.addEventListener('pointerdown', skip, true);
+  document.addEventListener('keydown', skip, true);
+  setTimeout(probe, 80);
 })();

@@ -77,10 +77,16 @@ def runtime_preflight() -> None:
             for filename in ("__init__.py", "__config__.py"):
                 if not (root / filename).is_file():
                     missing.append(f"numpy/{filename}")
-            if not list((root / "_core").glob("_multiarray_umath*.pyd")):
-                missing.append("numpy/_core/_multiarray_umath*.pyd")
-            if not any((root.parent / "numpy.libs").glob("*.dll")):
-                missing.append("numpy.libs/*.dll")
+            if sys.platform == "win32":
+                if not list((root / "_core").glob("_multiarray_umath*.pyd")):
+                    missing.append("numpy/_core/_multiarray_umath*.pyd")
+                if not any((root.parent / "numpy.libs").glob("*.dll")):
+                    missing.append("numpy.libs/*.dll")
+            else:
+                if not list((root / "_core").glob("_multiarray_umath*.so")):
+                    missing.append("numpy/_core/_multiarray_umath*.so")
+                if not any((root.parent / "numpy.libs").glob("*.so")):
+                    missing.append("numpy.libs/*.so")
     if missing:
         raise ModelError("RUNTIME_INCOMPLETE", f"模型运行环境不完整：{', '.join(missing)} 缺失。{ADVICE}")
 

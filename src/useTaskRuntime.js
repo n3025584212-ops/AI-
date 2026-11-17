@@ -88,6 +88,7 @@ export function useTaskRuntime({ getContext, executeUI, enabled = true, accessMo
   const [error,setError] = useState(''), [submitting,setSubmitting] = useState(false);
   const callbacks=useRef({getContext,executeUI,accessMode}); callbacks.current={getContext,executeUI,accessMode};
   const alive=useRef(true), pendingCreate=useRef(null), unconfirmedCreate=useRef(null), requests=useRef(new Set());
+  const tasksRef=useRef([]);
   const localReceipts=useRef(new Map()), dispatching=useRef(new Set()), mutation=useRef(new Set()), uiControllers=useRef(new Map());
   const merge=useCallback(value=>{
     const task=unwrap(value); if(!taskId(task)||!alive.current)return task;
@@ -110,13 +111,39 @@ export function useTaskRuntime({ getContext, executeUI, enabled = true, accessMo
       setError('');
     }catch(failure){if(alive.current&&failure.name!=='AbortError')setError(failure.message);}
   },[call,merge]);
+  const summarySignature=task=>[taskStatus(task),task.updatedAt||'',Array.isArray(task.steps)?task.steps.length:task.stepCount||0,task.pending?.type||task.pendingType||''].join('|');
+  // 轮询只用摘要（约几百字节）；摘要显示某条任务有变化时，再单独取那一条的完整详情。
+  const refreshSummary=useCallback(async()=>{
+    try {
+      const response=await call('/?summary=1');
+      if(!alive.current)return;
+      const items=response.items||[], known=new Map(tasksRef.current.map(task=>[taskId(task),task]));
+      for(const item of items){
+        const id=taskId(item);if(!id)continue;
+        const current=known.get(id);
+        if(!current||summarySignature(current)!==summarySignature(item)){
+          merge(unwrap(await call('/'+encodeURIComponent(id))));
+        }
+      }
+      setError('');
+    }catch(failure){if(alive.current&&failure.name!=='AbortError')setError(failure.message);}
+  },[call,merge]);
+  useEffect(()=>{tasksRef.current=tasks;},[tasks]);
+  // 只有存在未结束任务（运行/等待确认/等待补充）时才轮询；空闲时不再搬任务列表。
+  // 注意：已结束任务可能残留 pending 字段，不能用 pending 判断是否还在跑。
+  const hasActiveTask = tasks.some(task => !TASK_TERMINAL.has(taskStatus(task)));
   useEffect(()=>{
     alive.current=true;if(!enabled)return;
-    let stopped=false,timer;
-    const poll=async()=>{await refresh();if(!stopped)timer=setTimeout(poll,1200);};
-    void poll();
-    return()=>{stopped=true;alive.current=false;clearTimeout(timer);for(const controller of requests.current)controller.abort();for(const controller of uiControllers.current.values())controller.abort();};
+    void refresh();
+    return()=>{alive.current=false;for(const controller of requests.current)controller.abort();for(const controller of uiControllers.current.values())controller.abort();};
   },[enabled,refresh]);
+  useEffect(()=>{
+    if(!enabled||!hasActiveTask)return;
+    let stopped=false,timer;
+    const poll=async()=>{await refreshSummary();if(!stopped)timer=setTimeout(poll,3000);};
+    timer=setTimeout(poll,3000);
+    return()=>{stopped=true;clearTimeout(timer);};
+  },[enabled,hasActiveTask,refreshSummary]);
   useEffect(()=>{
     if(!enabled)return;
     for(const [key,controller] of uiControllers.current){

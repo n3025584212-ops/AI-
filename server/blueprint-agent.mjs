@@ -12,6 +12,7 @@ import { featureLocation, AGENT_TOOLS } from './process-agent.mjs';
 import { toDisplay, unitFor, sourceUnitFor, convertUnit, supportedUnitProfile, decodeUnitProfile } from '../src/engineeringUnits.js';
 import { isConversational } from '../src/assistantLayout.js';
 import { classifyAssistantIntent, resolveRuleReferences, diagnosticTargets, isRootCauseQuestion, requestText } from '../src/assistantIntent.js';
+import { resolveIntent } from './intent-resolver.mjs';
 import { isDomainKnowledgeQuestion, isKnowledgeQuestion, isExplicitKnowledgeDetail } from '../src/coldRollingDomain.js';
 import { probeKnowledgeCandidate, extractTargetConcept, selectKnowledgePassages, synthesizeKnowledgeAnswer, isKnowledgeDetailFollowup } from './knowledge.mjs';
 import { createCaseInputSnapshot, caseToModelValues } from './model-service.mjs';
@@ -379,7 +380,21 @@ export async function createBlueprintAgent({ state, processAgent, maintenance, l
       else parsedTrial=requestedTrial(request,baseline);
       trialChanges = guided ? parsedTrial.changes || [] : parsedTrial; if(guided&&parsedTrial.status!=='READY')trialError=parsedTrial.message;
     } catch (error) { trialError = error.message; run.error = {code:error.code,message:error.message}; }
-    const getObject = ref => { if (!objects.has(ref)) throw new StateError('对象引用不属于本次工况。', 403, 'OBJECT_SCOPE'); return objects.get(ref); };
+    // 2026-11-14 D5：模型偶尔把 snapshot_ref 写成 contextRef / 当前案例编号，或直接留空，
+    // 单工况作用域下这不该变成拒答。先做别名归一，只有多对象作用域且确实越界时才拒绝。
+    const resolveObjectRef = ref => {
+      if (!ref) return context.snapshotRef;
+      if (objects.has(ref)) return ref;
+      if (ref === context.contextRef || ref === context.snapshotRef) return context.snapshotRef;
+      if (baseline && [baseline.snapshot_id, baseline.case_id, baseline.id].filter(Boolean).includes(ref)) return context.snapshotRef;
+      return null;
+    };
+    const getObject = ref => {
+      const key = resolveObjectRef(ref);
+      if (key && objects.has(key)) return objects.get(key);
+      if (objects.size === 1) return [...objects.values()][0];
+      throw new StateError('对象引用不属于本次工况。', 403, 'OBJECT_SCOPE');
+    };
     let count = 0; const cache = new Map(), bindings = new Map();
     if(baseline)bindings.set(baseline,context);
     if(context.referencePrediction)bindings.set(objects.get(context.referenceRef),{...context,caseData:objects.get(context.referenceRef),prediction:context.referencePrediction,input_snapshot:context.referenceSnapshot,observation:context.referenceObservation,contextFingerprint:reportInputFingerprint(objects.get(context.referenceRef))});
@@ -808,10 +823,14 @@ export async function createBlueprintAgent({ state, processAgent, maintenance, l
     if (diagnosis !== undefined && (!record(diagnosis) || diagnosis.mode !== 'EXACT' || diagnosis.answer_variant !== 'AI_EXPLAIN'
       || typeof diagnosis.finding_id !== 'string' || !diagnosis.finding_id || Object.keys(diagnosis).some(key=>!['mode','answer_variant','finding_id'].includes(key))
       || request.tools || isRootCauseQuestion(request.message))) throw new StateError('诊断解读须指定当前 Finding，不能替代物理根因边界。',409,'DIAGNOSTIC_CONTEXT_INVALID');
+    // 理解层交给模型：正则退化为兜底与写操作护栏，见 intent-resolver.mjs。
+    // 意图解析单独限时 15 秒，超时回落规则，不让一句话把整个请求拖死。
+    const intentDiagnostics = request.context_ref ? contexts.get(request.context_ref)?.diagnostics : request.context?.diagnostics;
     let intent = batch3Trial ? {domain:'PARAMETER',action:'CHANGE',scope:'SNAPSHOT',certainty:'EXPLICIT',requiresTool:true}
       : candidate ? {domain:'SNAPSHOT',action:'QUERY',scope:'SNAPSHOT',certainty:'EXPLICIT',requiresTool:true}
       : diagnosis ? {domain:'DIAGNOSTIC',action:'QUERY',scope:'SNAPSHOT',certainty:'EXPLICIT',requiresTool:true}
-      : request.tools ? { domain: 'SNAPSHOT', action: 'QUERY', scope: 'SNAPSHOT', certainty: 'EXPLICIT' } : classifyAssistantIntent(request.message, request.context_ref ? contexts.get(request.context_ref)?.diagnostics : request.context?.diagnostics);
+      : request.tools ? { domain: 'SNAPSHOT', action: 'QUERY', scope: 'SNAPSHOT', certainty: 'EXPLICIT' }
+      : await resolveIntent({ message: request.message, diagnostics: intentDiagnostics, llm, signal: AbortSignal.timeout(15000) });
     if (intent.domain === 'UNKNOWN' && isKnowledgeQuestion(request.message) && probeKnowledgeCandidate(await knowledge(), request.message)) {
       intent = { domain: 'DOMAIN_KNOWLEDGE', action: 'QUERY', scope: 'KNOWLEDGE', requiresTool: true, certainty: 'EXPLICIT', entityRef: null, parsedChange: null };
     }
@@ -867,6 +886,9 @@ export async function createBlueprintAgent({ state, processAgent, maintenance, l
     if (!BLUEPRINT_SKILLS.some(item => item.id === selectedId)) throw new StateError('技能未注册。');
     if (closed) throw new StateError('服务正在关闭，不能创建新任务。', 503, 'AGENT_CLOSED');
     const run = { runId: randomUUID(), turnId: randomUUID(), answerScope: intent.scope, rulesVersion: null, checkedAt: null, intent, ...predictionIdentity(context.prediction,context.observation), identity_status:context.input_snapshot?'VERIFIED':'PENDING', contextFingerprint:context.contextFingerprint || reportInputFingerprint(context.caseData), operation_scope:context.operation_scope, actorId: actor.id, accessMode, contextRef: context.contextRef, snapshotRef: context.snapshotRef, skillId: selectedId, skillVersion: 'implemented-1.0', promptVersion: 'qwen-local-facts-v1', status: 'queued', createdAt: now(), question: request.message.trim(), trace: [], results: {}, actions: [], references: [], reply: '', model: 'qwen3.5:4b' };
+    run.intent_source = intent.intentSource || (batch3Trial || candidate || diagnosis || request.tools ? 'explicit-entry' : 'rules');
+    if (intent.missing?.length) run.intent_missing = intent.missing;
+    if (intent.subgoals?.length) run.intent_subgoals = intent.subgoals;
     Object.assign(run,{request_id:request.request_id,user_message_id:request.user_message_id,request_snapshot_id:context.fact_packet.snapshot_id,
       retry_of_request_id:request.retry_of_request_id??null,response_version:request.response_version||1,request_digest:request.request_digest,fact_packet:context.fact_packet});
     if(request.fact_diagnostic&&!diagnosis)Object.assign(run,preparedFactResponse(context.fact_packet),{answer_variant:'AI_EXPLAIN'});

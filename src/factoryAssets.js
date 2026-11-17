@@ -32,6 +32,74 @@ const META = {
 
 const protoCache = new Map();
 
+// 运行日志终端的屏幕内容 = 真实运行日志：App 轮询 /logs 后通过 qcdkr:log-feed
+// 推送最新几条，这里只负责画屏；没有数据时显示「正在同步」，不画死演示文案。
+const LOG_KIOSK_STATE_COLORS = { 告警: '#ffb454', 预警: '#ffcf6b', 完成: '#7fe3c0', 信息: '#63b8e0' };
+let logKioskScreen = null;
+let logKioskRows = [];
+let logKioskTotal = null;
+
+function drawLogKioskScreen() {
+  if (!logKioskScreen) return;
+  const { ctx, tex } = logKioskScreen;
+  const bg = ctx.createLinearGradient(0, 0, 0, 360);
+  bg.addColorStop(0, '#061622');
+  bg.addColorStop(1, '#0a2534');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 640, 360);
+  ctx.strokeStyle = '#2f7fa0';
+  ctx.lineWidth = 5;
+  ctx.strokeRect(2, 2, 636, 356);
+  ctx.fillStyle = '#7fe3ff';
+  ctx.font = 'bold 42px "Microsoft YaHei", sans-serif';
+  ctx.fillText('运行日志', 32, 66);
+  ctx.fillStyle = '#6f93a6';
+  ctx.font = '22px "Microsoft YaHei", sans-serif';
+  ctx.fillText(`RUN LOG · ${logKioskTotal ?? '—'} 条`, 32, 100);
+  ctx.strokeStyle = '#1e4a60';
+  ctx.beginPath();
+  ctx.moveTo(32, 120);
+  ctx.lineTo(608, 120);
+  ctx.stroke();
+  ctx.font = '22px "Microsoft YaHei", sans-serif';
+  if (!logKioskRows.length) {
+    ctx.fillStyle = '#527a8c';
+    ctx.fillText('正在同步运行日志…', 32, 170);
+  } else {
+    // 行结构 = App 推送的对象 {time,text,state}；解构前先取属性，
+    // 不能按数组解构（对象不是可迭代值，会把整个载入链炸掉）。
+    logKioskRows.forEach((row, index) => {
+      const time = String(row?.time ?? '--:--:--');
+      const item = String(row?.text ?? '');
+      const state = String(row?.state ?? '信息');
+      const y = 160 + index * 42;
+      ctx.fillStyle = '#9fc3d4';
+      ctx.fillText(time, 32, y);
+      ctx.fillStyle = '#d6ecf7';
+      ctx.fillText(item, 160, y);
+      ctx.fillStyle = LOG_KIOSK_STATE_COLORS[state] || '#63b8e0';
+      ctx.fillText(state, 500, y);
+    });
+  }
+  ctx.fillStyle = '#5fa8c4';
+  ctx.font = '20px "Microsoft YaHei", sans-serif';
+  ctx.fillText('点击进入运行日志', 32, 338);
+  if (tex) tex.needsUpdate = true;
+}
+
+export function pushLogKioskFeed(rows, total) {
+  logKioskRows = (Array.isArray(rows) ? rows : []).slice(0, 4);
+  logKioskTotal = Number.isSafeInteger(total) ? total : null;
+  drawLogKioskScreen();
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('qcdkr:log-feed', event => {
+    const detail = event.detail || {};
+    pushLogKioskFeed(detail.rows, detail.total);
+  });
+}
+
 // 运行日志终端：运行日志此前只有「点开机架信息卡再点按钮」的两步入口，
 // 这里补一个场景内直达设备，与其他设备一样点一下进页面。
 function createLogKiosk() {
@@ -50,46 +118,9 @@ function createLogKiosk() {
   canvas.width = 640;
   canvas.height = 360;
   const ctx = canvas.getContext('2d');
-  const bg = ctx.createLinearGradient(0, 0, 0, 360);
-  bg.addColorStop(0, '#061622');
-  bg.addColorStop(1, '#0a2534');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, 640, 360);
-  ctx.strokeStyle = '#2f7fa0';
-  ctx.lineWidth = 5;
-  ctx.strokeRect(2, 2, 636, 356);
-  ctx.fillStyle = '#7fe3ff';
-  ctx.font = 'bold 42px "Microsoft YaHei", sans-serif';
-  ctx.fillText('运行日志', 32, 66);
-  ctx.fillStyle = '#6f93a6';
-  ctx.font = '22px "Microsoft YaHei", sans-serif';
-  ctx.fillText('RUN LOG · 248 条', 32, 100);
-  ctx.strokeStyle = '#1e4a60';
-  ctx.beginPath();
-  ctx.moveTo(32, 120);
-  ctx.lineTo(608, 120);
-  ctx.stroke();
-  const rows = [
-    ['09:28:47', 'S5 轧制力预测', '正常'],
-    ['09:28:45', 'S5 轧制力预测', '正常'],
-    ['09:21:03', '换辊事件', '完成'],
-    ['09:14:22', '温度超限预警', '告警'],
-  ];
-  ctx.font = '22px "Microsoft YaHei", sans-serif';
-  rows.forEach(([time, item, state], index) => {
-    const y = 160 + index * 42;
-    ctx.fillStyle = '#9fc3d4';
-    ctx.fillText(time, 32, y);
-    ctx.fillStyle = '#d6ecf7';
-    ctx.fillText(item, 160, y);
-    ctx.fillStyle = state === '告警' ? '#ffb454' : state === '完成' ? '#7fe3c0' : '#63b8e0';
-    ctx.fillText(state, 500, y);
-  });
-  ctx.fillStyle = '#5fa8c4';
-  ctx.font = '20px "Microsoft YaHei", sans-serif';
-  ctx.fillText('点击进入运行日志', 32, 338);
-
   const tex = new THREE.CanvasTexture(canvas);
+  logKioskScreen = { canvas, ctx, tex };
+  drawLogKioskScreen();
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
   const screen = new THREE.Mesh(
