@@ -369,8 +369,7 @@ function sha256HexSync(value) {
     });
   }
 
-  function probe() {
-    if (done || awaitingLogin) return;
+  function probeBody() {
     var now = performance.now() - startedAt;
 
     if (!state.runtime && document.readyState !== 'loading' && now >= MIN_AT.runtime) step('runtime');
@@ -402,10 +401,23 @@ function sha256HexSync(value) {
 
     if (AUTHED === false && now > MIN) return enterLogin(); // 开屏动画播完再落到登录/首次创建框
     if (allReady() && now > MIN) return AUTHED === false ? enterLogin() : finish('authed');
-    // 已登录/会话待确认时，boot 只当厂房缓冲层：等 scene+model 真正就绪再进。
-    // 以前这里只要 .app-shell 出现就 finish，云端于是先露出工作台的“读取设备模型…”加载页。
-    if (now > 60000) return AUTHED === false ? enterLogin() : finish('slow');
-    setTimeout(probe, 180);
+    // 2026-11-18：模型校验不再挡进入。厂房场景一就绪就放行，
+    // 避免慢机器/二次进入时停在“校验预测模型 74%”；模型状态在工作台里继续刷新。
+    if (AUTHED !== false && state.runtime && state.app && state.scene && now > MIN) return finish('scene-ready');
+  }
+
+  // 2026-11-18：probe 包一层 try/catch。原来任何一次内部异常都会让定时器不再续约，
+  // 开屏层就永久停在最后一次进度（现象：74% 不动、看不到登录页/工作台）。
+  function probe() {
+    if (done || awaitingLogin) return;
+    try { probeBody(); } catch (error) { window.__obError = String((error && error.stack) || error); }
+    if (!done && !awaitingLogin) {
+      var elapsed = performance.now() - startedAt;
+      // 兜底放在包装器里，只读安全变量：probeBody 内一旦抛错也能按时收场。
+      if (AUTHED === true && elapsed > 18000) finish('entry-cap');
+      else if (elapsed > 60000) { if (AUTHED === false) enterLogin(); else finish('slow'); }
+    }
+    if (!done && !awaitingLogin) setTimeout(probe, 180);
   }
 
   function skip(e) {
