@@ -212,7 +212,7 @@ export function DataWorkspace({ stream, caseData, modelProps, cases = [], result
   return <section className="data-workspace reference-page data-access" aria-label="数据接入工作区">
     <header className="reference-page-heading data-access-heading">
       <div className="data-access-title">
-        <span className="page-identity-icon"><Database size={14}/></span>
+        <DataProjectionMark complete={check.completeCount} total={check.total} running={stream.running}/>
         <div>
           <h1>数据接入</h1>
           <p className="data-access-sub">

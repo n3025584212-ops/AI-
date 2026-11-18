@@ -320,7 +320,10 @@ html,body{ background:#03080A !important }
 .twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-bar{
   margin-top:10px !important; flex:0 0 auto !important; flex-wrap:wrap !important;
 }
-.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-heading{ display:none !important }
+/* 2026-11-18 标题基准改为"数据接入"：停靠态也保留页头，四页用同一套尺寸 */
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-heading{ display:flex !important; padding:6px 2px 4px !important; }
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-heading h1{ font-size:21px !important; }
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-heading .data-access-sub{ font-size:10px !important; }
 /* 右：参数矩阵 */
 .twin-stage.stage-docked[data-stage-page="data"] .data-col-right{
   position:absolute !important; right:8px !important; top:58px !important; bottom:186px !important;
@@ -2363,3 +2366,64 @@ body:has(.twin-stage[data-stage-page="logs"]) #root .sidebar{top:60px !important
 .twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1 .page-identity-icon{width:24px !important;height:24px !important;margin-right:2px}
 .twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1 .page-identity-icon svg{width:15px !important;height:15px !important}
 .twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading .page-identity-icon{width:24px !important;height:24px !important}
+
+/* ==========================================================================
+   2026-11-18 标题基准 = 数据接入：四页统一为“大页头”
+   图标/插图 40-44px、标题 20px、说明 10px、按钮 10.5px；面板整体下移 14px 不遮挡
+   ========================================================================== */
+.page-identity-icon.is-glyph{border:0 !important;background:none !important;box-shadow:none !important;width:40px !important;height:40px !important;border-radius:0 !important}
+.page-identity-icon.is-glyph svg{width:100% !important;height:100% !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading{height:58px !important;padding:4px 12px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading h2{font-size:20px !important;letter-spacing:.4px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading p{display:block !important;font-size:10px !important;line-height:1.45 !important;margin-top:1px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading .maint-button{min-height:26px !important;font-size:10.5px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-right{top:72px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-col-left{top:72px !important;position:absolute !important;left:10px !important;bottom:205px !important;padding:0 10px 10px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header{height:58px !important;padding:2px 12px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1{font-size:20px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header p{display:block !important;font-size:10px !important;line-height:1.45 !important;margin-top:1px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-header-actions .maint-button{min-height:26px !important;font-size:10.5px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-left{top:72px !important}
+.twin-stage.stage-docked[data-stage-page="communication"] .comm-col-right{top:72px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-heading-identity h2{font-size:20px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-heading-identity p{font-size:10px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-workspace .log-module-icon.is-large,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-workspace .log-module-icon.is-large svg{width:40px !important;height:40px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-actions .maint-button{font-size:10.5px !important;min-height:26px !important}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-projection-mark{width:54px !important;height:40px !important}
+HTML
+cat >> src/reference-ui.css <<'CSS'
+/* 大页头基准（数据接入）：整页布局同尺寸 */
+.data-access .data-access-heading .data-projection-mark{width:54px;height:40px}
+
+/* 2026-11-18 二轮：完全按“数据接入”的无底板页头对齐（去掉浮动条底板/边框，图标 34px、标题 21px） */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading,
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header{
+  background:none !important;border:0 !important;box-shadow:none !important;
+  height:52px !important;padding:0 4px !important;
+}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading h2,
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-heading-identity h2{font-size:21px !important;letter-spacing:.3px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading p,
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header p{font-size:10px !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .page-identity-icon,
+.twin-stage.stage-docked[data-stage-page="communication"] .page-identity-icon{width:34px !important;height:34px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-workspace .log-module-icon.is-large,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-workspace .log-module-icon.is-large svg{width:34px !important;height:34px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-head{background:none !important;border:0 !important;box-shadow:none !important;padding:0 2px 4px !important}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-projection-mark{width:44px !important;height:34px !important}
+
+/* 2026-11-18 三轮：与数据接入页头完全同构——图标 40px、标题 21px、无副标题、无底板 */
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading p,
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection>header p,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-heading-identity p{display:none !important}
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-heading .data-access-sub{display:none !important}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .page-identity-icon,
+.twin-stage.stage-docked[data-stage-page="communication"] .page-identity-icon{width:40px !important;height:40px !important;filter:brightness(1.55) saturate(1.35)}
+.twin-stage.stage-docked[data-stage-page="maintenance"] .maint-page-heading h2,
+.twin-stage.stage-docked[data-stage-page="communication"] .industrial-connection h1,
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-heading-identity h2,
+.twin-stage.stage-docked[data-stage-page="data"] .data-col-left .data-access-heading h1{font-size:21px !important;font-weight:600 !important;letter-spacing:.4px !important}
+.twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left{background:transparent !important;border-left:0 !important}
+#root .twin-stage.stage-docked[data-stage-page="logs"] .logs-col-left .logs-head{background:none !important;border:0 !important;box-shadow:none !important}
